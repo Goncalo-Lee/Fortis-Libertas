@@ -1,0 +1,98 @@
+# =============================================================================
+# Environment Variables Required (.env file)
+# -----------------------------------------------------------------------------
+# DB_PORT=3306              # Host port for MySQL
+# DB_PASSWORD=<strong_password>  # Root password (use strong credentials)
+# DB_MY_ADMIN_PHP_PORT=8080      # Host port for phpMyAdmin
+# =============================================================================
+
+services:
+    db:
+        image: mysql:8.1
+        # container_name removed - Compose projects handle naming automatically
+        restart: unless-stopped
+
+        # Health check ensures service is ready before dependent containers start
+        healthcheck:
+            test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 30s
+
+        volumes:
+            # Persist database data outside container lifecycle
+            - db_data:/var/lib/mysql
+            # Optional: mount init scripts for automatic setup
+            # - ./init-db:/docker-entrypoint-initdb.d
+
+        ports:
+            # Bind to localhost only for development security
+            - "127.0.0.1:${DB_PORT:-3306}:3306"
+
+        environment:
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+            # Recommended: Create dedicated application user instead of using root
+            # MYSQL_DATABASE: csm_app
+            # MYSQL_USER: csm_user
+            # MYSQL_PASSWORD: <application_password>
+
+        networks:
+            - internal-network
+
+        # Resource limits prevent runaway containers from exhausting host resources
+        deploy:
+            resources:
+                limits:
+                    cpus: '2'
+                    memory: 2G
+                reservations:
+                    cpus: '0.5'
+                    memory: 512M
+
+        # Logging configuration prevents disk exhaustion
+        logging:
+            driver: json-file
+            options:
+                max-size: "50m"
+                max-file: "3"
+
+    phpmyadmin:
+        depends_on:
+            db:
+                condition: service_healthy  # Wait until DB is healthy
+
+        image: phpmyadmin:5.2
+        # container_name removed for consistency
+        restart: unless-stopped
+
+        ports:
+            # IMPORTANT: Binding to localhost restricts access to local machine only
+            - "127.0.0.1:${DB_MY_ADMIN_PHP_PORT:-8080}:80"
+
+        environment:
+            PMA_HOST: db
+            PMA_PORT: 3306
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+            # Additional security settings for phpMyAdmin
+            # PMA_ARBITRARY: 0  # Prevent arbitrary server connection
+            # APACHE_PORT: 80
+
+        networks:
+            - internal-network
+
+        logging:
+            driver: json-file
+            options:
+                max-size: "10m"
+                max-file: "2"
+
+networks:
+    internal-network:
+        # Isolated network - containers can communicate but not exposed externally
+        driver: bridge
+
+volumes:
+    db_data:
+        # Named volume persists data across container recreation
+        driver: local
