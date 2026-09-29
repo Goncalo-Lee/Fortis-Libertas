@@ -15,6 +15,7 @@ versioning follows [SemVer](https://semver.org/).
 - Documentation structure under `docs/` (planning, documentation, roadmap)
 - Project `README.md`, `CONTRIBUTING.md` and `CHANGELOG.md`
 - Add the roadmap for the [0.1.0]
+- Add the issue setup script
 
 ### Removed
 
