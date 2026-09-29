@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
 
-## Getting Started
+# 🛡️ Fortis Libertas
 
-First, run the development server:
+*One-line description of what the project is.*
+
+![Status](https://img.shields.io/badge/status-in%20development-yellow)
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)
+![Bootstrap](https://img.shields.io/badge/Bootstrap-7952B3?logo=bootstrap&logoColor=white)
+
+![Preview](docs/assets/preview.png)
+
+</div>
+
+## 📖 About
+
+`TODO: Two or three sentences: what it is, who it is for, why it exists.`
+
+## ✨ Features
+
+- [x] Login page
+- [ ] Registration
+- [ ] Google sign-in
+- [ ] Password recovery
+
+## 🧰 Tech Stack
+
+| Area     | Technology          |
+|----------|---------------------|
+| Android  | Kotlin              |
+| Frontend | HTML, CSS, TAILWIND |
+| Backend  | NEXTJS              |
+| Database | MYSQL, DRIZZLE      |
+
+## 🚀 Quick Start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repo-url>
+cd fortis-libertas
+# commands to run
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Full instructions in [docs/documentation/setup.md](docs/documentation/setup.md).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📚 Documentation
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Section | Description |
+|---------|-------------|
+| [Planning](docs/planning/README.md) | Ideas and design before building |
+| ↳ [Database](docs/planning/db/README.md) | ER model and data dictionary |
+| ↳ [API](docs/planning/api/README.md) | Planned endpoints |
+| ↳ [UI](docs/planning/ui/README.md) | Wireframes and design system |
+| ↳ [UX](docs/planning/ux/README.md) | Sitemap and user flows |
+| [Documentation](docs/documentation/setup.md) | Setup, architecture, decisions |
+| [Roadmap](docs/roadmap/README.md) | What comes next |
 
-## Learn More
+## 🗺️ Roadmap
 
-To learn more about Next.js, take a look at the following resources:
+See [docs/roadmap](docs/roadmap/README.md).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 👤 Author
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Gonçalo Silva**, [GitHub](https://github.com/your-user) · [LinkedIn](https://linkedin.com/in/your-user)
+**João Amaral**, [GitHub]() · [LinkedIn]()
