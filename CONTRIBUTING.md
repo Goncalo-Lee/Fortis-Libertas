@@ -35,6 +35,12 @@ Format: `type(scope): short description`
 | `refactor` | Code restructuring (no new feature, no fix) |
 | `chore`    | Dependencies, configs, tooling              |
 
+Example how to use the reference of issue:
+
+```bash
+feat(auth): add sign-up form (#4)
+```
+
 ### Rules
 
 - Use the imperative mood: `add`, not `added`.
@@ -68,11 +74,12 @@ After tagging, move the `[Unreleased]` block in `CHANGELOG.md` to the new versio
 
 ## Workflow
 
-1. Update `main`: `git switch main && git pull`
-2. Create a branch: `git switch -c feat/my-feature`
-3. Commit in small steps
-4. Push and open a Pull Request
-5. Merge, then update the `CHANGELOG.md`
+1. Pick an issue from the current milestone (e.g. `#4`)
+2. Update `main`: `git switch main && git pull`
+3. Create a branch named after the issue: `git switch -c feat/sign-up-form`
+4. Commit in small steps, referencing the issue number
+5. Push and open a Pull Request with `Closes #4` in the description
+6. Merge (the issue closes automatically), then update the `CHANGELOG.md`
 
 ## Troubleshooting
 
