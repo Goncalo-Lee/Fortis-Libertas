@@ -3,6 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
+import { SunIcon } from "../icons/sun-icon";
+import { MoonIcon } from "../icons/moon-icon";
+import { Button } from "../ui/button"
+import { HamburgerIcon } from "../icons/hamburger-icon";
+import { CloseIcon } from "../icons/close-icon";
 
 interface Link {
   href: string;
@@ -21,41 +26,43 @@ export function Navbar() {
   const { resolvedTheme, setTheme } = useTheme();
 
   return (
-    <header>
-      <div>
+    <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white/80 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/80">
+      <div className="flex h-14 items-center justify-between px-4">
 
-        <Link href="/">
+        <Link href="/" className="font-semibold tracking-tight">
           Fortis Libertas
         </Link>
 
-        <div>
-          <button
+        <div className="flex items-center gap-1">
+          <Button
             onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
             aria-label="Change Theme"
           >
-            {/* Sol: visible in the dark mode */}
+            {resolvedTheme === "dark" ? <SunIcon /> : <MoonIcon />}
+          </Button>
 
-            {/* Lua: visible in the white mode */}
-          </button>
-
-          <button
+          <Button
             onClick={() => setOpen((open) => !open)}
             aria-label={open ? "Close Menu" : "Open Menu"}
             aria-expanded={open}
             aria-controls="mobile-menu"
           >
-          </button>
+            <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              {open ? <CloseIcon />: <HamburgerIcon />}
+            </svg>
+          </Button>
         </div>
       </div>
 
         {open && (
-          <nav>
-            <ul>
+          <nav id="mobile-menu" className="border-t border-neutral-200 md:hidden dark:border-neutral-800">
+            <ul className="flex flex-col gap-1 p-4">
               {links.map(({ href, label }) => (
                 <li key={href}>
                   <Link
                     href={href}
                     onClick={() => setOpen(false)}
+                    className="block rounded-md px-3 py-2 text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
                   >
                     {label}
                   </Link>
