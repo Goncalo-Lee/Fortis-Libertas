@@ -45,15 +45,20 @@ bun install
 cp .env-example .env        # Windows (PowerShell): Copy-Item .env-example .env
 ```
 
-Edit `.env` and fill in the values. <!-- TODO: list the variables (DATABASE_URL, ...) -->
+Edit `.env` and fill in the values.
+
+Set the following passwords in the .env file:
+- MYSQL_ROOT_PASSWORD
+- MYSQL_DATABASE
+- DATABASE_URL
+- BETTER_AUTH_SECRET
+- ALLOWED_DEV_ORIGINS (optional)
 
 ## 4. Start the database
 
 ```bash
 docker compose up -d
 ```
-
-<!-- TODO: service name, port and credentials from docker-compose.yml -->
 
 ## 6. Start the development server
 
