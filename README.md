@@ -69,4 +69,4 @@ See [docs/roadmap](docs/roadmap/README.md).
 ## 👤 Author
 
 **Gonçalo Silva**, [GitHub](https://github.com/your-user) · [LinkedIn](https://linkedin.com/in/your-user)
-**João Amaral**, [GitHub]() · [LinkedIn]()
+**João Amaral**, [GitHub](https://github.com/Cyberwitcher1) · [LinkedIn](https://www.linkedin.com/in/jo%C3%A3o-amaral1706/)
