@@ -54,6 +54,7 @@ Set the following passwords in the .env file:
 - DB_MY_ADMIN_PHP_PORT
 - DATABASE_URL
 - BETTER_AUTH_SECRET
+- BETTER_AUTH_URL
 - ALLOWED_DEV_ORIGINS (optional)
 
 ## 4. Start the database
@@ -72,14 +73,16 @@ The app runs at <http://localhost:3000>.
 
 ## Useful commands
 
-| Command                   | What it does        |
-| ------------------------- | ------------------- |
-| `bun run dev`             | Development server  |
-| `bun run build`           | Production build    |
-| `bun run lint`            | ESLint              |
-| `bunx drizzle-kit studio` | Browse the database |
-
-<!-- TODO: check these against the "scripts" in package.json -->
+| Command                   | What it does                                 |
+| ------------------------- | -------------------------------------------- |
+| `bun run dev`             | Development server                           |
+| `bun run build`           | Production build                             |
+| `bun run lint`            | ESLint                                       |
+| `bunx drizzle-kit studio` | Browse the database                          |
+| `bun run db:push`         | push schema changes directly to the database |
+| `bun run db:migrate`      | run pending migrations                       |
+| `bun run db:generate`     | generate new migrations                      |
+| `bun run star`            | run production build                         |
 
 ## Troubleshooting
 
