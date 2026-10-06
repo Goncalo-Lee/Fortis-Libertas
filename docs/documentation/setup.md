@@ -50,6 +50,8 @@ Edit `.env` and fill in the values.
 Set the following passwords in the .env file:
 - MYSQL_ROOT_PASSWORD
 - MYSQL_DATABASE
+- PORT_DATABASE
+- DB_MY_ADMIN_PHP_PORT
 - DATABASE_URL
 - BETTER_AUTH_SECRET
 - ALLOWED_DEV_ORIGINS (optional)
