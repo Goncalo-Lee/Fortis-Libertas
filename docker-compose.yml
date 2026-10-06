@@ -14,7 +14,7 @@ services:
 
         # Health check ensures service is ready before dependent containers start
         healthcheck:
-            test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
+            test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
             interval: 10s
             timeout: 5s
             retries: 5
@@ -28,10 +28,10 @@ services:
 
         ports:
             # Bind to localhost only for development security
-            - "127.0.0.1:${DB_PORT:-3306}:3306"
+            - "127.0.0.1:${PORT_DATABASE:-3306}:3306"
 
         environment:
-            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+            MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
             # Recommended: Create dedicated application user instead of using root
             # MYSQL_DATABASE: csm_app
             # MYSQL_USER: csm_user
