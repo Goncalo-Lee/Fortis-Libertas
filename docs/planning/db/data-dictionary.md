@@ -34,70 +34,91 @@
 ## Table: Card
 
 | Field | Data Type | Restrictions / Keys | Comments |
-| :--- | :--- | :--- | :--- |
-| **id** | binary(16) | PK KEY, NOT NULL | Identificador único do cartão. |
-| **bank_id** | binary(16) | FK KEY, NOT NULL | Chave estrangeira que liga ao banco. |
-| **user_id** | binary(16) | FK KEY, NOT NULL | Chave estrangeira que liga ao utilizador. |
-| **cardholder_name** | varchar(50) | NOT NULL | Nome do titular do cartão. |
-| **type_card** | enum | NOT NULL | Tipo de cartão, com os valores 'credit' ou 'debit'. |
-| **card_number** | char(16) | NULL | Número do cartão. |
-| **expiry_date** | date | NULL | Data de validade do cartão. |
-| **cvv** | char(3) | NULL | Código de segurança de 3 dígitos. |
-| **frozen_at** | datetime | NULL | Data e hora em que o cartão foi congelado/bloqueado. |
-| **deleted_at** | datetime | NULL | Data e hora de eliminação lógica (soft delete). |
-| **created_at** | datetime | NOT NULL | Data e hora de criação do registo. |
-| **updated_at** | datetime | NOT NULL | Data e hora da última atualização. |
+| --- | --- | --- | --- |
+| **id** | binary(16) | PK KEY, NOT NULL | Unique identifier for the card. |
+| **bank_id** | binary(16) | FK KEY, NOT NULL | Foreign key linking to the bank. |
+| **user_id** | binary(16) | FK KEY, NOT NULL | Foreign key linking to the user. |
+| **cardholder_name** | varchar(50) | NOT NULL | Name of the cardholder. |
+| **type_card** | enum | NOT NULL | Type of card, with the values 'credit' or 'debit'. |
+| **card_number** | char(16) | NULL | Card number. |
+| **expiry_date** | date | NULL | Expiry date of the card. |
+| **cvv** | char(3) | NULL | 3-digit security code. |
+| **frozen_at** | datetime | NULL | Date and time when the card was frozen/blocked. |
+| **deleted_at** | datetime | NULL | Date and time of logical deletion (soft delete). |
+| **created_at** | datetime | NOT NULL | Date and time the record was created. |
+| **updated_at** | datetime | NOT NULL | Date and time of the last update. |
 
-### Explicação Detalhada de Cada Campo (Field)
+### Detailed Explanation of Each Field
 
-As restrições baseiam-se na formatação visual apresentada na imagem da tabela `Card`:
+The restrictions are based on the visual formatting presented in the image of the `Card` table:
 
-*   **id**
-    *   **Data Type:** `binary(16)`.
-    *   **Restrições:** É a Chave Primária (texto a azul) e NOT NULL (quadrado rosa sólido).
-    *   **O que faz:** É o identificador principal e exclusivo do cartão na base de dados.
-*   **bank_id**
-    *   **Data Type:** `binary(16)`.
-    *   **Restrições:** É uma Chave Estrangeira (texto a verde) e NOT NULL (quadrado rosa sólido).
-    *   **O que faz:** Relaciona o cartão com um banco específico noutra tabela.
-*   **user_id**
-    *   **Data Type:** `binary(16)`.
-    *   **Restrições:** É uma Chave Estrangeira (texto a verde) e NOT NULL (quadrado rosa sólido).
-    *   **O que faz:** Relaciona o cartão com o utilizador a quem ele pertence.
-*   **cardholder_name**
-    *   **Data Type:** `varchar(50)`.
-    *   **Restrições:** NOT NULL (quadrado rosa sólido).
-    *   **O que faz:** Guarda o nome impresso no cartão. Sendo obrigatório, não pode ficar vazio.
-*   **type_card**
-    *   **Data Type:** `enum`.
-    *   **Restrições:** NOT NULL (quadrado rosa sólido).
-    *   **O que faz:** Define se o cartão é de crédito ou débito. A secção "Enum" na imagem especifica os valores aceites: `('credit', 'debit')`.
-*   **card_number**
-    *   **Data Type:** `char(16)`.
-    *   **Restrições:** NULL (quadrado escuro com linhas diagonais).
-    *   **O que faz:** Guarda os 16 dígitos do cartão. O estado NULL indica que pode estar temporariamente vazio (por exemplo, se o cartão foi solicitado mas o número ainda não foi gerado/atribuído).
-*   **expiry_date**
-    *   **Data Type:** `date`.
-    *   **Restrições:** NULL (quadrado escuro com linhas diagonais).
-    *   **O que faz:** Guarda a data em que o cartão expira.
-*   **cvv**
-    *   **Data Type:** `char(3)`.
-    *   **Restrições:** NULL (quadrado escuro com linhas diagonais).
-    *   **O que faz:** O código de segurança de 3 dígitos.
-*   **frozen_at**
-    *   **Data Type:** `datetime`.
-    *   **Restrições:** NULL (quadrado escuro com linhas diagonais).
-    *   **O que faz:** Regista a data e hora exatas em que um cartão foi temporariamente congelado pelo utilizador ou sistema. Se estiver vazio (NULL), o cartão não está congelado.
-*   **deleted_at**
-    *   **Data Type:** `datetime`.
-    *   **Restrições:** NULL (quadrado escuro com linhas diagonais).
-    *   **O que faz:** Usado para "Soft Deletes" (eliminação lógica). Assinalado a vermelho, agrupa-se com os outros campos de controlo de tempo.
-*   **created_at**
-    *   **Data Type:** `datetime`.
-    *   **Restrições:** NOT NULL (quadrado rosa sólido).
-    *   **O que faz:** Regista o momento em que o cartão foi adicionado à base de dados.
-*   **updated_at**
-    *   **Data Type:** `datetime`.
-    *   **Restrições:** NOT NULL (quadrado rosa sólido).
-    *   **O que faz:** Atualiza-se automaticamente para refletir a última alteração feita aos dados deste cartão.
->>>>>>> 2ed1724fe186152cb1781ea2fe91619450f9b793
+* **id**
+* **Data Type:** `binary(16)`.
+* **Restrictions:** It is the Primary Key (blue text) and NOT NULL (solid pink square).
+* **What it does:** It is the main and exclusive identifier for the card in the database.
+
+
+* **bank_id**
+* **Data Type:** `binary(16)`.
+* **Restrictions:** It is a Foreign Key (green text) and NOT NULL (solid pink square).
+* **What it does:** Relates the card to a specific bank in another table.
+
+
+* **user_id**
+* **Data Type:** `binary(16)`.
+* **Restrictions:** It is a Foreign Key (green text) and NOT NULL (solid pink square).
+* **What it does:** Relates the card to the user it belongs to.
+
+
+* **cardholder_name**
+* **Data Type:** `varchar(50)`.
+* **Restrictions:** NOT NULL (solid pink square).
+* **What it does:** Stores the name printed on the card. Being mandatory, it cannot be empty.
+
+
+* **type_card**
+* **Data Type:** `enum`.
+* **Restrictions:** NOT NULL (solid pink square).
+* **What it does:** Defines whether the card is credit or debit. The "Enum" section in the image specifies the accepted values: `('credit', 'debit')`.
+
+
+* **card_number**
+* **Data Type:** `char(16)`.
+* **Restrictions:** NULL (dark square with diagonal lines).
+* **What it does:** Stores the 16 digits of the card. The NULL state indicates that it can be temporarily empty (for example, if the card was requested but the number hasn't been generated/assigned yet).
+
+
+* **expiry_date**
+* **Data Type:** `date`.
+* **Restrictions:** NULL (dark square with diagonal lines).
+* **What it does:** Stores the date when the card expires.
+
+
+* **cvv**
+* **Data Type:** `char(3)`.
+* **Restrictions:** NULL (dark square with diagonal lines).
+* **What it does:** The 3-digit security code.
+
+
+* **frozen_at**
+* **Data Type:** `datetime`.
+* **Restrictions:** NULL (dark square with diagonal lines).
+* **What it does:** Records the exact date and time when a card was temporarily frozen by the user or system. If empty (NULL), the card is not frozen.
+
+
+* **deleted_at**
+* **Data Type:** `datetime`.
+* **Restrictions:** NULL (dark square with diagonal lines).
+* **What it does:** Used for "Soft Deletes" (logical deletion). Marked in red, it is grouped with the other time control fields.
+
+
+* **created_at**
+* **Data Type:** `datetime`.
+* **Restrictions:** NOT NULL (solid pink square).
+* **What it does:** Records the exact moment the card was added to the database.
+
+
+* **updated_at**
+* **Data Type:** `datetime`.
+* **Restrictions:** NOT NULL (solid pink square).
+* **What it does:** Updates automatically to reflect the last change made to this card's data.
