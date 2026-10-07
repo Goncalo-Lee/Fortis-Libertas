@@ -18,3 +18,16 @@
 ### Default:
 
 * `two_factor_enabled`: `false`;
+
+## Table: Session
+
+| Field | Data Type | Restrictions / Keys | Comments |
+| :--- | :--- | :--- | :--- |
+| **id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique session identifier. |
+| **user_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `id` in the `User` table. |
+| **token** | varchar(255) | UNIQUE, NOT NULL | Session authentication token. |
+| **ip_address** | text | NOT NULL | The client’s IP address during the session. |
+| **user_agent** | text | NOT NULL | User-Agent information from the browser/device. |
+| **expires_at** | datetime | NOT NULL | Session expiry date and time. |
+| **created_at** | datetime | NOT NULL | Date and time the session was created. |
+| **updated_at** | datetime | NOT NULL | Date and time of the last update to the session. |
