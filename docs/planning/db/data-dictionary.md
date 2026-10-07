@@ -18,6 +18,9 @@
 ### Default:
 
 * `two_factor_enabled`: `false`;
+
+---
+
 ## Table: Session
 
 | Field | Data Type | Restrictions / Keys | Comments |
@@ -30,6 +33,8 @@
 | **expires_at** | datetime | NOT NULL | Session expiry date and time. |
 | **created_at** | datetime | NOT NULL | Date and time the session was created. |
 | **updated_at** | datetime | NOT NULL | Date and time of the last update to the session. |
+
+---
 
 ## Table: Card
 
@@ -48,3 +53,4 @@
 | **created_at** | datetime | NOT NULL | Date and time the record was created. |
 | **updated_at** | datetime | NOT NULL | Date and time of the last update. |
 
+---
