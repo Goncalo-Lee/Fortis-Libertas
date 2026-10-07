@@ -14,7 +14,7 @@ docs/planning/db/
 \-- excalidraw-db/          # Visual ER diagrams versioned across design iterations
     |-- Fortis Libertas - DataBase-SQL.V.00.01.00.excalidraw
     |-- ...
-    \-- Fortis Libertas - DataBase-SQL.V.00.07.00.excalidraw
+    \-- Fortis Libertas - DataBase-SQL.V.00.08.00.excalidraw
 ```
 
 ---
@@ -50,7 +50,7 @@ When modifying or introducing database entities:
 
 1. **Plan & Iterate Visually:**
    - Open or duplicate the latest diagram in [`excalidraw-db/`](./excalidraw-db/).
-   - Increment the diagram version (e.g. `V.00.07.00` &rarr; `V.00.08.00`) when making structural updates.
+   - Increment the diagram version (e.g. `V.00.08.00` &rarr; `V.00.08.0x or V.00.09.00`) when making structural updates.
 2. **Update Planning Documentation:**
    - Document new entities and relationships in [`model-er.md`](./model-er.md).
    - Add column specifications and constraints to [`data-dictionary.md`](./data-dictionary.md).
