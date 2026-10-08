@@ -4,7 +4,7 @@
 
 | Field | Data Type | Restrictions / Keys | Comments |
 | :--- | :--- | :--- | :--- |
-| **id** | binary(16) | PK KEY (Primary Key), UNIQUE |  Unique user identifier. |
+| **id** | binary(16) | PK KEY, UNIQUE |  Unique user identifier. |
 | **user_name** | varchar(254) | UNIQUE | Username – must be unique. |
 | **full_name** | varchar(254) | NOT NULL | User’s full name. |
 | **email** | varchar(254) | UNIQUE | Email address – must be unique. |
@@ -25,8 +25,8 @@
 
 | Field | Data Type | Restrictions / Keys | Comments |
 | :--- | :--- | :--- | :--- |
-| **id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique session identifier. |
-| **user_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `id` in the `User` table. |
+| **id** | binary(16) | PK KEY, NOT NULL | Unique session identifier. |
+| **user_id** | binary(16) | FK KEY, NOT NULL | Foreign key referencing the `id` in the `User` table. |
 | **token** | varchar(255) | UNIQUE, NOT NULL | Session authentication token. |
 | **ip_address** | text | NOT NULL | The client’s IP address during the session. |
 | **user_agent** | text | NOT NULL | User-Agent information from the browser/device. |
@@ -55,7 +55,7 @@
 
 ---
 
-### Bank_Account
+### Table: Bank_Account
 
 | Field | Data Type | Restrictions / Keys | Comments |
 | :--- | :--- | :--- | :--- |
@@ -69,7 +69,7 @@
 
 ---
 
-### Tag__Category
+### Table: Tag__Category
 
 | Field | Data Type | Restrictions / Keys | Comments |
 | :--- | :--- | :--- | :--- |
@@ -79,7 +79,7 @@
 
 ---
 
-### Notifications
+### Table: Notifications
 
 | Field | Data Type | Restrictions / Keys | Comments |
 | :--- | :--- | :--- | :--- |
@@ -92,7 +92,7 @@
 
 ---
 
-### Verification
+### Table: Verification
 
 | Field | Data Type | Restrictions / Keys | Comments |
 | :--- | :--- | :--- | :--- |
@@ -105,7 +105,7 @@
 
 ---
 
-### Two_Factor
+### Table: Two_Factor
 
 | Field | Data Type | Restrictions / Keys | Comments |
 | :--- | :--- | :--- | :--- |
@@ -121,71 +121,77 @@
 
 ---
 
-### Payment_Method
+### Table: Payment_Method
 
 | Field | Data Type | Restrictions / Keys | Comments |
 | :--- | :--- | :--- | :--- |
-| **id** | char(26) | PK KEY, NOT NULL | Identificador único do método de pagamento. |
-| **card_id** | binary(16) | FK KEY, NULL | Chave estrangeira que relaciona com um cartão específico, podendo estar vazio. |
-| **dashboard_id** | binary(16) | FK KEY, NOT NULL, UNIQUE | Chave estrangeira para o dashboard (possui uma restrição de unicidade em conjunto com o campo `name`). |
-| **name** | varchar(50) | NOT NULL, UNIQUE | Nome do método de pagamento (único para o mesmo `dashboard_id`). |
-| **description** | text | NOT NULL | Descrição detalhada do método de pagamento. |
-| **deleted_at** | datetime | NULL | Data e hora para a eliminação lógica ("soft delete") do registo. |
+| **id** | char(26) | PK KEY, NOT NULL | Unique identifier for the payment method. |
+| **card_id** | binary(16) | FK KEY, NULL | A foreign key that references a specific card; it may be empty. |
+| **dashboard_id** | binary(16) | FK KEY, NOT NULL, UNIQUE | Foreign key for the dashboard (has a unique constraint in conjunction with the `name` field). |
+| **name** | varchar(50) | NOT NULL, UNIQUE | Payment method name (unique for the same `dashboard_id`). |
+| **description** | text | NOT NULL | Payment method name (unique for the same `dashboard_id`). |
+| **deleted_at** | datetime | NULL | Date and time for the logical deletion (‘soft delete’) of the record. |
 | **created_at** | datetime | NOT NULL | Data e hora em que o registo foi criado. |
 | **updated_at** | datetime | NOT NULL | Data e hora da última atualização do registo. |
 
 ---
 
-### Bank_Account__User
+### Table: Bank_Account__User
 
 | Field | Data Type | Restrictions / Keys | Comments |
 | :--- | :--- | :--- | :--- |
-| **bank_id** | binary(16) | PK KEY, NOT NULL | Parte da chave primária composta, que faz a ligação à conta bancária. |
-| **user_id** | binary(16) | PK KEY, NOT NULL | Parte da chave primária composta, que faz a ligação ao utilizador. |
-| **role** | enum | NOT NULL | Define o papel/nível de acesso do utilizador. Valores aceites: `'owner'`, `'editor'`, `'viewer'`. |
-| **created_at** | datetime | NOT NULL | Data e hora em que a relação foi criada. |
-| **updated_at** | datetime | NOT NULL | Data e hora da última atualização desta relação. |
+| **bank_id** | binary(16) | PK KEY, NOT NULL | Part of the composite primary key, which links to the bank account. |
+| **user_id** | binary(16) | PK KEY, NOT NULL | Part of the composite primary key, which links to the user. |
+| **role** | enum | NOT NULL | Sets the user’s role/access level. Accepted values: `“owner”`, `“editor”`, `“viewer”`. |
+| **created_at** | datetime | NOT NULL | The date and time when the list was created. |
+| **updated_at** | datetime | NOT NULL | Date and time of the last update to this list. |
 
 ---
 
-### Tag__Financial_Record
+### Table: Tag__Financial_Record
 
 | Field | Data Type | Restrictions / Keys | Comments |
 | :--- | :--- | :--- | :--- |
-| **tag_id** | binary(16) | PK KEY, NOT NULL, ON DELETE CASCADE | Chave primária composta, liga à etiqueta (tag). Será eliminada em cascata se a referência for apagada. |
-| **record_id** | binary(16) | PK KEY, NOT NULL, ON DELETE CASCADE | Chave primária composta, liga ao registo financeiro. Será eliminada em cascata se a referência for apagada. |
-| **created_at** | datetime | NOT NULL | Data e hora em que a associação foi criada. |
+| **tag_id** | binary(16) | PK KEY, NOT NULL, ON DELETE CASCADE | Composite primary key, linked to the tag. It will be deleted in a cascade if the reference is deleted. |
+| **record_id** | binary(16) | PK KEY, NOT NULL, ON DELETE CASCADE | Composite primary key, linked to the financial record. It will be deleted in a cascading manner if the reference is deleted. |
+| **created_at** | datetime | NOT NULL | The date and time the association was established. |
 
 ---
 
-### Record_Type
+### Table: Record_Type
 
 | Field | Data Type | Restrictions / Keys | Comments |
 | :--- | :--- | :--- | :--- |
-| **id** | binary(16) | PK KEY, NOT NULL | Identificador único do tipo de registo. |
-| **dashboard_id** | binary(16) | FK KEY, NOT NULL, UNIQUE | Chave estrangeira para o dashboard associado (com restrição única com o campo `name`). |
-| **name** | varchar(50) | NOT NULL, UNIQUE | Nome do tipo de registo. Valores iniciais (Seeders): `Expenses`, `Income`, `Investment`. |
-| **description** | text | NULL | Descrição opcional para o tipo de registo. |
+| **id** | binary(16) | PK KEY, NOT NULL | Unique identifier for the record type. |
+| **dashboard_id** | binary(16) | FK KEY, NOT NULL, UNIQUE | Foreign key for the associated dashboard (with a one-to-one relationship with the `name` field). |
+| **name** | varchar(50) | NOT NULL, UNIQUE | Name of the record type. |
+| **description** | text | NULL | Date and time of the ‘soft delete’ (if applicable). |
 | **deleted_at** | datetime | NULL | Data e hora do 'soft delete' (se aplicável). |
-| **created_at** | datetime | NOT NULL | Data e hora em que o registo foi criado. |
-| **updated_at** | datetime | NOT NULL | Data e hora da última alteração do registo. |
+| **created_at** | datetime | NOT NULL | The date and time the record was created. |
+| **updated_at** | datetime | NOT NULL | Date and time of the last change to the record. |
+
+### Seeder:
+
+* `name`: `Expenses`, `Income`, `Investment`;
 
 ---
 
-### Account
+### Table: Account
 
 | Field | Data Type | Restrictions / Keys | Comments |
 | :--- | :--- | :--- | :--- |
-| **id** | binary(16) | PK KEY, NOT NULL | Identificador único da conta. |
-| **user_id** | binary(16) | FK KEY, NOT NULL | Chave estrangeira que relaciona esta conta com o seu utilizador principal. |
-| **account_id** | text | NOT NULL | Identificador da conta num fornecedor/serviço externo. |
-| **provider_id** | text | NOT NULL | Identificador do provedor do serviço (ex: Google, GitHub, etc.). |
-| **access_token** | text | NOT NULL | Token de acesso para a API do provedor. |
-| **refresh_token** | text | NULL | Token utilizado para renovar o acesso expirado. |
-| **scope** | text | NULL | Âmbito de permissões autorizadas no provedor externo. |
-| **id_token** | text | NULL | Token de identidade fornecido pelo serviço externo. |
-| **password** | text | NULL | Palavra-passe da conta, podendo estar vazia consoante o método de autenticação. |
-| **access_token_expires_at**| datetime | NULL | Data e hora de expiração do token de acesso. |
-| **refresh_token_expires_at**| datetime | NULL | Data e hora de expiração do token de renovação. |
-| **created_at** | datetime | NOT NULL | Data e hora em que a conta foi registada. |
-| **updated_at** | datetime | NOT NULL | Data e hora da última atualização aos dados da conta. |
+| **id** | binary(16) | PK KEY, NOT NULL | Unique account identifier. |
+| **user_id** | binary(16) | FK KEY, NOT NULL | Foreign key that links this account to its primary user. |
+| **account_id** | text | NOT NULL | Account identifier with an external supplier or service  |
+| **provider_id** | text | NOT NULL | Service provider identifier (e.g. Google, GitHub, etc.). |
+| **access_token** | text | NOT NULL | Access token for the provider’s API. |
+| **refresh_token** | text | NULL | A token used to renew expired access. |
+| **scope** | text | NULL | Scope of permissions authorised by the external provider. |
+| **id_token** | text | NULL | Identity token provided by the external service. |
+| **password** | text | NULL | Account password; this may be left blank depending on the authentication method. |
+| **access_token_expires_at**| datetime | NULL | Expiry date and time of the access token. |
+| **refresh_token_expires_at**| datetime | NULL | Expiry date and time of the renewal token. |
+| **created_at** | datetime | NOT NULL | The date and time the account was registered. |
+| **updated_at** | datetime | NOT NULL | Date and time of the last update to the account details. |
+
+---
