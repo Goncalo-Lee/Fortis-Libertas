@@ -217,6 +217,7 @@
 | **updated_at** | datetime | NOT NULL | Timestamp when the category was last updated. |
 
 **Unique Constraint:**
+
 - A composite unique constraint exists on the combination of `(dashboard_id, name)`, meaning category names must be unique within each dashboard.
 
 ---
@@ -234,4 +235,127 @@
 | **updated_at** | datetime | NOT NULL | Timestamp when the tag was last updated. |
 
 **Unique Constraint:**
+
 - A composite unique constraint exists on the combination of `(dashboard_id, name)`, ensuring tag names are unique within each dashboard.
+
+---
+
+## Table: Profile
+
+| Field | Data Type | Constraints / Keys | Notes |
+| :--- | :--- | :--- | :--- |
+| **user_id** | binary(16) | PK KEY (Primary Key), FK KEY (Foreign Key), NOT NULL | Primary key and foreign key referencing the `User` table. |
+| **birth_date** | date | NULL | User's birth date. |
+| **phone** | varchar(20) | NULL | User's phone number. |
+| **phone_verified_at** | datetime | NULL | Timestamp when the phone number was verified. |
+| **currency** | char(3) | NOT NULL | Preferred currency (default: EUR). |
+| **language** | varchar(254) | NOT NULL | Preferred language (default: pt-PT). |
+| **created_at** | datetime | NOT NULL | Timestamp when the profile was created. |
+| **updated_at** | datetime | NOT NULL | Timestamp when the profile was last updated. |
+
+**Defaults:**
+
+- `currency`: `EUR`
+- `language`: `pt-PT`
+
+**Cascade Delete:**
+
+- `ON DELETE CASCADE` is configured for `user_id`, meaning if a user is deleted, their associated profile will also be automatically deleted.
+
+---
+
+## Table: Dashboard
+
+| Field | Data Type | Constraints / Keys | Notes |
+| :--- | :--- | :--- | :--- |
+| **id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the dashboard. |
+| **name** | varchar(50) | NOT NULL | Name of the dashboard. |
+| **is_active** | bool | NOT NULL | Indicates whether the dashboard is currently active. |
+| **deleted_at** | datetime | NULL | Timestamp for soft deletion (if applicable). |
+| **created_at** | datetime | NOT NULL | Timestamp when the dashboard was created. |
+| **updated_at** | datetime | NOT NULL | Timestamp when the dashboard was last updated. |
+
+---
+
+## Table: User__Dashboard
+
+| Field | Data Type | Constraints / Keys | Notes |
+| :--- | :--- | :--- | :--- |
+| **dashboard_id** | binary(16) | PK KEY (Primary Key), FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `Dashboard` table. |
+| **user_id** | binary(16) | PK KEY (Primary Key), FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `User` table. |
+| **role** | enum | NOT NULL | User's role in the dashboard ('owner', 'editor', 'viewer'). |
+| **deleted_at** | datetime | NULL | Timestamp for soft deletion (if applicable). |
+| **created_at** | datetime | NOT NULL | Timestamp when the association was created. |
+| **updated_at** | datetime | NOT NULL | Timestamp when the association was last updated. |
+
+**Enum Values for `role`:**
+
+- `'owner'`
+- `'editor'`
+- `'viewer'`
+
+**Composite Primary Key:**
+
+- The combination of `(dashboard_id, user_id)` forms the primary key, ensuring each user-dashboard pair is unique.
+
+---
+
+## Table: Financial_Record
+
+| Field | Data Type | Constraints / Keys | Notes |
+| :--- | :--- | :--- | :--- |
+| **id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the financial record. |
+| **dashboard_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `Dashboard` table. |
+| **register_by_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `User` table (who registered the record). |
+| **record_type_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing a record type (likely a separate table not shown). |
+| **category_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `Category` table. |
+| **payment_method_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing a payment method (likely a separate table not shown). |
+| **installment_plan_id** | binary(16) | FK KEY (Foreign Key), NULL | Foreign key referencing an installment plan (optional, nullable). |
+| **name** | varchar(50) | NOT NULL | Name/title of the financial record. |
+| **description** | text | NULL | Detailed description of the transaction. |
+| **price** | decimal(10,2) | NOT NULL | Monetary amount (10 digits total, 2 decimal places). |
+| **currency** | varchar(3) | NOT NULL | Currency code (e.g., USD, EUR). |
+| **payment_date** | datetime | NOT NULL | Date and time when payment was made or due. |
+| **status** | enum | NOT NULL | Current status of the record. |
+| **deleted_at** | datetime | NULL | Timestamp for soft deletion (if applicable). |
+| **created_at** | datetime | NOT NULL | Timestamp when the record was created. |
+| **updated_at** | datetime | NOT NULL | Timestamp when the record was last updated. |
+
+**Enum Values for `status`:**
+
+- `'active'`
+- `'settled'`
+- `'cancelled'`
+- `'pending'`
+- `'paid'`
+- `'late'`
+
+---
+
+## Table: Installment_Plan
+
+| Field | Data Type | Constraints / Keys | Notes |
+| :--- | :--- | :--- | :--- |
+| **id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the installment plan. |
+| **dashboard_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `Dashboard` table. |
+| **register_by_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `User` table (who created the plan). |
+| **total_amount** | decimal(10,2) | NOT NULL | Total monetary amount of the plan (10 digits, 2 decimals). |
+| **total_installments** | int | NOT NULL | Number of installments in the plan. |
+| **due_date** | datetime | NOT NULL | Final due date for the entire plan. |
+| **status** | enum | NOT NULL | Current status of the plan (default: 'pending'). |
+| **deleted_at** | datetime | NULL | Timestamp for soft deletion (if applicable). |
+| **created_at** | datetime | NOT NULL | Timestamp when the plan was created. |
+| **updated_at** | datetime | NOT NULL | Timestamp when the plan was last updated. |
+
+**Enum Values for `status`:**
+
+- `'cancelled'`
+- `'pending'`
+- `'paid'`
+- `'late'`
+
+**Default Value:**
+
+- `status`: `'pending'`
+
+---
