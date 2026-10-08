@@ -15,9 +15,9 @@
 | **created_at** | datetime | NOT NULL | Date and time the record was created. |
 | **updated_at** | datetime | NOT NULL | Date and time of the last update to the record. |
 
-### Default:
+**Default:**
 
-* `two_factor_enabled`: `false`;
+- two_factor_enabled: `false`;
 
 ---
 
@@ -55,7 +55,7 @@
 
 ---
 
-### Table: Bank_Account
+## Table: Bank_Account
 
 | Field | Data Type | Restrictions / Keys | Comments |
 | :--- | :--- | :--- | :--- |
@@ -79,7 +79,7 @@
 
 ---
 
-### Table: Notifications
+## Table: Notifications
 
 | Field | Data Type | Restrictions / Keys | Comments |
 | :--- | :--- | :--- | :--- |
@@ -92,7 +92,7 @@
 
 ---
 
-### Table: Verification
+## Table: Verification
 
 | Field | Data Type | Restrictions / Keys | Comments |
 | :--- | :--- | :--- | :--- |
@@ -105,7 +105,7 @@
 
 ---
 
-### Table: Two_Factor
+## Table: Two_Factor
 
 | Field | Data Type | Restrictions / Keys | Comments |
 | :--- | :--- | :--- | :--- |
@@ -121,22 +121,26 @@
 
 ---
 
-### Table: Payment_Method
+## Table: Payment_Method
 
 | Field | Data Type | Restrictions / Keys | Comments |
 | :--- | :--- | :--- | :--- |
 | **id** | char(26) | PK KEY, NOT NULL | Unique identifier for the payment method. |
 | **card_id** | binary(16) | FK KEY, NULL | A foreign key that references a specific card; it may be empty. |
-| **dashboard_id** | binary(16) | FK KEY, NOT NULL, UNIQUE | Foreign key for the dashboard (has a unique constraint in conjunction with the `name` field). |
-| **name** | varchar(50) | NOT NULL, UNIQUE | Payment method name (unique for the same `dashboard_id`). |
-| **description** | text | NOT NULL | Payment method name (unique for the same `dashboard_id`). |
+| **dashboard_id** | binary(16) | FK KEY, NOT NULL, UNIQUE | Foreign key for the dashboard. |
+| **name** | varchar(50) | NOT NULL, UNIQUE | Payment method name. |
+| **description** | text | NOT NULL | Payment method name. |
 | **deleted_at** | datetime | NULL | Date and time for the logical deletion (‘soft delete’) of the record. |
 | **created_at** | datetime | NOT NULL | Data e hora em que o registo foi criado. |
 | **updated_at** | datetime | NOT NULL | Data e hora da última atualização do registo. |
 
+**Unique Constraint:**
+
+- A composite unique constraint exists on the combination of `(dashboard_id, name)`, meaning category names must be unique within each dashboard.
+
 ---
 
-### Table: Bank_Account__User
+## Table: Bank_Account__User
 
 | Field | Data Type | Restrictions / Keys | Comments |
 | :--- | :--- | :--- | :--- |
@@ -148,7 +152,7 @@
 
 ---
 
-### Table: Tag__Financial_Record
+## Table: Tag__Financial_Record
 
 | Field | Data Type | Restrictions / Keys | Comments |
 | :--- | :--- | :--- | :--- |
@@ -158,25 +162,29 @@
 
 ---
 
-### Table: Record_Type
+## Table: Record_Type
 
 | Field | Data Type | Restrictions / Keys | Comments |
 | :--- | :--- | :--- | :--- |
 | **id** | binary(16) | PK KEY, NOT NULL | Unique identifier for the record type. |
-| **dashboard_id** | binary(16) | FK KEY, NOT NULL, UNIQUE | Foreign key for the associated dashboard (with a one-to-one relationship with the `name` field). |
+| **dashboard_id** | binary(16) | FK KEY, NOT NULL, UNIQUE | Foreign key for the associated dashboard. |
 | **name** | varchar(50) | NOT NULL, UNIQUE | Name of the record type. |
 | **description** | text | NULL | Date and time of the ‘soft delete’ (if applicable). |
 | **deleted_at** | datetime | NULL | Data e hora do 'soft delete' (se aplicável). |
 | **created_at** | datetime | NOT NULL | The date and time the record was created. |
 | **updated_at** | datetime | NOT NULL | Date and time of the last change to the record. |
 
-### Seeder:
+**Unique Constraint:**
 
-* `name`: `Expenses`, `Income`, `Investment`;
+- A composite unique constraint exists on the combination of `(dashboard_id, name)`, meaning category names must be unique within each dashboard.
+
+**Seeder:**
+
+- name: `Expenses`, `Income`, `Investment`;
 
 ---
 
-### Table: Account
+## Table: Account
 
 | Field | Data Type | Restrictions / Keys | Comments |
 | :--- | :--- | :--- | :--- |
@@ -195,3 +203,35 @@
 | **updated_at** | datetime | NOT NULL | Date and time of the last update to the account details. |
 
 ---
+
+## Table: Category
+
+| Field | Data Type | Constraints / Keys | Notes |
+| :--- | :--- | :--- | :--- |
+| **id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the category. |
+| **dashboard_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the dashboard this category belongs to. |
+| **name** | varchar(50) | NOT NULL | Name of the category. |
+| **description** | text | NULL | Optional description of the category. |
+| **deleted_at** | datetime | NULL | Timestamp for soft deletion (if applicable). |
+| **created_at** | datetime | NOT NULL | Timestamp when the category was created. |
+| **updated_at** | datetime | NOT NULL | Timestamp when the category was last updated. |
+
+**Unique Constraint:**
+- A composite unique constraint exists on the combination of `(dashboard_id, name)`, meaning category names must be unique within each dashboard.
+
+---
+
+## Table: Tag
+
+| Field | Data Type | Constraints / Keys | Notes |
+| :--- | :--- | :--- | :--- |
+| **id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the tag. |
+| **dashboard_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the dashboard this tag belongs to. |
+| **name** | varchar(50) | NOT NULL | Name of the tag. |
+| **description** | text | NULL | Optional description of the tag. |
+| **deleted_at** | datetime | NULL | Timestamp for soft deletion (if applicable). |
+| **created_at** | datetime | NOT NULL | Timestamp when the tag was created. |
+| **updated_at** | datetime | NOT NULL | Timestamp when the tag was last updated. |
+
+**Unique Constraint:**
+- A composite unique constraint exists on the combination of `(dashboard_id, name)`, ensuring tag names are unique within each dashboard.
