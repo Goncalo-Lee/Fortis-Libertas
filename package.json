@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:seed": "tsx --env-file=.env src/db/data/seed.ts",
+    "db:delete": "tsx --env-file=.env src/db/data/delete.ts"
   },
   "dependencies": {
     "better-auth": "^1.7.6",
