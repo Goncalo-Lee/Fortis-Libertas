@@ -1,4 +1,4 @@
-import { Icon } from '@/src/components/ui/icon'
+import { Icon } from '@/components/ui/icon'
 
 export function MoonIcon(props: React.ComponentProps<typeof Icon>) {
   return (
