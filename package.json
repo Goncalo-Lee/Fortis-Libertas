@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "db:seed": "tsx --env-file=.env src/db/data/seed.ts",
-    "db:delete": "tsx --env-file=.env src/db/data/delete.ts"
+    "db:delete": "tsx --env-file=.env src/db/data/delete.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",

@@ -15,12 +15,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className="h-dvh"
       suppressHydrationWarning
     >
-      <ThemeProvider>
-        <Navbar />
         <body className="bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+        <ThemeProvider>
+        <Navbar />
+
           {children}
+        </ThemeProvider>
         </body>
-      </ThemeProvider>
     </html>
   );
 }
