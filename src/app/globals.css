@@ -1,6 +1,6 @@
 @import "tailwindcss";
+/* Only keep this if you ran: bun add tw-animate-css */
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
 
