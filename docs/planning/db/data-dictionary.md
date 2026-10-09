@@ -38,6 +38,7 @@ Stores registered users of the platform, including authentication credentials, p
 | **email_verified_at** | datetime | NULL | Date and time of the email verification. |
 | **image** | text | NULL | Path or URL of the profile picture. |
 | **two_factor_enabled** | bool | NOT NULL | Indicates whether two-factor authentication is enabled. |
+| **suspended_at** | datetime | NULL | Timestamp for suspended the user |
 | **deleted_at** | datetime | NULL | Timestamp for soft deletion (if applicable). |
 | **created_at** | datetime | NOT NULL | Timestamp when the record was created. |
 | **updated_at** | datetime | NOT NULL | Timestamp when the record was last updated. |
