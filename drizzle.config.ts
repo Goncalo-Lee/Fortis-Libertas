@@ -20,7 +20,6 @@
  * Security Note:
  * - Throws error if DATABASE_URL is undefined, preventing misconfiguration
  */
-import 'dotenv/config';
 import { defineConfig } from 'drizzle-kit';
 
 
