@@ -106,4 +106,29 @@ export const user = mysqlTable("user", {
    * - Essential for debugging, analytics, and sync operations
    */
   ...timestamps,
-});
+}, (table) =>
+// Additional indexes for query performance optimization
+//
+// These indexes improve read query speed for common lookup patterns.
+// Note: Each index adds overhead to INSERT/UPDATE/DELETE operations,
+// so only include indexes matching your actual query patterns.
+[
+  /**
+   * Username lookup index
+   * - Supports fast queries filtering by username (e.g., @mentions, profile pages)
+   * - UNIQUE constraint on `username` already creates an implicit index
+   * - This explicit naming makes it easier to identify/drop later
+   * - Useful when querying without the PRIMARY KEY
+   */
+  t.index("idx_user_user_name").on(table.username),
+
+  /**
+   * Email lookup index
+   * - Critical for authentication flow (email/password lookups)
+   * - UNIQUE constraint on `email` already creates an implicit index
+   * - This explicit naming makes it easier to identify/drop later
+   * - Most accessed column during login, password reset, session validation
+   * ⚠️ Redundant with UNIQUE constraint, but improves migration clarity
+   */
+  t.index("idx_user_email").on(table.email),
+]);
