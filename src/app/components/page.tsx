@@ -1,8 +1,8 @@
 import React from 'react';
-import ChartPie from '@/components/ChartPie';
-import ChartPieLabel from '@/components/ChartPieLabel';
-import ChartRadial from "@/components/ChartRadial";
-import ChartPieTest from "@/components/ChartPieTest";
+import ChartPie from '@/src/components/ChartPie'
+import ChartPieLabel from '@/src/components/ChartPieLabel';
+import ChartRadial from "@/src/components/ChartRadial";
+import ChartPieTest from "@/src/components/ChartPieTest";
 
 export default function page() {
   return (
