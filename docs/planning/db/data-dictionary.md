@@ -243,7 +243,7 @@ Defines payment methods available within a dashboard (e.g., cash, bank transfer,
 
 **Unique Constraint:**
 
-- A composite unique constraint exists on the combination of `(dashboard_id, name)`, meaning payment method names must be unique within each dashboard.
+- A composite unique constraint exists on the combination of `(dashboard_id, user_id ,name)`, meaning payment method names must be unique within each dashboard and user.
 
 **Indexes:**
 
