@@ -27,8 +27,10 @@ export const auth = betterAuth({
     },
   }),
   advanced: {
-    // Enforces application-wide UUIDv7 generation for all Better Auth models
-    generateId: () => generateId(),
+    database: {
+      // Enforces application-wide UUIDv7 generation for all Better Auth models
+      generateId: () => generateId(),
+    },
   },
   plugins: [
     twoFactor(),

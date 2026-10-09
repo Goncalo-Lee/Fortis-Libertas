@@ -42,10 +42,7 @@ export const timestamps = customType<{
     return `${typeName}${precision}`;
   },
 
-  toDriver(value: Date | string | null | undefined): Date | null {
-    if (value === null || value === undefined) {
-      return null;
-    }
+  toDriver(value: Date | string): Date | string {
     return value instanceof Date ? value : new Date(value);
   },
 
