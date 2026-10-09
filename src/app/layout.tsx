@@ -17,7 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
         <body className="bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
         <ThemeProvider>
-        <Navbar />
+        
 
           {children}
         </ThemeProvider>
