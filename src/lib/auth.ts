@@ -23,13 +23,14 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "mysql",
     schema: {
-      ...schema,
+      schema,
     },
   }),
   advanced: {
     database: {
       // Enforces application-wide UUIDv7 generation for all Better Auth models
       generateId: () => generateId(),
+      joins: true,
     },
   },
   plugins: [
