@@ -29,7 +29,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 export default defineConfig({
-  out: './drizzle',
+  out: './src/db/migrations',
   schema: './src/db/schema/index.ts',
   dialect: 'mysql',
   dbCredentials: {
