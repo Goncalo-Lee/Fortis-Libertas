@@ -103,7 +103,7 @@ erDiagram
     %% =========================================================
 
     User {
-        binary16 id PK
+        binary16 user_id PK
         varchar254 user_name "UK"
         varchar254 full_name
         varchar254 email "UK"
@@ -127,7 +127,7 @@ erDiagram
     }
 
     Session {
-        binary16 id PK
+        binary16 session_id PK
         binary16 user_id FK
         varchar255 token "UK"
         text ip_address
@@ -138,7 +138,7 @@ erDiagram
     }
 
     Account {
-        binary16 id PK
+        binary16 account_id PK
         binary16 user_id FK
         text account_id
         text provider_id
@@ -154,7 +154,7 @@ erDiagram
     }
 
     Two_Factor {
-        binary16 id PK
+        binary16 two_factor_id PK
         binary16 user_id FK "UK"
         text secret
         text backup_codes
@@ -166,7 +166,7 @@ erDiagram
     }
 
     Verification {
-        binary16 id PK
+        binary16 verification_id PK
         varchar191 identifier
         text value
         datetime expires_at
@@ -175,7 +175,7 @@ erDiagram
     }
 
     Notifications {
-        binary16 id PK
+        binary16 notification_id PK
         binary16 user_id FK
         varchar255 type
         json data
@@ -184,7 +184,7 @@ erDiagram
     }
 
     Bank_Account {
-        binary16 id PK
+        binary16 bank_account_id PK
         varchar50 name
         decimal10_2 initial_balance
         datetime frozen_at
@@ -202,7 +202,7 @@ erDiagram
     }
 
     Card {
-        binary16 id PK
+        binary16 card_id PK
         binary16 bank_id FK
         binary16 user_id FK
         varchar50 cardholder_name
@@ -217,7 +217,7 @@ erDiagram
     }
 
     Dashboard {
-        binary16 id PK
+        binary16 dashboard_id PK
         varchar50 name
         bool is_active
         datetime deleted_at
@@ -235,7 +235,7 @@ erDiagram
     }
 
     Record_Type {
-        binary16 id PK
+        binary16 record_type_id PK
         binary16 dashboard_id FK
         varchar50 name
         text description
@@ -245,7 +245,7 @@ erDiagram
     }
 
     Category {
-        binary16 id PK
+        binary16 category_id PK
         binary16 dashboard_id FK
         varchar50 name
         text description
@@ -255,7 +255,7 @@ erDiagram
     }
 
     Tag {
-        binary16 id PK
+        binary16 tag_id PK
         binary16 dashboard_id FK
         varchar50 name
         text description
@@ -265,7 +265,7 @@ erDiagram
     }
 
     Payment_Method {
-        char26 id PK
+        char26 payment_method_id PK
         binary16 dashboard_id FK
         binary16 card_id FK
         varchar50 name
@@ -276,7 +276,7 @@ erDiagram
     }
 
     Installment_Plan {
-        binary16 id PK
+        binary16 installment_plan_id PK
         binary16 dashboard_id FK
         binary16 register_by_id FK
         decimal10_2 total_amount
@@ -289,7 +289,7 @@ erDiagram
     }
 
     Financial_Record {
-        binary16 id PK
+        binary16 financial_record_id PK
         binary16 dashboard_id FK
         binary16 register_by_id FK
         binary16 record_type_id FK

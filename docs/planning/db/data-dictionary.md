@@ -31,7 +31,7 @@ Stores registered users of the platform, including authentication credentials, p
 
 | Field | Data Type | Constraints / Keys | Notes |
 | :--- | :--- | :--- | :--- |
-| **id** | binary(16) | PK KEY (Primary Key), UNIQUE | Unique user identifier. |
+| **user_id** | binary(16) | PK KEY (Primary Key), UNIQUE | Unique user identifier. |
 | **user_name** | varchar(254) | UNIQUE | Username – must be unique. |
 | **full_name** | varchar(254) | NOT NULL | User’s full name. |
 | **email** | varchar(254) | UNIQUE | Email address – must be unique. |
@@ -60,7 +60,7 @@ Manages active authentication sessions, linking authenticated tokens to specific
 
 | Field | Data Type | Constraints / Keys | Notes |
 | :--- | :--- | :--- | :--- |
-| **id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique session identifier. |
+| **session_id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique session identifier. |
 | **user_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `User` table. |
 | **token** | varchar(255) | UNIQUE, NOT NULL | Session authentication token. |
 | **ip_address** | text | NOT NULL | The client’s IP address during the session. |
@@ -84,7 +84,7 @@ Stores payment cards (credit and debit) associated with bank accounts and users,
 
 | Field | Data Type | Constraints / Keys | Notes |
 | :--- | :--- | :--- | :--- |
-| **id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the card. |
+| **card_id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the card. |
 | **bank_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key linking to the bank account. |
 | **user_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key linking to the user. |
 | **cardholder_name** | varchar(50) | NOT NULL | Name of the cardholder. |
@@ -116,7 +116,7 @@ Represents financial bank accounts, tracking account labels, opening balance, fr
 
 | Field | Data Type | Constraints / Keys | Notes |
 | :--- | :--- | :--- | :--- |
-| **id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the bank account. |
+| **bank_account_id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the bank account. |
 | **name** | varchar(50) | NOT NULL | Name or label of the bank account. |
 | **initial_balance** | decimal(10,2) | NOT NULL | The starting balance of the account. |
 | **frozen_at** | datetime | NULL | Timestamp recording when the account was temporarily frozen. |
@@ -161,7 +161,7 @@ Stores transactional and system notifications delivered to users, including noti
 
 | Field | Data Type | Constraints / Keys | Notes |
 | :--- | :--- | :--- | :--- |
-| **id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the notification. |
+| **notification_id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the notification. |
 | **user_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Relates the notification to the receiving user in the `User` table. |
 | **type** | varchar(255) | NOT NULL | The category or type of the notification. |
 | **data** | json | NOT NULL | The payload or main content of the notification. |
@@ -182,7 +182,7 @@ Stores short-lived tokens and security verification codes (e.g., email confirmat
 
 | Field | Data Type | Constraints / Keys | Notes |
 | :--- | :--- | :--- | :--- |
-| **id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the verification attempt. |
+| **verification_id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the verification attempt. |
 | **identifier** | varchar(191) | NOT NULL | The target being verified (e.g., an email address or phone number). |
 | **value** | text | NOT NULL | The actual verification code or token. |
 | **expires_at** | datetime | NOT NULL | Timestamp indicating when the verification code is no longer valid. |
@@ -203,7 +203,7 @@ Manages two-factor authentication (2FA) configurations, including cryptographic 
 
 | Field | Data Type | Constraints / Keys | Notes |
 | :--- | :--- | :--- | :--- |
-| **id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the 2FA configuration. |
+| **tow_factor_id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the 2FA configuration. |
 | **user_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Relates the two-factor settings to a specific user in the `User` table. |
 | **secret** | text | NOT NULL | The cryptographic secret used to generate authenticator codes. |
 | **backup_codes** | text | NOT NULL | Stored emergency recovery codes. |
@@ -231,7 +231,8 @@ Defines payment methods available within a dashboard (e.g., cash, bank transfer,
 
 | Field | Data Type | Constraints / Keys | Notes |
 | :--- | :--- | :--- | :--- |
-| **id** | char(26) | PK KEY (Primary Key), NOT NULL | Unique identifier for the payment method. |
+| **payment_method_id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the payment method. |
+| **user_id** | binary(16) | FK KEY (Foreign Key), NOT NULL| Foreign key referencing the `User` table. |
 | **card_id** | binary(16) | FK KEY (Foreign Key), NULL | Foreign key referencing a card in the `Card` table (optional). |
 | **dashboard_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `Dashboard` table. |
 | **name** | varchar(50) | NOT NULL | Payment method name. |
@@ -313,7 +314,7 @@ Classifies financial transactions into broad movement types (Expenses, Income, I
 
 | Field | Data Type | Constraints / Keys | Notes |
 | :--- | :--- | :--- | :--- |
-| **id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the record type. |
+| **record_type_id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the record type. |
 | **dashboard_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the associated dashboard. |
 | **name** | varchar(50) | NOT NULL | Name of the record type. |
 | **description** | text | NULL | Optional description of the record type. |
@@ -343,7 +344,7 @@ Stores linked external authentication providers (e.g., Google, GitHub) and crede
 
 | Field | Data Type | Constraints / Keys | Notes |
 | :--- | :--- | :--- | :--- |
-| **id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique account identifier. |
+| **account_id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique account identifier. |
 | **user_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key linking this account to its user in the `User` table. |
 | **account_id** | text | NOT NULL | Account identifier with an external supplier or service. |
 | **provider_id** | text | NOT NULL | Service provider identifier (e.g., Google, GitHub). |
@@ -370,7 +371,7 @@ Represents user-defined categories within a dashboard for organizing and groupin
 
 | Field | Data Type | Constraints / Keys | Notes |
 | :--- | :--- | :--- | :--- |
-| **id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the category. |
+| **category_id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the category. |
 | **dashboard_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the dashboard this category belongs to. |
 | **name** | varchar(50) | NOT NULL | Name of the category. |
 | **description** | text | NULL | Optional description of the category. |
@@ -396,7 +397,7 @@ Represents flexible labels within a dashboard used to categorize, filter, and cr
 
 | Field | Data Type | Constraints / Keys | Notes |
 | :--- | :--- | :--- | :--- |
-| **id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the tag. |
+| **tag_id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the tag. |
 | **dashboard_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the dashboard this tag belongs to. |
 | **name** | varchar(50) | NOT NULL | Name of the tag. |
 | **description** | text | NULL | Optional description of the tag. |
@@ -452,7 +453,7 @@ Represents a financial workspace or dashboard context, acting as the container f
 
 | Field | Data Type | Constraints / Keys | Notes |
 | :--- | :--- | :--- | :--- |
-| **id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the dashboard. |
+| **dashboard_id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the dashboard. |
 | **name** | varchar(50) | NOT NULL | Name of the dashboard. |
 | **is_active** | bool | NOT NULL | Indicates whether the dashboard is currently active. |
 | **deleted_at** | datetime | NULL | Timestamp for soft deletion (if applicable). |
@@ -501,7 +502,7 @@ Stores individual financial transactions (income, expenses, investments) within 
 
 | Field | Data Type | Constraints / Keys | Notes |
 | :--- | :--- | :--- | :--- |
-| **id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the financial record. |
+| **financial_id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the financial record. |
 | **dashboard_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `Dashboard` table. |
 | **register_by_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `User` table (who registered the record). |
 | **record_type_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `Record_Type` table. |
@@ -547,7 +548,7 @@ Manages multi-installment payment plans and financing schedules, tracking total 
 
 | Field | Data Type | Constraints / Keys | Notes |
 | :--- | :--- | :--- | :--- |
-| **id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the installment plan. |
+| **installment_plan_id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the installment plan. |
 | **dashboard_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `Dashboard` table. |
 | **register_by_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `User` table (who created the plan). |
 | **total_amount** | decimal(10,2) | NOT NULL | Total monetary amount of the plan (10 digits, 2 decimals). |
