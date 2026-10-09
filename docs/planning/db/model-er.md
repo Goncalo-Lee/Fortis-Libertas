@@ -6,18 +6,19 @@ This document outlines the conceptual and logical Entity-Relationship (ER) model
 
 ## Table of Contents
 
-1. [Visual Entity-Relationship Diagram](#visual-entity-relationship-diagram)
-2. [Core Relationships Around User](#core-relationships-around-user)
-3. [Core Relationships Around Dashboard](#core-relationships-around-dashboard)
-4. [Financial & Banking Relationships](#financial--banking-relationships)
-5. [Transaction & Financial Record Relationships](#transaction--financial-record-relationships)
-6. [Classification & Tagging Relationships](#classification--tagging-relationships)
-7. [Junction Tables (Many-to-Many Resolvers)](#junction-tables-many-to-many-resolvers)
-8. [Full Relationship Map (Textual ERD Hierarchy)](#full-relationship-map-textual-erd-hierarchy)
+1. [Visual Entity-Relationship Diagram Simple](#visual-entity-relationship-diagram-simple)
+2. [Visual Entity-Relationship Diagram Complete](#visual-entity-relationship-diagram-complete)
+3. [Core Relationships Around User](#core-relationships-around-user)
+4. [Core Relationships Around Dashboard](#core-relationships-around-dashboard)
+5. [Financial & Banking Relationships](#financial--banking-relationships)
+6. [Transaction & Financial Record Relationships](#transaction--financial-record-relationships)
+7. [Classification & Tagging Relationships](#classification--tagging-relationships)
+8. [Junction Tables (Many-to-Many Resolvers)](#junction-tables-many-to-many-resolvers)
+9. [Full Relationship Map (Textual ERD Hierarchy)](#full-relationship-map-textual-erd-hierarchy)
 
 ---
 
-## Visual Entity-Relationship Diagram
+## Visual Entity-Relationship Diagram Simple
 
 ```mermaid
 erDiagram
@@ -49,6 +50,274 @@ erDiagram
     Installment_Plan ||--o{ Financial_Record : "schedules (0..1:N)"
     Financial_Record ||--o{ Tag__Financial_Record : "tagged by (1:N)"
     Tag ||--o{ Tag__Financial_Record : "tags (1:N)"
+```
+
+---
+
+## Visual Entity-Relationship Diagram Complete
+
+```mermaid
+erDiagram
+    %% =========================================================
+    %% Core Relationships Around User & Auth
+    %% =========================================================
+    User ||--|| Profile : "has (1:1)"
+    User ||--o{ Session : "authenticates (1:N)"
+    User ||--o| Two_Factor : "secures (1:1)"
+    User ||--o{ Account : "links (1:N)"
+    User ||--o{ Notifications : "receives (1:N)"
+    User ||--o{ Bank_Account__User : "participates (1:N)"
+    Bank_Account ||--o{ Bank_Account__User : "assigned to (1:N)"
+    User ||--o{ User__Dashboard : "joins (1:N)"
+    Dashboard ||--o{ User__Dashboard : "includes (1:N)"
+    User ||--o{ Card : "owns (1:N)"
+    Bank_Account ||--o{ Card : "issues (1:N)"
+    User ||--o{ Financial_Record : "registers (1:N)"
+    User ||--o{ Installment_Plan : "creates (1:N)"
+
+    %% =========================================================
+    %% Core Relationships Around Dashboard & Entities
+    %% =========================================================
+    Dashboard ||--o{ Category : "defines (1:N)"
+    Dashboard ||--o{ Tag : "defines (1:N)"
+    Dashboard ||--o{ Record_Type : "defines (1:N)"
+    Dashboard ||--o{ Payment_Method : "defines (1:N)"
+    Dashboard ||--o{ Financial_Record : "contains (1:N)"
+    Dashboard ||--o{ Installment_Plan : "tracks (1:N)"
+
+    %% =========================================================
+    %% Transaction, Tagging & Payment Relationships
+    %% =========================================================
+    Card ||--o{ Payment_Method : "funds (0..1:N)"
+    Category ||--o{ Tag__Category : "classified by (1:N)"
+    Tag ||--o{ Tag__Category : "applies to (1:N)"
+    Category ||--o{ Financial_Record : "groups (1:N)"
+    Record_Type ||--o{ Financial_Record : "classifies (1:N)"
+    Payment_Method ||--o{ Financial_Record : "executes (1:N)"
+    Installment_Plan ||--o{ Financial_Record : "schedules (0..1:N)"
+    Financial_Record ||--o{ Tag__Financial_Record : "tagged by (1:N)"
+    Tag ||--o{ Tag__Financial_Record : "tags (1:N)"
+
+    %% =========================================================
+    %% Table Definitions & Columns
+    %% =========================================================
+
+    User {
+        binary16 id PK
+        varchar254 user_name "UK"
+        varchar254 full_name
+        varchar254 email "UK"
+        datetime email_verified_at
+        text image
+        bool two_factor_enabled "default false"
+        datetime deleted_at
+        datetime created_at
+        datetime updated_at
+    }
+
+    Profile {
+        binary16 user_id PK, FK
+        date birth_date
+        varchar20 phone
+        datetime phone_verified_at
+        char3 currency "default EUR"
+        varchar254 language "default pt-PT"
+        datetime created_at
+        datetime updated_at
+    }
+
+    Session {
+        binary16 id PK
+        binary16 user_id FK
+        varchar255 token "UK"
+        text ip_address
+        text user_agent
+        datetime expires_at
+        datetime created_at
+        datetime updated_at
+    }
+
+    Account {
+        binary16 id PK
+        binary16 user_id FK
+        text account_id
+        text provider_id
+        text access_token
+        text refresh_token
+        text scope
+        text id_token
+        text password
+        datetime access_token_expires_at
+        datetime refresh_token_expires_at
+        datetime created_at
+        datetime updated_at
+    }
+
+    Two_Factor {
+        binary16 id PK
+        binary16 user_id FK "UK"
+        text secret
+        text backup_codes
+        bool verified "default false"
+        int failed_verification_count "default 0"
+        datetime locked_until
+        datetime created_at
+        datetime updated_at
+    }
+
+    Verification {
+        binary16 id PK
+        varchar191 identifier
+        text value
+        datetime expires_at
+        datetime created_at
+        datetime updated_at
+    }
+
+    Notifications {
+        binary16 id PK
+        binary16 user_id FK
+        varchar255 type
+        json data
+        datetime created_at
+        datetime read_at
+    }
+
+    Bank_Account {
+        binary16 id PK
+        varchar50 name
+        decimal10_2 initial_balance
+        datetime frozen_at
+        datetime deleted_at
+        datetime created_at
+        datetime updated_at
+    }
+
+    Bank_Account__User {
+        binary16 bank_id PK, FK
+        binary16 user_id PK, FK
+        enum role "owner, editor, viewer"
+        datetime created_at
+        datetime updated_at
+    }
+
+    Card {
+        binary16 id PK
+        binary16 bank_id FK
+        binary16 user_id FK
+        varchar50 cardholder_name
+        enum type_card "credit, debit"
+        char16 card_number
+        date expiry_date
+        char3 cvv
+        datetime frozen_at
+        datetime deleted_at
+        datetime created_at
+        datetime updated_at
+    }
+
+    Dashboard {
+        binary16 id PK
+        varchar50 name
+        bool is_active
+        datetime deleted_at
+        datetime created_at
+        datetime updated_at
+    }
+
+    User__Dashboard {
+        binary16 dashboard_id PK, FK
+        binary16 user_id PK, FK
+        enum role "owner, editor, viewer"
+        datetime deleted_at
+        datetime created_at
+        datetime updated_at
+    }
+
+    Record_Type {
+        binary16 id PK
+        binary16 dashboard_id FK
+        varchar50 name
+        text description
+        datetime deleted_at
+        datetime created_at
+        datetime updated_at
+    }
+
+    Category {
+        binary16 id PK
+        binary16 dashboard_id FK
+        varchar50 name
+        text description
+        datetime deleted_at
+        datetime created_at
+        datetime updated_at
+    }
+
+    Tag {
+        binary16 id PK
+        binary16 dashboard_id FK
+        varchar50 name
+        text description
+        datetime deleted_at
+        datetime created_at
+        datetime updated_at
+    }
+
+    Payment_Method {
+        char26 id PK
+        binary16 dashboard_id FK
+        binary16 card_id FK
+        varchar50 name
+        text description
+        datetime deleted_at
+        datetime created_at
+        datetime updated_at
+    }
+
+    Installment_Plan {
+        binary16 id PK
+        binary16 dashboard_id FK
+        binary16 register_by_id FK
+        decimal10_2 total_amount
+        int total_installments
+        datetime due_date
+        enum status "default pending"
+        datetime deleted_at
+        datetime created_at
+        datetime updated_at
+    }
+
+    Financial_Record {
+        binary16 id PK
+        binary16 dashboard_id FK
+        binary16 register_by_id FK
+        binary16 record_type_id FK
+        binary16 category_id FK
+        binary16 payment_method_id FK
+        binary16 installment_plan_id FK
+        varchar50 name
+        text description
+        decimal10_2 price
+        varchar3 currency
+        datetime payment_date
+        enum status "active, settled, cancelled, pending, paid, late"
+        datetime deleted_at
+        datetime created_at
+        datetime updated_at
+    }
+
+    Tag__Category {
+        binary16 tag_id PK, FK
+        binary16 category_id PK, FK
+        datetime created_at
+    }
+
+    Tag__Financial_Record {
+        binary16 tag_id PK, FK
+        binary16 record_id PK, FK
+        datetime created_at
+    }
 ```
 
 ---
