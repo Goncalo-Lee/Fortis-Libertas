@@ -35,7 +35,7 @@ export const session = mysqlTable("session", {
    * - INDEX (session_userId_idx) enables fast queries: "find all sessions for user X"
    * ⚠️ Ensure user.id matches expected type (binary vs string)
    */
-  userId: t.text("user_id")
+  userId: uuidBinary("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
 

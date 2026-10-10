@@ -41,7 +41,7 @@ export const account = mysqlTable("account", {
    * - INDEX (idx_account_user_id) optimizes: "find all accounts for user X"
    * ⚠️ Use t.text() to match userId type in session table for consistency
    */
-  userId: t.text("user_id")
+  userId: uuidBinary("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
 
