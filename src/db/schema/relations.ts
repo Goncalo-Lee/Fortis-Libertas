@@ -1,150 +1,171 @@
+import { relations } from "drizzle-orm/_relations";
 import { user } from "./user";
 import { session } from "./session";
 import { account } from "./account";
 import { twoFactor } from "./twoFactor";
-import { relations } from "drizzle-orm/_relations";
+import { profile } from "./profile";
+import { notifications } from "./notifications";
+import { bankAccount } from "./bankAccount";
+import { bankAccountUser } from "./bankAccountUser";
+import { card } from "./card";
+import { dashboard } from "./dashboard";
+import { userDashboard } from "./userDashboard";
+import { recordType } from "./recordType";
+import { category } from "./category";
+import { tag } from "./tag";
+import { paymentMethod } from "./paymentMethod";
+import { installmentPlan } from "./installmentPlan";
+import { financialRecord } from "./financialRecord";
+import { tagCategory } from "./tagCategory";
+import { tagFinancialRecord } from "./tagFinancialRecord";
 
-/**
- * User Table Relations Definition (Drizzle ORM)
- *
- * Declares one-to-many relationships between the user table and child tables.
- * Enables Drizzle to automatically join and fetch related data when querying users.
- *
- * Relationship Summary:
- * - user ↔ session: One user can have multiple active sessions (multi-device login)
- * - user ↔ account: One user can link multiple OAuth provider accounts
- * - user ↔ twoFactor: One user has exactly one 2FA configuration (1:1 modeled as 1:M)
- *
- * ⚠️ IMPORTANT: This file DOES NOT enforce referential integrity
- * - Foreign keys are defined in the table schemas (*.references())
- * - This file only enables Drizzle's relation helpers (.include(), .with())
- * - Cascade deletes are handled by MySQL, not Drizzle relations
- */
-export const userRelations = relations(user, ({ many }) => ({
-  /**
-   * Sessions relationship (one-to-many)
-   * - User can have multiple concurrent login sessions
-   * - Each session stored in session table with FK userId
-   * - Enables queries: "get all sessions for user" (dashboard view)
-   * - Enables queries: "revoke all sessions" (security feature)
-   *
-   * Query Example:
-   *   const userWithSessions = await db.query.users.findFirst({
-   *     where: eq(users.id, userId),
-   *     with: { sessions: true },
-   *   });
-   *
-   * Result Structure:
-   *   {
-   *     id: string,
-   *     name: string,
-   *     sessions: Array<{ id, token, expiresAt, ... }>
-   *   }
-   *
-   * ⚠️ Performance: Large session counts (100+) may cause memory pressure
-   * ⚠️ Consider pagination for listing sessions in UI
-   */
+export const userRelations = relations(user, ({ one, many }) => ({
+  // Links user to one active profile (1:1)
+  profile: one(profile),
+
+  // User can have multiple concurrent login sessions (1:N)
   sessions: many(session),
 
-  /**
-   * Accounts relationship (one-to-many)
-   * - User can link multiple OAuth providers (Google + GitHub + Discord)
-   * - Each account stored in account table with FK userId
-   * - Enables queries: "list connected accounts" (settings page)
-   * - Enables queries: "disconnect specific provider" (revoke access)
-   *
-   * Query Example:
-   *   const userWithAccounts = await db.query.users.findFirst({
-   *     where: eq(users.id, userId),
-   *     with: { accounts: true },
-   *   });
-   *
-   * Result Structure:
-   *   {
-   *     id: string,
-   *     email: string,
-   *     accounts: Array<{ id, providerId, accountId, ... }>
-   *   }
-   *
-   * ⚠️ Security: Never serialize accessToken/refreshToken to frontend
-   * ⚠️ Mask sensitive fields in application layer before sending to client
-   */
+  // User can link multiple OAuth providers (1:N)
   accounts: many(account),
 
-  /**
-   * Two-Factor Authentication relationship (one-to-one modeled as one-to-many)
-   * - Technically 1:1 (user has one 2FA config), but Drizzle requires many() for FK tables
-   * - Use .limit(1) or unique constraint on account side to enforce 1:1 at app layer
-   * - Enables queries: "check if user has 2FA enabled" (account security status)
-   * - Enables queries: "get 2FA config for verification challenge"
-   *
-   * Query Example:
-   *   const userWith2FA = await db.query.users.findFirst({
-   *     where: eq(users.id, userId),
-   *     with: { twoFactors: true },
-   *   });
-   *
-   * Result Structure:
-   *   {
-   *     id: string,
-   *     twoFactors: [{ id, secret, verified, failedVerificationCount, ... }]
-   *   }
-   *
-   * Note: twoFactors will be empty array [] if user hasn't set up 2FA
-   *       (foreign key is NOT NULL, so 2FA row must exist when created)
-   * ⚠️ Missing 2FA row = 2FA not configured (handle gracefully in auth logic)
-   * ⚠️ Consider optional .optional() if 2FA table is truly optional
-   */
+  // 1:1 modeled as 1:N in Drizzle. Enforce logic in app layer.
   twoFactors: many(twoFactor),
+
+  // User notifications inbox (1:N)
+  notifications: many(notifications),
+
+  // Shared bank accounts via junction table (M:N)
+  bankAccounts: many(bankAccountUser),
+
+  // Shared dashboards via junction table (M:N)
+  dashboards: many(userDashboard),
+
+  // Cards owned by the user (1:N)
+  cards: many(card),
+
+  // Financial records authored by the user (1:N)
+  financialRecords: many(financialRecord),
+
+  // Installment plans created by the user (1:N)
+  installmentPlans: many(installmentPlan),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
-  /**
-   * Parent user reference (inverse of user.sessions)
-   * - Links session back to owner user
-   * - Enables queries: "get user details for a session" (auth middleware)
-   * - Query example:
-   *   const sessionWithUser = await db.query.session.findFirst({
-   *     where: eq(session.token, token),
-   *     with: { user: true },
-   *   });
-   */
-  user: one(user, {
-    fields: [session.userId],
-    references: [user.id],
-  }),
+  // Links session back to its owner user
+  user: one(user, { fields: [session.userId], references: [user.id] }),
 }));
 
 export const accountRelations = relations(account, ({ one }) => ({
-  /**
-   * Parent user reference (inverse of user.accounts)
-   * - Links OAuth account back to owner user
-   * - Enables queries: "get user profile.ts from OAuth callback"
-   * - Query example:
-   *   const accountWithUser = await db.query.account.findFirst({
-   *     where: and(eq(account.providerId, 'google'), eq(account.accountId, externalId)),
-   *     with: { user: true },
-   *   });
-   */
-  user: one(user, {
-    fields: [account.userId],
-    references: [user.id],
-  }),
+  // Links OAuth account back to owner user
+  user: one(user, { fields: [account.userId], references: [user.id] }),
 }));
 
 export const twoFactorRelations = relations(twoFactor, ({ one }) => ({
-  /**
-   * Parent user reference (inverse of user.twoFactors)
-   * - Links 2FA config back to owner user
-   * - Enables queries: "get user info during 2FA challenge"
-   * - Query example:
-   *   const twoFAWithUser = await db.query.twoFactor.findFirst({
-   *     where: eq(twoFactor.userId, userId),
-   *     with: { user: true },
-   *   });
-   */
-  user: one(user, {
-    fields: [twoFactor.userId],
-    references: [user.id],
-  }),
+  // Links 2FA config back to owner user
+  user: one(user, { fields: [twoFactor.userId], references: [user.id] }),
+}));
+
+export const profileRelations = relations(profile, ({ one }) => ({
+  // Links profile back to user
+  user: one(user, { fields: [profile.userId], references: [user.id] }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  // Links notification to receiving user
+  user: one(user, { fields: [notifications.userId], references: [user.id] }),
+}));
+
+export const bankAccountRelations = relations(bankAccount, ({ many }) => ({
+  // Users sharing this bank account
+  users: many(bankAccountUser),
+  // Cards issued under this bank account
+  cards: many(card),
+}));
+
+export const bankAccountUserRelations = relations(bankAccountUser, ({ one }) => ({
+  // Resolves M:N between bank account and user
+  bankAccount: one(bankAccount, { fields: [bankAccountUser.bankId], references: [bankAccount.id] }),
+  user: one(user, { fields: [bankAccountUser.userId], references: [user.id] }),
+}));
+
+export const cardRelations = relations(card, ({ one, many }) => ({
+  // Links card back to issuing bank and owning user
+  bankAccount: one(bankAccount, { fields: [card.bankId], references: [bankAccount.id] }),
+  user: one(user, { fields: [card.userId], references: [user.id] }),
+  paymentMethods: many(paymentMethod),
+}));
+
+export const dashboardRelations = relations(dashboard, ({ many }) => ({
+  // Workspace relational links (1:N & M:N)
+  users: many(userDashboard),
+  categories: many(category),
+  tags: many(tag),
+  recordTypes: many(recordType),
+  paymentMethods: many(paymentMethod),
+  financialRecords: many(financialRecord),
+  installmentPlans: many(installmentPlan),
+}));
+
+export const userDashboardRelations = relations(userDashboard, ({ one }) => ({
+  // Resolves M:N between dashboard and user
+  dashboard: one(dashboard, { fields: [userDashboard.dashboardId], references: [dashboard.id] }),
+  user: one(user, { fields: [userDashboard.userId], references: [user.id] }),
+}));
+
+export const recordTypeRelations = relations(recordType, ({ one, many }) => ({
+  // Associated dashboard and financial records
+  dashboard: one(dashboard, { fields: [recordType.dashboardId], references: [dashboard.id] }),
+  financialRecords: many(financialRecord),
+}));
+
+export const categoryRelations = relations(category, ({ one, many }) => ({
+  // Category ties to a workspace, records, and M:N tags
+  dashboard: one(dashboard, { fields: [category.dashboardId], references: [dashboard.id] }),
+  financialRecords: many(financialRecord),
+  tags: many(tagCategory),
+}));
+
+export const tagRelations = relations(tag, ({ one, many }) => ({
+  // Tag ties to workspace and M:N to categories/records
+  dashboard: one(dashboard, { fields: [tag.dashboardId], references: [dashboard.id] }),
+  categories: many(tagCategory),
+  financialRecords: many(tagFinancialRecord),
+}));
+
+export const paymentMethodRelations = relations(paymentMethod, ({ one, many }) => ({
+  // Links payment method to dashboard, specific card, and records
+  dashboard: one(dashboard, { fields: [paymentMethod.dashboardId], references: [dashboard.id] }),
+  card: one(card, { fields: [paymentMethod.cardId], references: [card.id] }),
+  financialRecords: many(financialRecord),
+}));
+
+export const installmentPlanRelations = relations(installmentPlan, ({ one, many }) => ({
+  // Links installment plan to dashboard, author, and related records
+  dashboard: one(dashboard, { fields: [installmentPlan.dashboardId], references: [dashboard.id] }),
+  registerBy: one(user, { fields: [installmentPlan.registerById], references: [user.id] }),
+  financialRecords: many(financialRecord),
+}));
+
+export const financialRecordRelations = relations(financialRecord, ({ one, many }) => ({
+  // Core transaction linkages to dimensions
+  dashboard: one(dashboard, { fields: [financialRecord.dashboardId], references: [dashboard.id] }),
+  registerBy: one(user, { fields: [financialRecord.registerById], references: [user.id] }),
+  recordType: one(recordType, { fields: [financialRecord.recordTypeId], references: [recordType.id] }),
+  category: one(category, { fields: [financialRecord.categoryId], references: [category.id] }),
+  paymentMethod: one(paymentMethod, { fields: [financialRecord.paymentMethodId], references: [paymentMethod.id] }),
+  installmentPlan: one(installmentPlan, { fields: [financialRecord.installmentPlanId], references: [installmentPlan.id] }),
+  tags: many(tagFinancialRecord),
+}));
+
+export const tagCategoryRelations = relations(tagCategory, ({ one }) => ({
+  // Resolves M:N between tag and category
+  tag: one(tag, { fields: [tagCategory.tagId], references: [tag.id] }),
+  category: one(category, { fields: [tagCategory.categoryId], references: [category.id] }),
+}));
+
+export const tagFinancialRecordRelations = relations(tagFinancialRecord, ({ one }) => ({
+  // Resolves M:N between tag and financial record
+  tag: one(tag, { fields: [tagFinancialRecord.tagId], references: [tag.id] }),
+  financialRecord: one(financialRecord, { fields: [tagFinancialRecord.recordId], references: [financialRecord.id] }),
 }));
