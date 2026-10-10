@@ -110,6 +110,7 @@ erDiagram
         datetime email_verified_at
         text image
         bool two_factor_enabled "default false"
+        datetime suspended_at
         datetime deleted_at
         datetime created_at
         datetime updated_at
