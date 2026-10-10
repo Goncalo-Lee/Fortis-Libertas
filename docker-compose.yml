@@ -32,8 +32,8 @@ services:
 
         environment:
             MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+            MYSQL_DATABASE: ${MYSQL_DATABASE}
             # Recommended: Create dedicated application user instead of using root
-            # MYSQL_DATABASE: csm_app
             # MYSQL_USER: csm_user
             # MYSQL_PASSWORD: <application_password>
 
