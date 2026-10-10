@@ -119,7 +119,7 @@ export const accountRelations = relations(account, ({ one }) => ({
   /**
    * Parent user reference (inverse of user.accounts)
    * - Links OAuth account back to owner user
-   * - Enables queries: "get user profile from OAuth callback"
+   * - Enables queries: "get user profile.ts from OAuth callback"
    * - Query example:
    *   const accountWithUser = await db.query.account.findFirst({
    *     where: and(eq(account.providerId, 'google'), eq(account.accountId, externalId)),
