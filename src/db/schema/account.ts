@@ -119,7 +119,7 @@ export const account = mysqlTable("account", {
   /**
    * OpenID Connect ID token (JWT)
    * - Contains verified identity claims (sub, email, name, etc.)
-   * - Used for initial user profile population from provider
+   * - Used for initial user profile.ts population from provider
    * - Verify signature using provider's JWKS endpoint before storing
    * - Optional; not all OAuth providers issue ID tokens (non-OIDC flows)
    * ⚠️ Validate JWT structure and signature on every read (prevent tampering)

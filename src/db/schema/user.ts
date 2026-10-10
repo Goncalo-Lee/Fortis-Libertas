@@ -6,7 +6,7 @@ import { softDelete, timestamps } from "../columns";
 /**
  * User table schema for Better Auth integration
  *
- * Core entity storing authenticated user identities and profile data.
+ * Core entity storing authenticated user identities and profile.ts data.
  * Designed for production use with security-conscious defaults:
  * - UUID v7 primary keys for sequential, time-ordered IDs
  * - Soft delete pattern for audit trails and data recovery
@@ -23,7 +23,7 @@ export const user = mysqlTable("user", {
   id: uuidBinary("id").primaryKey(),
 
   /**
-   * Display name for user profile
+   * Display name for user profile.ts
    * - Stores full name as provided by user (not system-generated)
    * - VARCHAR(254) accommodates international name lengths
    * - NOT NULL ensures all users have visible identity
@@ -61,7 +61,7 @@ export const user = mysqlTable("user", {
   emailVerified: booleanAsDatetime("email_verified_at"),
 
   /**
-   * Avatar/profile image URL
+   * Avatar/profile.ts image URL
    * - TEXT type accommodates long CDN/presigned URLs
    * - NULLABLE (users can use default avatars)
    * - Should store absolute HTTP(S) URLs, not relative paths
@@ -115,7 +115,7 @@ export const user = mysqlTable("user", {
 [
   /**
    * Username lookup index
-   * - Supports fast queries filtering by username (e.g., @mentions, profile pages)
+   * - Supports fast queries filtering by username (e.g., @mentions, profile.ts pages)
    * - UNIQUE constraint on `username` already creates an implicit index
    * - This explicit naming makes it easier to identify/drop later
    * - Useful when querying without the PRIMARY KEY
