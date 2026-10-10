@@ -73,7 +73,7 @@ services:
         environment:
             PMA_HOST: db
             PMA_PORT: 3306
-            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+            MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
             # Additional security settings for phpMyAdmin
             # PMA_ARBITRARY: 0  # Prevent arbitrary server connection
             # APACHE_PORT: 80
