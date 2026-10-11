@@ -1,5 +1,4 @@
 import { cn } from "cn"
-
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -9,13 +8,53 @@ import {
   FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import {useRouter} from "next/navigation";
+import {useForm} from "react-hook-form";
+import contactSchema from "@/utils/validation/login-contact-schema";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {z} from "zod";
+import {authClient} from "@/lib/auth-client";
+import {Loader2} from "lucide-react";
+import React from "react";
+
 
 export default function SignInForm({
                                      className,
                                      ...props
                                    }: React.ComponentProps<"form">) {
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const router = useRouter();
+
+  const form = useForm<z.infer<typeof contactSchema>>({
+    resolver: zodResolver(contactSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    }
+  })
+
+  async function onSubmit(data: z.infer<typeof contactSchema>) {
+    setIsLoading(true);
+    const{data: session, error} = await authClient.signIn.email({
+      email: data.email,
+      password: data.password,
+    })
+
+    if (error) {
+      console.log(error);
+      setIsLoading(false);
+      return;
+    }
+    await router.push("/components");
+  }
+
   return (
-      <form className={cn("flex flex-col gap-6", className)} {...props}>
+      <form
+          onSubmit={form.handleSubmit(onSubmit, (errors) => console.log("Erros do Zod:", errors))}
+          className={cn("flex flex-col gap-6", className)}
+          {...props}
+      >
         <FieldGroup>
           <div className="flex flex-col items-center gap-1 text-center">
             <h1 className="text-2xl font-bold">Entra com a tua conta</h1>
@@ -24,8 +63,11 @@ export default function SignInForm({
             </p>
           </div>
           <Field>
-            <FieldLabel htmlFor="email">Email</FieldLabel>
-            <Input id="email" type="email" placeholder="m@example.com" required />
+            <FieldLabel htmlFor="email">Email do utilizador</FieldLabel>
+            <Input id="email" type="email" placeholder="Ricardo@..." {...form.register("email")} />
+            {form.formState.errors.email && (
+                <p className="text-sm text-red-500">{form.formState.errors.email.message}</p>
+            )}
           </Field>
           <Field>
             <div className="flex items-center">
@@ -37,10 +79,19 @@ export default function SignInForm({
                 Esqueceste a password?
               </a>
             </div>
-            <Input id="password" type="password" required />
+            <Input id="password" type="password" {...form.register("password")} />
+            {form.formState.errors.password && (
+                <p className="text-sm text-red-500">{form.formState.errors.password.message}</p>
+            )}
           </Field>
           <Field>
-            <Button type="submit">Entrar</Button>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                  <Loader2 className="size-4 animate-spin" />
+              ) : (
+                  "Entrar"
+              )}
+            </Button>
           </Field>
           <FieldSeparator>Ou continua com</FieldSeparator>
           <Field>
