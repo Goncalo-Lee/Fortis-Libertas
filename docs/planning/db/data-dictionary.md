@@ -554,7 +554,7 @@ Manages multi-installment payment plans and financing schedules, tracking total 
 | **register_by_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `User` table (who created the plan). |
 | **total_amount** | decimal(10,2) | NOT NULL | Total monetary amount of the plan (10 digits, 2 decimals). |
 | **total_installments** | int | NOT NULL | Number of installments in the plan. |
-| **due_date** | datetime | NOT NULL | Final due date for the entire plan. |
+| **due_date** | date | NOT NULL | Final due date for the entire plan. |
 | **status** | enum | NOT NULL | Current status of the plan (default: 'pending'). |
 | **deleted_at** | datetime | NULL | Timestamp for soft deletion (if applicable). |
 | **created_at** | datetime | NOT NULL | Timestamp when the plan was created. |
