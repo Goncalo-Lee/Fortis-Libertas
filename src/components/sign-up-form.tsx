@@ -26,8 +26,6 @@ export default function SignUpForm({
 
   const router = useRouter();
 
-
-  console.log("Fodasse");
   // Initialize form with resolver from zod
   const form = useForm<z.infer<typeof contactSchema>>({
     resolver: zodResolver(contactSchema),
@@ -39,7 +37,6 @@ export default function SignUpForm({
   })
 
   async function onSubmit(data: z.infer<typeof contactSchema>) {
-    console.log("Estou aqui!")
     setIsLoading(true);
     const{ data: session, error } = await authClient.signUp.email({
       email: data.email,

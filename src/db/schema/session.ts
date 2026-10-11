@@ -1,8 +1,8 @@
 import { mysqlTable } from "drizzle-orm/mysql-core";
 import * as t from "drizzle-orm/mysql-core";
-import * as s from "./index";
 import { uuidBinary } from "../types";
 import { timestamps } from "../columns";
+import { user } from "./user";
 
 /**
  * Session table for Better Auth session management
@@ -25,7 +25,7 @@ export const session = mysqlTable("session", {
    * - PRIMARY KEY for session retrieval during auth middleware
    * - Internal use only; not exposed to client-side code
    */
-  id: uuidBinary("session_id").primaryKey(),
+  id: uuidBinary("id").primaryKey(),
 
   /**
    * Foreign key reference to owning user
@@ -36,8 +36,8 @@ export const session = mysqlTable("session", {
    * ⚠️ Ensure user.id matches expected type (binary vs string)
    */
   userId: uuidBinary("user_id")
-    .notNull()
-    .references(() => s.user.id, { onDelete: "cascade" }),
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
 
   /**
    * Session authentication token
@@ -49,8 +49,8 @@ export const session = mysqlTable("session", {
    * ⚠️ Implement token rotation on privilege elevation (e.g., 2FA enablement)
    */
   token: t.varchar("token", { length: 255 })
-    .notNull()
-    .unique(),
+      .notNull()
+      .unique(),
 
   /**
    * Session expiration timestamp (UTC)
@@ -61,7 +61,7 @@ export const session = mysqlTable("session", {
    * - Better Auth validates this on every session check to reject stale tokens
    */
   expiresAt: t.timestamp("expires_at", { mode: "date", fsp: 3 })
-    .notNull(),
+      .notNull(),
 
   /**
    * Client IP address at session creation
