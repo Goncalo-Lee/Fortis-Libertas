@@ -1,6 +1,4 @@
 import 'dotenv/config';
-import { drizzle } from "drizzle-orm/mysql2";
-import * as schema from "../schema";
 import mysql from 'mysql2/promise';
 
 if (!process.env.DATABASE_URL) {
@@ -8,23 +6,42 @@ if (!process.env.DATABASE_URL) {
     process.exit(1);
 }
 
-
 async function main() {
-
     const connection = await mysql.createConnection({
         uri: process.env.DATABASE_URL,
     });
 
-    const db = drizzle({client : connection});
+    console.log("✅ Conexão estabelecida!");
 
-    console.log("✅ Database connection successful!");
+    try {
+        // 1. Desativar chaves estrangeiras à força na sessão atual
+        await connection.query('SET FOREIGN_KEY_CHECKS = 0;');
 
+        // 2. Obter o nome de todas as tabelas da base de dados atual
+        const [tables] = await connection.query('SHOW TABLES;');
 
-    // DELETE THE TABLES
-    await db.delete(schema.user);
+        for (const row of tables as any[]) {
+            // O resultado vem num objeto onde o valor é o nome da tabela
+            const tableName = Object.values(row)[0];
 
+            // OPÇÃO A: Limpar todos os dados e resetar os IDs (Auto Increment)
+            await connection.query(`TRUNCATE TABLE \`${tableName}\`;`);
+            console.log(`🧹 Dados limpos da tabela: ${tableName}`);
 
-    console.log("Data on the user table deleted with success!!!");
-    await connection.end();
+            // OPÇÃO B: Se quiseres DESTRUIR as tabelas completamente, comenta a linha de cima e usa esta:
+            // await connection.query(`DROP TABLE \`${tableName}\`;`);
+            // console.log(`🔥 Tabela destruída: ${tableName}`);
+        }
+
+        console.log("✅ Operação concluída em todas as tabelas!");
+
+    } catch (error) {
+        console.error("❌ Erro ao processar tabelas:", error);
+    } finally {
+        // 3. Reativar chaves estrangeiras
+        await connection.query('SET FOREIGN_KEY_CHECKS = 1;');
+        await connection.end();
+    }
 }
+
 main();

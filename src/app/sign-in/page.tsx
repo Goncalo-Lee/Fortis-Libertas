@@ -22,7 +22,7 @@ export default function SignInPage() {
             </div>
             <div className="relative hidden bg-muted lg:block">
                 <img
-                    src="/panel.jpeg"
+                    src="/panel.png"
                     alt="Image"
                     className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
                 />

@@ -1,17 +1,14 @@
-import { mysqlTable } from "drizzle-orm/mysql-core";
+import { mysqlTable, text, timestamp } from "drizzle-orm/mysql-core";
 import * as t from "drizzle-orm/mysql-core";
-import * as s from "./index";
-import { uuidBinary } from "../types";
-import { softDelete, timestamps } from "../columns";
+import { dashboard } from "./dashboard";
+import {uuidBinary} from "../types";
 
 export const recordType = mysqlTable("record_type", {
     id: uuidBinary("record_type_id").primaryKey(),
-    dashboardId: uuidBinary("dashboard_id").references(() => s.dashboard.id, { onDelete: "cascade" }).notNull(),
-    name: t.varchar("name", { length: 50 }).notNull(),
-    description: t.text("description"),
-    ...softDelete,
-    ...timestamps,
-}, (table) => [
-  t.uniqueIndex("idx_record_type_dashboard_name").on(table.dashboardId, table.name),
-  t.index("idx_record_type_dashboard_id").on(table.dashboardId),
-]);
+    dashboardId: uuidBinary("dashboard_id").references(() => dashboard.id, { onDelete: "cascade" }),
+    name: t.varchar("name", { length: 50 }),
+    description: text("description"),
+    deletedAt: timestamp("deleted_at"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").onUpdateNow(),
+});

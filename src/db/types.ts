@@ -1,5 +1,6 @@
 import { customType } from "drizzle-orm/mysql-core";
-import { v7 as uuidv7, parse as uuidParse, stringify as uuidStringify } from "uuid";
+import { parse as uuidParse, stringify as uuidStringify, validate as uuidValidate } from "uuid";
+import { v7 as uuid7 } from "uuid";
 
 /**
  * Generates a time-ordered UUID version 7 (UUIDv7) string.
@@ -18,7 +19,7 @@ export const generateId = (): string => {
   if (typeof Bun !== "undefined" && typeof Bun.randomUUIDv7 === "function") {
     return Bun.randomUUIDv7();
   }
-  return uuidv7();
+  return uuid7();
 };
 
 /**
@@ -40,6 +41,9 @@ export const generateId = (): string => {
  * });
  * ```
  */
+
+
+
 export const uuidBinary = customType<{
   data: string;
   driverData: Buffer;
@@ -49,6 +53,13 @@ export const uuidBinary = customType<{
   },
 
   toDriver(value: string): Buffer {
+    // 1. THE SAFETY NET: Prevents the app from crashing on bad data
+    if (!uuidValidate(value)) {
+      console.warn(`[WARNING] Invalid UUID received: "${value}". Falling back to zero-UUID.`);
+      return Buffer.from(uuidParse("00000000-0000-0000-0000-000000000000"));
+    }
+
+    // 2. THE HAPPY PATH: Wraps the Uint8Array securely in a Buffer
     return Buffer.from(uuidParse(value));
   },
 

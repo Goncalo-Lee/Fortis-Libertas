@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const contactSchema = z.object({
+export const contactSchema = z.object({
     name: z
         .string()
         .trim()
@@ -19,13 +19,7 @@ const contactSchema = z.object({
         .string()
         .trim()
         .min(1, { message: "O e-mail é obrigatório" })
-        .email({ message: "Digite um e-mail válido" }),
-    phone : z
-        .int()
-        .min(9, { message: "O número tem de ter pelo menos 9 dígitos!" })
-        .max(15, { message: "O número não pode ter mais de 15 dígitos!" }),
-    message: z
-        .string().min(1)
+        .email({ message: "Digite um e-mail válido" })
 })
 
-export default contactSchema;
+export type data = z.infer<typeof contactSchema>;

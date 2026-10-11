@@ -1,9 +1,10 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
-import {APIError, betterAuth} from "better-auth";
+import {betterAuth} from "better-auth";
 import { twoFactor } from "better-auth/plugins";
 import { db } from "../db";
 import * as schema from "../db/schema";
 import { generateId } from "../db/types";
+import {nextCookies} from "better-auth/next-js";
 
 /**
  * Better Auth Configuration
@@ -20,26 +21,27 @@ import { generateId } from "../db/types";
  * - `DATABASE_URL`: Connection string for the MySQL database.
  */
 export const auth = betterAuth({
-  databaseHooks: {
-    user: {
-      create: {
-        before: async (user) => {
-          if (user.name.length < 3) {
-            throw new APIError ("BAD_REQUEST", {
-              message: "Name must be at least 3 characters long."
-                }
-            )
-          }
-        }
-      }
-    }
-  },
   database: drizzleAdapter(db, {
     provider: "mysql",
     schema: {
-      schema,
+      user: schema.user,
+      session: schema.session,
+      account: schema.account,
+      verification: schema.verification,
+      twoFactor: schema.twoFactor,
     },
   }),
+  emailAndPassword: {
+    enabled: true,
+    minPasswordLength: 8,
+    maxPasswordLength: 32,
+  },
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    },
+  },
   advanced: {
     database: {
       // Enforces application-wide UUIDv7 generation for all Better Auth models
@@ -47,8 +49,10 @@ export const auth = betterAuth({
       joins: true,
     },
   },
+  appName: "FortisLibertas",
   plugins: [
     twoFactor(),
+    nextCookies(),
   ],
 });
 
