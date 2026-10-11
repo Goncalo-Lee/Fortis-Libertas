@@ -41,9 +41,8 @@ export const account = mysqlTable("account", {
    * - INDEX (idx_account_user_id) optimizes: "find all accounts for user X"
    * ⚠️ Use t.text() to match userId type in session table for consistency
    */
-  userId: uuidBinary("user_id")
-      .notNull()
-      .references(() => s.user.id, { onDelete: "cascade" }),
+  userId: uuidBinary("user_id").notNull(),
+
 
   /**
    * Third-party provider's unique account identifier
@@ -147,6 +146,13 @@ export const account = mysqlTable("account", {
    */
   ...timestamps,
 }, (table) => [
+
+  t.foreignKey({
+          name: "fk_user_account_user",
+          columns: [table.userId],
+          foreignColumns: [s.user.id],
+      }).onDelete("cascade"),
+
   /**
    * User association index for account queries
    * - Optimizes: "list all connected accounts for a user" (settings page)

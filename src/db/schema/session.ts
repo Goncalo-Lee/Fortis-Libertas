@@ -35,9 +35,7 @@ export const session = mysqlTable("session", {
    * - INDEX (session_userId_idx) enables fast queries: "find all sessions for user X"
    * ⚠️ Ensure user.id matches expected type (binary vs string)
    */
-  userId: uuidBinary("user_id")
-      .notNull()
-      .references(() => s.user.id, { onDelete: "cascade" }),
+  userId: uuidBinary("user_id").notNull(),
 
   /**
    * Session authentication token
@@ -90,6 +88,13 @@ export const session = mysqlTable("session", {
    */
   ...timestamps,
 }, (table) => [
+
+  t.foreignKey({
+          name: "fk_user_session_user",
+          columns: [table.userId],
+          foreignColumns: [s.user.id],
+      }).onDelete("cascade"),
+
   /**
    * Composite index for session queries by user
    * - Critical performance optimization for:
