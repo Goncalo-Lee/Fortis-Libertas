@@ -347,7 +347,7 @@ Stores linked external authentication providers (e.g., Google, GitHub) and crede
 | :--- | :--- | :--- | :--- |
 | **account_id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique account identifier. |
 | **user_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key linking this account to its user in the `User` table. |
-| **account_id** | text | NOT NULL | Account identifier with an external supplier or service. |
+| **account_identifier_id** | text | NOT NULL | Account identifier with an external supplier or service. |
 | **provider_id** | text | NOT NULL | Service provider identifier (e.g., Google, GitHub). |
 | **access_token** | text | NOT NULL | Access token for the provider's API. |
 | **refresh_token** | text | NULL | Token used to renew expired access. |
@@ -461,6 +461,10 @@ Represents a financial workspace or dashboard context, acting as the container f
 | **created_at** | datetime | NOT NULL | Timestamp when the dashboard was created. |
 | **updated_at** | datetime | NOT NULL | Timestamp when the dashboard was last updated. |
 
+**Defaults:**
+
+- `is_active`: `true`
+
 **Indexes:**
 
 - `PRIMARY KEY (id)`
@@ -554,7 +558,7 @@ Manages multi-installment payment plans and financing schedules, tracking total 
 | **register_by_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `User` table (who created the plan). |
 | **total_amount** | decimal(10,2) | NOT NULL | Total monetary amount of the plan (10 digits, 2 decimals). |
 | **total_installments** | int | NOT NULL | Number of installments in the plan. |
-| **due_date** | datetime | NOT NULL | Final due date for the entire plan. |
+| **due_date** | date | NOT NULL | Final due date for the entire plan. |
 | **status** | enum | NOT NULL | Current status of the plan (default: 'pending'). |
 | **deleted_at** | datetime | NULL | Timestamp for soft deletion (if applicable). |
 | **created_at** | datetime | NOT NULL | Timestamp when the plan was created. |

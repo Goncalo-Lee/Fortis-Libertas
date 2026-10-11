@@ -20,7 +20,7 @@ export const user = mysqlTable("user", {
    * - UUID v7 enables temporal ordering in B-tree indexes
    * - PRIMARY KEY with clustered index on MySQL InnoDB
    */
-  id: uuidBinary("id").primaryKey(),
+  id: uuidBinary("user_id").primaryKey(),
 
   /**
    * Display name for user profile.ts

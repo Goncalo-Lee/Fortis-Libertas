@@ -1,7 +1,7 @@
 import { mysqlTable } from "drizzle-orm/mysql-core";
 import * as t from "drizzle-orm/mysql-core";
+import * as s from "./index";
 import { uuidBinary } from "../types";
-import { user } from "./user";
 
 /**
  * Two-Factor Authentication (2FA) Configuration Table
@@ -32,7 +32,7 @@ export const twoFactor = mysqlTable("two_factor", {
    * - Not exposed externally; application-internal only
    * ⚠️ UUID provides no security benefit here; separate random token needed
    */
-  id: uuidBinary("id").primaryKey(),
+  id: uuidBinary("two_factor_id").primaryKey(),
 
   /**
    * Foreign key to owning user (UUID binary)
@@ -44,7 +44,7 @@ export const twoFactor = mysqlTable("two_factor", {
    */
   userId: uuidBinary("user_id")
     .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
+    .references(() => s.user.id, { onDelete: "cascade" }),
 
   /**
    * TOTP shared secret (base32 encoded)

@@ -282,7 +282,7 @@ erDiagram
         binary16 register_by_id FK
         decimal10_2 total_amount
         int total_installments
-        datetime due_date
+        date due_date
         enum status "default pending"
         datetime deleted_at
         datetime created_at
