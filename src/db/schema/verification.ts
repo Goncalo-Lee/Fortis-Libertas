@@ -78,7 +78,7 @@ export const verification = mysqlTable("verification", {
    * ⚠️ Expired tokens should be purged regularly (daily cron job recommended)
    */
   expiresAt: t.timestamp("expires_at", { mode: "date", fsp: 3 })
-    .notNull(),
+      .notNull(),
 
   /**
    * Audit timestamp columns

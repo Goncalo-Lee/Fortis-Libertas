@@ -42,8 +42,8 @@ export const account = mysqlTable("account", {
    * ⚠️ Use t.text() to match userId type in session table for consistency
    */
   userId: uuidBinary("user_id")
-    .notNull()
-    .references(() => s.user.id, { onDelete: "cascade" }),
+      .notNull()
+      .references(() => s.user.id, { onDelete: "cascade" }),
 
   /**
    * Third-party provider's unique account identifier

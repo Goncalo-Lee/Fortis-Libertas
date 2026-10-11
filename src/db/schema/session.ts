@@ -36,8 +36,8 @@ export const session = mysqlTable("session", {
    * ⚠️ Ensure user.id matches expected type (binary vs string)
    */
   userId: uuidBinary("user_id")
-    .notNull()
-    .references(() => s.user.id, { onDelete: "cascade" }),
+      .notNull()
+      .references(() => s.user.id, { onDelete: "cascade" }),
 
   /**
    * Session authentication token
@@ -49,8 +49,8 @@ export const session = mysqlTable("session", {
    * ⚠️ Implement token rotation on privilege elevation (e.g., 2FA enablement)
    */
   token: t.varchar("token", { length: 255 })
-    .notNull()
-    .unique(),
+      .notNull()
+      .unique(),
 
   /**
    * Session expiration timestamp (UTC)
@@ -61,7 +61,7 @@ export const session = mysqlTable("session", {
    * - Better Auth validates this on every session check to reject stale tokens
    */
   expiresAt: t.timestamp("expires_at", { mode: "date", fsp: 3 })
-    .notNull(),
+      .notNull(),
 
   /**
    * Client IP address at session creation

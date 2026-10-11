@@ -43,8 +43,8 @@ export const twoFactor = mysqlTable("two_factor", {
    * ⚠️ Missing explicit UNIQUE constraint; add if enforcing single 2FA per user
    */
   userId: uuidBinary("user_id")
-    .notNull()
-    .references(() => s.user.id, { onDelete: "cascade" }),
+      .notNull()
+      .references(() => s.user.id, { onDelete: "cascade" }),
 
   /**
    * TOTP shared secret (base32 encoded)
@@ -99,7 +99,7 @@ export const twoFactor = mysqlTable("two_factor", {
    * ⚠️ Alert security team if count exceeds threshold repeatedly
    */
   failedVerificationCount: t.int("failed_verification_count")
-    .notNull(),
+      .notNull(),
 
   /**
    * Account lockout timestamp (UTC)

@@ -1,29 +1,13 @@
-import { mysqlTable, timestamp, primaryKey, foreignKey } from "drizzle-orm/mysql-core";
-import { tag } from "./tag";
-import { financialRecord } from "./financialRecord";
+import { mysqlTable } from "drizzle-orm/mysql-core";
+import * as t from "drizzle-orm/mysql-core";
+import * as s from "./index";
 import { uuidBinary } from "../types";
 
-export const tagFinancialRecord = mysqlTable(
-    "tag__financial_record",
-    {
-        tagId: uuidBinary("tag_id"),
-        recordId: uuidBinary("record_id"),
-        createdAt: timestamp("created_at").defaultNow(),
-    },
-    (table) => ({
-        pk: primaryKey({ columns: [table.tagId, table.recordId] }),
-
-        // Custom short names to bypass the 64-character limit
-        tagFk: foreignKey({
-            name: "fk_tag_fin_rec_tag",
-            columns: [table.tagId],
-            foreignColumns: [tag.id],
-        }).onDelete("cascade"),
-
-        recordFk: foreignKey({
-            name: "fk_tag_fin_rec_record",
-            columns: [table.recordId],
-            foreignColumns: [financialRecord.id],
-        }).onDelete("cascade"),
-    })
-);
+export const tagFinancialRecord = mysqlTable("tag__financial_record", {
+    tagId: uuidBinary("tag_id").references(() => s.tag.id, { onDelete: "cascade" }).notNull(),
+    recordId: uuidBinary("record_id").references(() => s.financialRecord.id, { onDelete: "cascade" }).notNull(),
+    createdAt: t.timestamp("created_at", { fsp: 3 }).defaultNow().notNull(),
+}, (table) => [
+    t.primaryKey({ columns: [table.tagId, table.recordId] }),
+    t.index("idx_tag_financial_record_record_id").on(table.recordId),
+]);
