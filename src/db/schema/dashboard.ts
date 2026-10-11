@@ -1,10 +1,11 @@
-import { mysqlTable, varchar, boolean, timestamp } from "drizzle-orm/mysql-core";
+import { mysqlTable, varchar, boolean } from "drizzle-orm/mysql-core";
+import { uuidBinary } from "../types";
+import { softDelete, timestamps } from "../columns";
 
 export const dashboard = mysqlTable("dashboard", {
-    id: varchar("dashboard_id", { length: 36 }).primaryKey(),
-    name: varchar("name", { length: 50 }),
-    isActive: boolean("is_active"),
-    deletedAt: timestamp("deleted_at"),
-    createdAt: timestamp("created_at").defaultNow(),
-    updatedAt: timestamp("updated_at").onUpdateNow(),
+  id: uuidBinary("dashboard_id").primaryKey(),
+  name: varchar("name", { length: 50 }).notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  ...softDelete,
+  ...timestamps,
 });

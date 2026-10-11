@@ -1,8 +1,8 @@
 import { mysqlTable } from "drizzle-orm/mysql-core";
 import * as t from "drizzle-orm/mysql-core";
+import * as s from "./index";
 import { uuidBinary } from "../types";
 import { timestamps } from "../columns";
-import { user } from "./user";
 
 /**
  * OAuth Provider Account Credentials Table (Better Auth)
@@ -31,7 +31,7 @@ export const account = mysqlTable("account", {
    * - PRIMARY KEY for direct credential lookup during token refresh
    * ⚠️ Not exposed externally; internal reference only
    */
-  id: uuidBinary("id").primaryKey(),
+  id: uuidBinary("account_id").primaryKey(),
 
   /**
    * Foreign key to owner user record
@@ -43,7 +43,7 @@ export const account = mysqlTable("account", {
    */
   userId: uuidBinary("user_id")
     .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
+    .references(() => s.user.id, { onDelete: "cascade" }),
 
   /**
    * Third-party provider's unique account identifier
@@ -53,7 +53,7 @@ export const account = mysqlTable("account", {
    * - Used to match incoming OAuth callbacks to existing local accounts
    * ⚠️ Provider IDs change rarely but verify if provider supports ID rotation
    */
-  accountId: t.text("account_id").notNull(),
+  accountId: t.text("account_identifier_id").notNull(),
 
   /**
    * OAuth provider identifier
