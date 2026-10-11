@@ -1,7 +1,7 @@
 import { mysqlTable } from "drizzle-orm/mysql-core";
 import * as t from "drizzle-orm/mysql-core";
+import * as s from "./index";
 import { uuidBinary } from "../types";
-import { user } from "./user";
 
 /**
  * Two-Factor Authentication (2FA) Configuration Table
@@ -32,7 +32,7 @@ export const twoFactor = mysqlTable("two_factor", {
    * - Not exposed externally; application-internal only
    * ⚠️ UUID provides no security benefit here; separate random token needed
    */
-  id: uuidBinary("id").primaryKey(),
+  id: uuidBinary("two_factor_id").primaryKey(),
 
   /**
    * Foreign key to owning user (UUID binary)
@@ -42,9 +42,8 @@ export const twoFactor = mysqlTable("two_factor", {
    * - 1:1 relationship enforced at application layer (unique userId)
    * ⚠️ Missing explicit UNIQUE constraint; add if enforcing single 2FA per user
    */
-  userId: uuidBinary("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+  userId: uuidBinary("user_id").notNull(),
+
 
   /**
    * TOTP shared secret (base32 encoded)
@@ -115,6 +114,13 @@ export const twoFactor = mysqlTable("two_factor", {
    */
   lockedUntil: t.timestamp("locked_until", { mode: "date", fsp: 3 }),
 }, (table) => [
+
+  t.foreignKey({
+          name: "fk_user_two_factor_user",
+          columns: [table.userId],
+          foreignColumns: [s.user.id],
+      }).onDelete("cascade"),
+
   /**
    * User-based lookup index for 2FA records
    * - Critical performance optimization for login flows:

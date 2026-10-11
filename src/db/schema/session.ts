@@ -1,8 +1,8 @@
 import { mysqlTable } from "drizzle-orm/mysql-core";
 import * as t from "drizzle-orm/mysql-core";
+import * as s from "./index";
 import { uuidBinary } from "../types";
 import { timestamps } from "../columns";
-import { user } from "./user";
 
 /**
  * Session table for Better Auth session management
@@ -25,7 +25,7 @@ export const session = mysqlTable("session", {
    * - PRIMARY KEY for session retrieval during auth middleware
    * - Internal use only; not exposed to client-side code
    */
-  id: uuidBinary("id").primaryKey(),
+  id: uuidBinary("session_id").primaryKey(),
 
   /**
    * Foreign key reference to owning user
@@ -35,9 +35,7 @@ export const session = mysqlTable("session", {
    * - INDEX (session_userId_idx) enables fast queries: "find all sessions for user X"
    * ⚠️ Ensure user.id matches expected type (binary vs string)
    */
-  userId: uuidBinary("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+  userId: uuidBinary("user_id").notNull(),
 
   /**
    * Session authentication token
@@ -90,6 +88,13 @@ export const session = mysqlTable("session", {
    */
   ...timestamps,
 }, (table) => [
+
+  t.foreignKey({
+          name: "fk_user_session_user",
+          columns: [table.userId],
+          foreignColumns: [s.user.id],
+      }).onDelete("cascade"),
+
   /**
    * Composite index for session queries by user
    * - Critical performance optimization for:
