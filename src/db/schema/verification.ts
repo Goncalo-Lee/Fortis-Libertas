@@ -33,7 +33,7 @@ export const verification = mysqlTable("verification", {
    * - Not exposed to users; used only in application logic
    * ⚠️ UUID v7 provides temporal ordering but not security (use cryptographically random token separately)
    */
-  id: uuidBinary("verification_id").primaryKey(),
+  id: uuidBinary("id").primaryKey(),
 
   /**
    * Verification purpose/type identifier
