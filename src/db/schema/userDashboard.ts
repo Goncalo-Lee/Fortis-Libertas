@@ -1,10 +1,12 @@
-import { mysqlTable, varchar, mysqlEnum, timestamp, primaryKey } from "drizzle-orm/mysql-core";
+import { mysqlTable, mysqlEnum, timestamp, primaryKey } from "drizzle-orm/mysql-core";
 import { user } from "./user";
 import { dashboard } from "./dashboard";
+import { uuidBinary } from "../types";
+
 
 export const userDashboard = mysqlTable("user__dashboard", {
-    dashboardId: varchar("dashboard_id", { length: 36 }).references(() => dashboard.id, { onDelete: "cascade" }),
-    userId: varchar("user_id", { length: 36 }).references(() => user.id, { onDelete: "cascade" }),
+    dashboardId: uuidBinary("dashboard_id").references(() => dashboard.id, { onDelete: "cascade" }),
+    userId: uuidBinary("user_id").references(() => user.id, { onDelete: "cascade" }),
     role: mysqlEnum("role", ["owner", "editor", "viewer"]),
     deletedAt: timestamp("deleted_at"),
     createdAt: timestamp("created_at").defaultNow(),

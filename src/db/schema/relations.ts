@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm/_relations";
+import { relations } from "drizzle-orm";
 import { user } from "./user";
 import { session } from "./session";
 import { account } from "./account";
@@ -19,9 +19,9 @@ import { financialRecord } from "./financialRecord";
 import { tagCategory } from "./tagCategory";
 import { tagFinancialRecord } from "./tagFinancialRecord";
 
-export const userRelations = relations(user, ({ one, many }) => ({
+export const userRelations = relations(user, ({ many }) => ({
   // Links user to one active profile (1:1)
-  profile: one(profile),
+  profile: many(profile),
 
   // User can have multiple concurrent login sessions (1:N)
   sessions: many(session),

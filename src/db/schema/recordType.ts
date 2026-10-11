@@ -1,10 +1,12 @@
-import { mysqlTable, varchar, text, timestamp } from "drizzle-orm/mysql-core";
+import { mysqlTable, text, timestamp } from "drizzle-orm/mysql-core";
+import * as t from "drizzle-orm/mysql-core";
 import { dashboard } from "./dashboard";
+import {uuidBinary} from "../types";
 
 export const recordType = mysqlTable("record_type", {
-    id: varchar("record_type_id", { length: 36 }).primaryKey(),
-    dashboardId: varchar("dashboard_id", { length: 36 }).references(() => dashboard.id, { onDelete: "cascade" }),
-    name: varchar("name", { length: 50 }),
+    id: uuidBinary("record_type_id").primaryKey(),
+    dashboardId: uuidBinary("dashboard_id").references(() => dashboard.id, { onDelete: "cascade" }),
+    name: t.varchar("name", { length: 50 }),
     description: text("description"),
     deletedAt: timestamp("deleted_at"),
     createdAt: timestamp("created_at").defaultNow(),

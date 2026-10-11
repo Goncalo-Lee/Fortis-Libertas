@@ -1,8 +1,10 @@
-import { mysqlTable, varchar, boolean, timestamp } from "drizzle-orm/mysql-core";
+import { mysqlTable, boolean, timestamp } from "drizzle-orm/mysql-core";
+import * as t from "drizzle-orm/mysql-core";
+import {uuidBinary} from "../types";
 
 export const dashboard = mysqlTable("dashboard", {
-    id: varchar("dashboard_id", { length: 36 }).primaryKey(),
-    name: varchar("name", { length: 50 }),
+    id: uuidBinary("dashboard_id").primaryKey(),
+    name: t.varchar("name", { length: 50 }),
     isActive: boolean("is_active"),
     deletedAt: timestamp("deleted_at"),
     createdAt: timestamp("created_at").defaultNow(),
