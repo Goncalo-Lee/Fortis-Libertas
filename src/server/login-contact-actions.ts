@@ -2,7 +2,7 @@
 
 import {ContactFormData} from "@/types";
 import { z } from 'zod';
-import contactSchema from "@/utils/validation/register-contact-schema";
+import contactSchema from "@/utils/validation/login-contact-schema";
 
 // LOGIN-CONTACT-ACTIONS
 
