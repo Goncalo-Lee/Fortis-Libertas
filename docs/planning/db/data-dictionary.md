@@ -461,6 +461,10 @@ Represents a financial workspace or dashboard context, acting as the container f
 | **created_at** | datetime | NOT NULL | Timestamp when the dashboard was created. |
 | **updated_at** | datetime | NOT NULL | Timestamp when the dashboard was last updated. |
 
+**Defaults:**
+
+- `is_active`: `true`
+
 **Indexes:**
 
 - `PRIMARY KEY (id)`
