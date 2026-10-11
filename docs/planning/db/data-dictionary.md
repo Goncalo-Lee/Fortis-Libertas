@@ -347,7 +347,7 @@ Stores linked external authentication providers (e.g., Google, GitHub) and crede
 | :--- | :--- | :--- | :--- |
 | **account_id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique account identifier. |
 | **user_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key linking this account to its user in the `User` table. |
-| **account_id** | text | NOT NULL | Account identifier with an external supplier or service. |
+| **account_identifier_id** | text | NOT NULL | Account identifier with an external supplier or service. |
 | **provider_id** | text | NOT NULL | Service provider identifier (e.g., Google, GitHub). |
 | **access_token** | text | NOT NULL | Access token for the provider's API. |
 | **refresh_token** | text | NULL | Token used to renew expired access. |
