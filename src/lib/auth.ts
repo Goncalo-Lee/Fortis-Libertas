@@ -1,5 +1,5 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
-import {APIError, betterAuth} from "better-auth";
+import {betterAuth} from "better-auth";
 import { twoFactor } from "better-auth/plugins";
 import { db } from "../db";
 import * as schema from "../db/schema";
@@ -24,7 +24,11 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "mysql",
     schema: {
-      schema,
+      user: schema.user,
+      session: schema.session,
+      account: schema.account,
+      verification: schema.verification,
+      twoFactor: schema.twoFactor,
     },
   }),
   emailAndPassword: {

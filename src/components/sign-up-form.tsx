@@ -1,13 +1,11 @@
+"use client"
 import { cn } from "cn"
-
 import { Button } from "@/components/ui/button"
 import {
   Field,
-  FieldDescription,
   FieldGroup,
   FieldLabel,
-  FieldSeparator,
-} from "@/components/ui/field"
+  } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import React from "react";
 import {Loader2} from "lucide-react";
@@ -29,19 +27,19 @@ export default function SignUpForm({
   const router = useRouter();
 
 
+  console.log("Fodasse");
   // Initialize form with resolver from zod
   const form = useForm<z.infer<typeof contactSchema>>({
     resolver: zodResolver(contactSchema),
     defaultValues: {
       name: "",
       email: "",
-      phone: "",
       password: "",
-
     }
   })
 
   async function onSubmit(data: z.infer<typeof contactSchema>) {
+    console.log("Estou aqui!")
     setIsLoading(true);
     const{ data: session, error } = await authClient.signUp.email({
       email: data.email,
@@ -54,12 +52,15 @@ export default function SignUpForm({
       return;
     }
     await router.push("/components");
-
   }
 
 
   return (
-      <form onSubmit={form.handleSubmit(onSubmit)} className={cn("flex flex-col gap-6", className)} {...props}>
+      <form
+          onSubmit={form.handleSubmit(onSubmit, (errors) => console.log("Erros do Zod:", errors))}
+          className={cn("flex flex-col gap-6", className)}
+          {...props}
+      >
         <FieldGroup>
           <div className="flex flex-col items-center gap-1 text-center">
             <h1 className="text-2xl font-bold">Regista-te</h1>
@@ -69,29 +70,26 @@ export default function SignUpForm({
           </div>
           <Field>
             <FieldLabel htmlFor="name">Nome do utilizador</FieldLabel>
-            <Input id="name" type="name" placeholder="nomedoutilizador" required />
+            <Input id="name" type="text" placeholder="nomedoutilizador" {...form.register("name")} />
+            {form.formState.errors.name && (
+                <p className="text-sm text-red-500">{form.formState.errors.name.message}</p>
+            )}
           </Field>
           <Field>
             <FieldLabel htmlFor="email">Email</FieldLabel>
-            <Input id="email" type="email" placeholder="m@example.com" required />
-          </Field>
-          <Field>
-            <div className="flex items-center">
-              <FieldLabel htmlFor="phone">Número de telemóvel</FieldLabel>
-            </div>
-            <Input id="phone" type="phone" required />
+            <Input id="email" type="email" placeholder="m@example.com" {...form.register("email")}/>
+            {form.formState.errors.email && (
+                <p className="text-sm text-red-500">{form.formState.errors.email.message}</p>
+            )}
           </Field>
           <Field>
             <div className="flex items-center">
               <FieldLabel htmlFor="password">Password</FieldLabel>
             </div>
-            <Input id="password" type="password" required />
-          </Field>
-          <Field>
-            <div className="flex items-center">
-              <FieldLabel htmlFor="password">Confirma a password</FieldLabel>
-            </div>
-            <Input id="password" type="password" required />
+            <Input id="password" type="password" {...form.register("password")}/>
+            {form.formState.errors.password && (
+                <p className="text-sm text-red-500">{form.formState.errors.password.message}</p>
+            )}
           </Field>
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? (
