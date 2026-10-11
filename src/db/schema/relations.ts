@@ -19,9 +19,9 @@ import { financialRecord } from "./financialRecord";
 import { tagCategory } from "./tagCategory";
 import { tagFinancialRecord } from "./tagFinancialRecord";
 
-export const userRelations = relations(user, ({ many }) => ({
+export const userRelations = relations(user, ({ one, many }) => ({
   // Links user to one active profile (1:1)
-  profile: many(profile),
+  profile: one(profile),
 
   // User can have multiple concurrent login sessions (1:N)
   sessions: many(session),
