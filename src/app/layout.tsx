@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Navbar }  from "@/components/layout/Navbar";
 import { Poppins } from 'next/font/google';
 import "./globals.css";
 
@@ -11,8 +10,9 @@ export const metadata: Metadata = {
 const poppins = Poppins({
     subsets: ['latin'],
     weight: ['400', '500', '700', '800'],
-    variable: '--font-poppins-custom',
+    variable: '--font-poppins',
 });
+
 export default function RootLayout({ children }: { children: React.ReactNode })  {
   return (
     <html
@@ -22,8 +22,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
         <body className={poppins.variable}>
         <ThemeProvider>
-        
-
           {children}
         </ThemeProvider>
         </body>

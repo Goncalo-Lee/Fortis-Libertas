@@ -1,19 +1,16 @@
 import React from 'react';
 import Link from 'next/link';
 // Importamos a fonte Poppins do Next.js
-import { Poppins } from 'next/font/google';
+
 
 // Configuramos os pesos da fonte que vamos usar
-const poppins = Poppins({
-  weight: ['400', '600', '800'],
-  subsets: ['latin'],
-});
+
 
 export default function Home() {
   return (
       // Aplicamos a classe da fonte (poppins.className) na div principal
       <div
-          className={`min-h-screen relative flex flex-col items-center justify-center p-4 bg-cover bg-center bg-no-repeat overflow-hidden ${poppins.className}`}
+          className={`min-h-screen relative flex flex-col items-center justify-center p-4 bg-cover bg-center bg-no-repeat overflow-hidden font-poppins`}
           style={{ backgroundImage: "url('/background3.jpeg')" }} // O caminho para a imagem gerada na pasta public
       >
         {/* Título - Responsivo nos tamanhos e posicionamento */}
@@ -52,9 +49,12 @@ export default function Home() {
           </p>
 
           {/* Botão */}
-          <button className="bg-white text-[#194b7c] font-bold text-sm md:text-base uppercase px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg hover:bg-gray-100 transition-all transform hover:scale-105">
-            Comece agora
-          </button>
+          <Link
+          href="/sign-up">
+            <button className="bg-[#194b7c] text-white font-bold text-sm md:text-base uppercase px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg hover:bg-[#194b7c]/90 transition-all transform hover:scale-105">
+              Comece agora
+            </button>
+          </Link>
         </div>
       </div>
   );
