@@ -35,7 +35,7 @@ const data = {
   navMain: [
     {
       title: "Rendimentos",
-      url: "/incomes",
+      url: "/dashboard/incomes",
       icon: (
         <BadgeEuroIcon
         />
@@ -43,7 +43,7 @@ const data = {
     },
     {
       title: "Despesas",
-      url: "/expenses",
+      url: "/dashboard/expenses",
       icon: (
         <MinusCircleIcon
         />
@@ -51,7 +51,7 @@ const data = {
     },
     {
       title: "Metas Financeiras",
-      url: "/financial-goals",
+      url: "/dashboard/financial-goals",
       icon: (
         <CalendarArrowDownIcon
         />
@@ -59,7 +59,7 @@ const data = {
     },
     {
       title: "Dívidas",
-      url: "/financial-debts",
+      url: "/dashboard/financial-debts",
       icon: (
         <ClipboardMinusIcon
         />
@@ -67,7 +67,7 @@ const data = {
     },
     {
       title: "Pé de meia",
-      url: "/money-pillow",
+      url: "/dashboard/money-pillow",
       icon: (
           <PiggyBankIcon
           />
@@ -75,7 +75,7 @@ const data = {
     },
     {
       title: "Notificações",
-      url: "/notifications",
+      url: "/dashboard/notifications",
       icon: (
           <BellIcon
           />

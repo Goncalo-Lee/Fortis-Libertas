@@ -76,26 +76,6 @@ export function IncomeExpenseChart() {
                     </BarChart>
                 </ChartContainer>
             </CardContent>
-
-            <CardFooter className="flex-col items-start gap-2 text-sm bg-slate-50/50 pt-4 pb-4 rounded-b-xl border-t">
-                <div className="flex items-center gap-2 font-medium text-slate-700">
-                    {isPositive ? (
-                        <>
-                            <TrendingUp className="h-5 w-5 text-green-500" />
-                            Tiveste um saldo positivo no último mês!
-                            <Smile className="h-4 w-4 text-green-500 ml-1" />
-                        </>
-                    ) : (
-                        <>
-                            <TrendingDown className="h-5 w-5 text-orange-500" />
-                            No último mês, as saídas superaram as entradas.
-                        </>
-                    )}
-                </div>
-                <div className="leading-none text-slate-500">
-                    Acompanhar estes valores ajuda-te a teres um mês mais tranquilo.
-                </div>
-            </CardFooter>
         </Card>
     )
 }
