@@ -1,6 +1,6 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import {betterAuth} from "better-auth";
-import {twoFactor, username} from "better-auth/plugins";
+import {bearer, twoFactor, username} from "better-auth/plugins";
 import { db } from "../db";
 import * as schema from "../db/schema";
 import { generateId } from "../db/types";
@@ -52,6 +52,7 @@ export const auth = betterAuth({
   appName: "FortisLibertas",
   plugins: [
     twoFactor(),
+    bearer(),
     nextCookies(),
   ],
 });
