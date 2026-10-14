@@ -15,7 +15,23 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { LayoutDashboardIcon, ListIcon, ChartBarIcon, FolderIcon, UsersIcon, CameraIcon, FileTextIcon, Settings2Icon, CircleHelpIcon, SearchIcon, DatabaseIcon, FileChartColumnIcon, FileIcon, CommandIcon } from "lucide-react"
+import {
+  LayoutDashboardIcon,
+  ListIcon,
+  ChartBarIcon,
+  FolderIcon,
+  UsersIcon,
+  CameraIcon,
+  FileTextIcon,
+  Settings2Icon,
+  CircleHelpIcon,
+  SearchIcon,
+  DatabaseIcon,
+  FileChartColumnIcon,
+  FileIcon,
+  CommandIcon,
+  DollarSignIcon, BadgeEuroIcon, MinusCircleIcon
+} from "lucide-react"
 
 const data = {
   user: {
@@ -25,7 +41,7 @@ const data = {
   },
   navMain: [
     {
-      title: "Rendimentos",
+      title: "Dashboard",
       url: "#",
       icon: (
         <LayoutDashboardIcon
@@ -33,18 +49,18 @@ const data = {
       ),
     },
     {
-      title: "Despesas",
+      title: "Rendimentos",
       url: "#",
       icon: (
-        <ListIcon
+        <BadgeEuroIcon
         />
       ),
     },
     {
-      title: "Analytics",
+      title: "Despesas",
       url: "#",
       icon: (
-        <ChartBarIcon
+        <MinusCircleIcon
         />
       ),
     },
@@ -158,7 +174,7 @@ const data = {
       ),
     },
     {
-      name: "Reports",
+      name: "Gerador de relatórios",
       url: "#",
       icon: (
         <FileChartColumnIcon
