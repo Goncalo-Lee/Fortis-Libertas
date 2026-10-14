@@ -1,6 +1,6 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
-import {betterAuth} from "better-auth";
-import {bearer, twoFactor, username} from "better-auth/plugins";
+import { betterAuth} from "better-auth";
+import { bearer, twoFactor } from "better-auth/plugins";
 import { db } from "../db";
 import * as schema from "../db/schema";
 import { generateId } from "../db/types";
@@ -35,6 +35,12 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 8,
     maxPasswordLength: 32,
+  },
+  user: {
+    additionalFields: {
+      suspendedAt: { type: "date", required: false, input: false },
+      deletedAt: { type: "date", required: false, input: false},
+    },
   },
   socialProviders: {
     google: {
