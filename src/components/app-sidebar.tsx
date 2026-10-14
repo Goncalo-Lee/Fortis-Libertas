@@ -16,21 +16,15 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import {
-  LayoutDashboardIcon,
-  ListIcon,
-  ChartBarIcon,
-  FolderIcon,
-  UsersIcon,
   CameraIcon,
   FileTextIcon,
   Settings2Icon,
   CircleHelpIcon,
   SearchIcon,
-  DatabaseIcon,
   FileChartColumnIcon,
-  FileIcon,
   CommandIcon,
-  DollarSignIcon, BadgeEuroIcon, MinusCircleIcon
+  BadgeEuroIcon, MinusCircleIcon, CalendarArrowDownIcon,
+  ClipboardMinusIcon, PiggyBankIcon, FileOutputIcon, BellIcon, ArrowLeftRightIcon
 } from "lucide-react"
 
 const data = {
@@ -41,16 +35,8 @@ const data = {
   },
   navMain: [
     {
-      title: "Dashboard",
-      url: "#",
-      icon: (
-        <LayoutDashboardIcon
-        />
-      ),
-    },
-    {
       title: "Rendimentos",
-      url: "#",
+      url: "/incomes",
       icon: (
         <BadgeEuroIcon
         />
@@ -58,84 +44,43 @@ const data = {
     },
     {
       title: "Despesas",
-      url: "#",
+      url: "/expenses",
       icon: (
         <MinusCircleIcon
         />
       ),
     },
     {
-      title: "Projects",
-      url: "#",
+      title: "Metas Financeiras",
+      url: "/financial-goals",
       icon: (
-        <FolderIcon
+        <CalendarArrowDownIcon
         />
       ),
     },
     {
-      title: "Team",
-      url: "#",
+      title: "Dívidas",
+      url: "/financial-debts",
       icon: (
-        <UsersIcon
+        <ClipboardMinusIcon
         />
       ),
     },
-  ],
-  navClouds: [
     {
-      title: "Capture",
+      title: "Pé de meia",
+      url: "/money-pillow",
       icon: (
-        <CameraIcon
-        />
+          <PiggyBankIcon
+          />
       ),
-      isActive: true,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
     },
     {
-      title: "Proposal",
+      title: "Notificações",
+      url: "/notifications",
       icon: (
-        <FileTextIcon
-        />
+          <BellIcon
+          />
       ),
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Prompts",
-      icon: (
-        <FileTextIcon
-        />
-      ),
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
     },
   ],
   navSecondary: [
@@ -148,7 +93,7 @@ const data = {
       ),
     },
     {
-      title: "Ajuda",
+      title: "Ajuda/Chatbot",
       url: "#",
       icon: (
         <CircleHelpIcon
@@ -166,10 +111,10 @@ const data = {
   ],
   documents: [
     {
-      name: "Data Library",
-      url: "#",
+      name: "Exportações",
+      url: "/exportations",
       icon: (
-        <DatabaseIcon
+        <FileOutputIcon
         />
       ),
     },
@@ -182,11 +127,19 @@ const data = {
       ),
     },
     {
-      name: "Word Assistant",
-      url: "#",
+      name: "Faturas",
+      url: "/invoices",
       icon: (
-        <FileIcon
+        <FileTextIcon
         />
+      ),
+    },
+    {
+      name: "Registo de transações",
+      url: "/transactions-log",
+      icon: (
+          <ArrowLeftRightIcon
+          />
       ),
     },
   ],
@@ -199,9 +152,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               className="data-[slot=sidebar-menu-button]:p-1.5!"
-              render={<a href="#" />}
+              render={<a href="/dashboard" />}
             >
-              <CommandIcon className="size-5!" />
+              <CommandIcon className="size-8!" />
               <span className="text-base font-semibold">Fortis Libertas</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
