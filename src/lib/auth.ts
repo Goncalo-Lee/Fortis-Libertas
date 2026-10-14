@@ -55,6 +55,17 @@ export const auth = betterAuth({
       joins: true,
     },
   },
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (createdUser) => {
+          await db.insert(schema.profile).values({
+            userId: createdUser.id,
+          })
+        }
+      },
+    },
+  },
   appName: "FortisLibertas",
   plugins: [
     twoFactor(),
