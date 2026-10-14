@@ -16,7 +16,6 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import {
-  CameraIcon,
   FileTextIcon,
   Settings2Icon,
   CircleHelpIcon,
@@ -120,7 +119,7 @@ const data = {
     },
     {
       name: "Gerador de relatórios",
-      url: "#",
+      url: "/reports-generator",
       icon: (
         <FileChartColumnIcon
         />
