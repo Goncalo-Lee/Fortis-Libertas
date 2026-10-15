@@ -52,7 +52,6 @@ export const auth = betterAuth({
     database: {
       // Enforces application-wide UUIDv7 generation for all Better Auth models
       generateId: () => generateId(),
-      joins: true,
     },
   },
   databaseHooks: {
