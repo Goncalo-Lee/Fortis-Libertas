@@ -120,7 +120,7 @@ export const user = mysqlTable("user", {
        * - This explicit naming makes it easier to identify/drop later
        * - Useful when querying without the PRIMARY KEY
        */
-      t.index("idx_user_user_name").on(table.username),
+      t.index("idx_user_user_name").on(table.userName),
 
       /**
        * Email lookup index

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, getTableColumns, sql } from "drizzle-orm";
 import { db } from "..";
 import { profile, user } from "../schema";
 
@@ -19,7 +19,12 @@ export async function getMe(userId: string) {
   // 1. Fetch the user row
   // Using .limit(1) and destructuring [userRow] is a common Drizzle pattern to get a single object
   // instead of an array, though .get() would be more explicit.
-  const [userRow] = await db.select().from(user).where(eq(user.id, userId)).limit(1);
+  const [userRow] = await db.select({
+    ...getTableColumns(user),
+    // Raw DATETIME value, bypassing the boolean mapping of `emailVerified`
+    emailVerifiedRaw: sql<Date | string | null>`${user.emailVerified}`.as("email_verified_raw"),
+  })
+  .from(user).where(eq(user.id, userId)).limit(1);
 
   // If user doesn't exist, return null immediately.
   // This allows the caller to handle "not found" vs "internal error" distinctions.
