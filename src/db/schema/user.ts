@@ -38,7 +38,7 @@ export const user = mysqlTable("user", {
    * - NULLABLE allows users without handles (email-only accounts)
    * - Case sensitivity depends on collation (consider utf8mb4_general_ci)
    */
-  username: t.varchar("user_name", { length: 254 }).unique(),
+  userName: t.varchar("user_name", { length: 254 }).unique(),
 
   /**
    * Primary email address for account identification
