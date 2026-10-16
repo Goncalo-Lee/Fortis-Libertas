@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/sidebar"
 import { EllipsisVerticalIcon, CircleUserRoundIcon, CreditCardIcon, BellIcon, LogOutIcon } from "lucide-react"
 
+import Link from "next/link";
+
 export function NavUser({
   user,
 }: {
@@ -77,20 +79,22 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem render={
+                <Link href="/dashboard/settings/account" className="w-full flex items-center cursor-pointer">
                 <CircleUserRoundIcon
                 />
-                Account
+                Conta do utilizador
+              </Link>}>
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <CreditCardIcon
                 />
-                Billing
+                Faturação
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <BellIcon
                 />
-                Notifications
+                Notificações
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
