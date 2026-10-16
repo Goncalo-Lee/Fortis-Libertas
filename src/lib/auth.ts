@@ -5,6 +5,8 @@ import { db } from "../db";
 import * as schema from "../db/schema";
 import { generateId } from "../db/types";
 import {nextCookies} from "better-auth/next-js";
+import nodemailer from "nodemailer";
+import {error} from "better-auth/api";
 
 /**
  * Better Auth Configuration
@@ -20,6 +22,16 @@ import {nextCookies} from "better-auth/next-js";
  * - `BETTER_AUTH_URL`: Canonical base URL of the application.
  * - `DATABASE_URL`: Connection string for the MySQL database.
  */
+
+const transporter = nodemailer.createTransport({
+  host: "sandbox.smtp.mailtrap.io",
+  port: process.env.MAIL_PORT,
+  auth: {
+    user: process.env.MAIL_USERNAME,
+    pass: process.env.MAIL_PASSWORD,
+  }
+});
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "mysql",
@@ -31,10 +43,40 @@ export const auth = betterAuth({
       twoFactor: schema.twoFactor,
     },
   }),
+
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    sendVerificationEmail: async ({ user, url }) => {
+      console.log("A tentar enviar email para:", user.email);
+
+      await transporter.sendMail({
+        from: '"Fortis Libertas" <no-reply@fortislibertas.com>',
+        to: user.email,
+        subject: "Verifica a tua conta",
+        html: `<p>Clica <a href="${url}">aqui</a> para verificar a tua conta.</p>`,
+      })
+
+      if (error) {
+        console.error(error);
+      } else {
+        console.log("Email enviado com sucesso!");
+      }
+    },
+  },
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
     maxPasswordLength: 32,
+
+    sendResetPassword: async ({ user, url }) => {
+      await transporter.sendMail({
+        from: '"Fortis Libertas" <no-reply@fortislibertas.com>',
+        to: user.email,
+        subject: "Reinicia a tua senha",
+        html: `<p>Clica <a href="${url}">aqui</a> para reiniciar a tua senha.</p>`,
+      })
+    },
   },
   socialProviders: {
     google: {

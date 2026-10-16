@@ -48,7 +48,7 @@ export default function SignUpForm({
       setIsLoading(false);
       return;
     }
-    await router.push("/components");
+    await router.push("/sign-in");
   }
 
 
