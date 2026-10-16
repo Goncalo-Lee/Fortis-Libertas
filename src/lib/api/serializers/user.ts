@@ -3,10 +3,10 @@ import { user, profile } from "../../../db/schema";
 import { toDateOnly, toIso } from "./common";
 
 // Type representing the raw database row for 'user' table.
-// Extends the inferred Drizzle model with a specific override for emailVerifiedRaw
+// Extends the inferred Drizzle model with a specific override for emailVerified
 // to handle cases where the DB driver returns Date objects or ISO strings inconsistently.
-type UserRow = InferSelectModel<typeof user> & {
-  emailVerifiedRaw: Date | string | null;
+type UserRow = Omit<InferSelectModel<typeof user>, "emailVerified"> & {
+  emailVerified: Date | string | null;
 };
 
 // Type representing the raw database row for 'profile' table.
@@ -75,8 +75,8 @@ export function serializeUser(row: UserRow, profileRow: ProfileRow) {
     full_name: row.name,
     email: row.email,
 
-    // Special handling for emailVerifiedRaw which might be Date or string
-    email_verified_at: toIso(row.emailVerifiedRaw),
+    // Special handling for emailVerified which might be Date or string
+    email_verified_at: toIso(row.emailVerified),
 
     image: row.image,
     two_factor_enabled: row.twoFactorEnabled,
