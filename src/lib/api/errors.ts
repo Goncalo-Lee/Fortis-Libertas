@@ -21,8 +21,17 @@ export type ErrorCode =
   | "RATE_LIMITED"             // 429 - Too many requests
   | "INTERNAL_ERROR";          // 500 - Unexpected server error
 
+
+// Defines a named type alias for a "map of every ErrorCode to an HTTP status number".
+// Equivalent to the inline type you already wrote for the STATUS constant:
+//
+//   const STATUS: Record<ErrorCode, number> = { ... }
+//
+// So `StatusType` is just a reusable name for `Record<ErrorCode, number>`.
+export type StatusType = Record<ErrorCode, number>;
+
 // Maps each error code to its appropriate HTTP status code
-const STATUS: Record<ErrorCode, number> = {
+const STATUS: StatusType = {
   MALFORMED_REQUEST: 400,
   UNAUTHENTICATED: 401,
   ACCOUNT_SUSPENDED: 403,
