@@ -46,7 +46,7 @@ export default function SignInForm({
       setIsLoading(false);
       return;
     }
-    await router.push("/components");
+    await router.push("/dashboard");
   }
 
   return (
@@ -106,7 +106,7 @@ export default function SignInForm({
             </Button>
             <FieldDescription className="text-center">
               Ainda não tens conta?{" "}
-              <a href="#" className="underline underline-offset-4">
+              <a href="/sign-up" className="underline underline-offset-4">
                 Clica aqui
               </a>
             </FieldDescription>
