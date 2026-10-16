@@ -90,24 +90,6 @@ export function LeftoverBalanceChart() {
                     </AreaChart>
                 </ChartContainer>
             </CardContent>
-
-            <CardFooter className="flex-col items-start gap-2 text-sm bg-slate-50/50 pt-4 pb-4 rounded-b-xl border-t">
-                <div className="flex items-center gap-2 font-medium text-slate-700">
-                    {isImproving ? (
-                        <>
-                            Estás a conseguir guardar mais este mês!
-                            <Sparkles className="h-4 w-4 text-yellow-500" />
-                        </>
-                    ) : (
-                        <>
-                            Todos os meses são diferentes, o importante é manter o equilíbrio.
-                        </>
-                    )}
-                </div>
-                <div className="leading-none text-slate-500">
-                    Este é o teu espaço de segurança. Quanto mais alta a onda, mais folga tens.
-                </div>
-            </CardFooter>
         </Card>
     )
 }

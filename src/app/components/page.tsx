@@ -1,12 +1,12 @@
 import React from 'react';
-import ChartPie from '@/components/ChartPie'
-import ChartPieLabel from '@/components/ChartPieLabel';
-import ChartRadial from "@/components/ChartRadial";
-import ChartPieTest from "@/components/ChartPieTest";
-import CurrentBalance from "@/components/CurrentBalance";
-import { IncomeExpenseChart } from "@/components/IncomeExpenseChart";
-import { LeftoverBalanceChart } from "@/components/LeftoverBalanaceChart";
-import {TestChart} from "@/components/TestChart";
+import ChartPie from '@/components/Charts/ChartPie'
+import ChartPieLabel from '@/components/Charts/ChartPieLabel';
+import ChartRadial from "@/components/Charts/ChartRadial";
+import ChartPieTest from "@/components/Charts/ChartPieTest";
+import CurrentBalance from "@/components/Charts/CurrentBalance";
+import { IncomeExpenseChart } from "@/components/Charts/IncomeExpenseChart";
+import { LeftoverBalanceChart } from "@/components/Charts/LeftoverBalanaceChart";
+import {TestChart} from "@/components/Charts/TestChart";
 
 export default function page() {
     return (
