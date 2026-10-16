@@ -1,6 +1,6 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
-import {betterAuth} from "better-auth";
-import {twoFactor, username} from "better-auth/plugins";
+import { betterAuth} from "better-auth";
+import { bearer, twoFactor } from "better-auth/plugins";
 import { db } from "../db";
 import * as schema from "../db/schema";
 import { generateId } from "../db/types";
@@ -36,6 +36,12 @@ export const auth = betterAuth({
     minPasswordLength: 8,
     maxPasswordLength: 32,
   },
+  user: {
+    additionalFields: {
+      suspendedAt: { type: "date", required: false, input: false },
+      deletedAt: { type: "date", required: false, input: false},
+    },
+  },
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
@@ -46,12 +52,23 @@ export const auth = betterAuth({
     database: {
       // Enforces application-wide UUIDv7 generation for all Better Auth models
       generateId: () => generateId(),
-      joins: true,
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (createdUser) => {
+          await db.insert(schema.profile).values({
+            userId: createdUser.id,
+          })
+        }
+      },
     },
   },
   appName: "FortisLibertas",
   plugins: [
     twoFactor(),
+    bearer(),
     nextCookies(),
   ],
 });
