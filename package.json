@@ -12,7 +12,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "api:test": "cd api-tests && bru run --env local"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
