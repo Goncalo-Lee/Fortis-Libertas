@@ -96,7 +96,9 @@ Filter parameters are listed per endpoint. Multi-value filters accept comma-sepa
 | `RESTRICT` relations (see `model-er.md`) | Emulated: deleting a still-referenced row returns `409 IN_USE`. |
 | `SET NULL` relations | Applied explicitly in the same transaction as the delete (where stated). |
 | Unique names | Unique indexes include soft-deleted rows, so reusing a deleted name returns `409 NAME_ALREADY_EXISTS` (see README, Open Item 4). |
-| Restore | Not available in `v1`. |
+| Restore | Dashboards only: `POST /dashboards/{dashboard_id}/restore` (`owner`). Allowed within 30 days of `deleted_at`; afterwards it returns `409 RESTORE_WINDOW_EXPIRED`. Other resources cannot be restored in v1. |
+
+> The 30-day window applies to every dashboard in v1. A longer window for business use is a possible extension and would require a dashboard type, which the schema does not have yet.
 
 ### 1.6 Inactive & Frozen States
 
@@ -451,6 +453,7 @@ A dashboard is the multi-tenant workspace that contains record types, categories
 | `GET` | `/dashboards/{dashboard_id}` | Get a dashboard | `viewer` | `200` | `401`, `404` |
 | `PATCH` | `/dashboards/{dashboard_id}` | Rename, activate, or deactivate | `owner` | `200` | `401`, `404`, `422` |
 | `DELETE` | `/dashboards/{dashboard_id}` | Soft-delete a dashboard | `owner` | `204` | `401`, `404` |
+| `POST` | `/dashboards/{dashboard_id}/restore` | Restore a soft-deleted dashboard | `owner` | `200` | `401`, `404`, `409` |
 
 ### 8.2 Representation
 
@@ -485,6 +488,8 @@ A dashboard is the multi-tenant workspace that contains record types, categories
 - `POST` runs in one transaction: insert `Dashboard`, insert `User__Dashboard (role = 'owner')`, and seed three `Record_Type` rows: `Expenses`, `Income`, `Investment`.
 - `DELETE` soft-deletes only the dashboard row. Child rows remain but become unreachable because every child route verifies the parent.
 - Membership checks ignore `User__Dashboard` rows with `deleted_at` set.
+- `POST .../restore` clears `deleted_at` on the dashboard. It returns `409 NOT_DELETED` if the dashboard is not deleted and `409 RESTORE_WINDOW_EXPIRED` if more than 30 days have passed since `deleted_at`. Non-members and non-owners receive `404`.
+- `GET /dashboards?deleted=true` lists only dashboards the caller owns that are currently soft-deleted.
 
 ---
 
@@ -959,6 +964,8 @@ Errors use `application/problem+json` ([RFC 9457](https://www.rfc-editor.org/rfc
 | `409` | `DASHBOARD_INACTIVE` | Write attempted on a dashboard with `is_active = false`. |
 | `409` | `PLAN_CANCELLED` | Record linked to a cancelled installment plan. |
 | `409` | `CURRENT_SESSION` | Attempt to revoke the current session through `/me/sessions/{session_id}`. |
+| `409` | `NOT_DELETED` | Restore requested for a resource that is not deleted. |
+| `409` | `RESTORE_WINDOW_EXPIRED` | The 30-day restore window has passed. |
 | `422` | `VALIDATION_ERROR` | Body or query validation failed, unknown keys, or cross-dashboard foreign keys. |
 | `429` | `RATE_LIMITED` | Too many requests; includes `Retry-After`. |
 | `500` | `INTERNAL_ERROR` | Unexpected error. The response never contains stack traces or SQL. |
