@@ -1,0 +1,26 @@
+meta {
+  name: Get me
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns the signed-in user with a profile", function () {
+    expect(res.body.data.email).to.equal(bru.getVar("email"));
+    expect(res.body.data.profile.currency).to.equal("EUR");
+  });
+}
