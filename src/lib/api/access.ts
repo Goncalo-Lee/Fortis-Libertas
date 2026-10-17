@@ -14,6 +14,14 @@ type Options = {
    * The dashboard's own PATCH/DELETE must pass `false` so it can be reactivated or deleted.
    */
   requireActive?: boolean;
+
+  /**
+   * Allows middleware to authorize access to soft-deleted dashboards.
+   * When enabled, it bypasses the default deletedAt filter, allowing the
+   * function to return deleted rows (typically for restoration or permanent
+   * deletion) while still maintaining membership and role verification for security.
+   */
+  includeDeleted?: boolean;
 };
 
 /**
@@ -41,7 +49,7 @@ export async function requireDashboardRole(
   const session = await requireSession(request);
 
   // 2. Resolve membership — joins userDashboard + dashboard, excluding soft-deleted rows
-  const membership = await findMembership(dashboardId, session.user.id);
+  const membership = await findMembership(dashboardId, session.user.id, options.includeDeleted);
 
   // 3. Enumeration defense: return 404 instead of 403 for non-members.
   // If we returned 403, an attacker could probe UUIDs and learn which ones
