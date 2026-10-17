@@ -17,6 +17,8 @@ export type ErrorCode =
   | "DASHBOARD_INACTIVE"       // 409 - Conflict: dashboard not active
   | "PLAN_CANCELLED"           // 409 - Conflict: subscription cancelled
   | "CURRENT_SESSION"          // 409 - Conflict: operation affects current session
+  | "NOT_DELETED"              // 409 - Conflict: dashboard is not delete
+  | "RESTORE_WINDOW_EXPIRED"   // 409 - Conflict: restore window expired
   | "VALIDATION_ERROR"         // 422 - Schema validation failed
   | "RATE_LIMITED"             // 429 - Too many requests
   | "INTERNAL_ERROR";          // 500 - Unexpected server error
@@ -47,6 +49,8 @@ const STATUS: StatusType = {
   DASHBOARD_INACTIVE: 409,
   PLAN_CANCELLED: 409,
   CURRENT_SESSION: 409,
+  NOT_DELETED: 409,
+  RESTORE_WINDOW_EXPIRED: 409,
   VALIDATION_ERROR: 422,
   RATE_LIMITED: 429,
   INTERNAL_ERROR: 500,
