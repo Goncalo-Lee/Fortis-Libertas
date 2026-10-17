@@ -46,3 +46,8 @@ next-env.d.ts
 
 # Zed
 .zed
+
+# API TEST Bruno
+api-tests/.env
+body.json
+login.json
