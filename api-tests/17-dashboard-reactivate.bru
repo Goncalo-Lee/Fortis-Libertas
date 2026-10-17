@@ -1,0 +1,24 @@
+meta {
+  name: Dashboard - reactivate
+  type: http
+  seq: 17
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "is_active": true }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.is_active: eq true
+}

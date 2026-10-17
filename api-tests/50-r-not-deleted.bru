@@ -1,0 +1,20 @@
+meta {
+  name: Restore - not deleted
+  type: http
+  seq: 50
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}/restore
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 409
+  res.body.code: eq NOT_DELETED
+}

@@ -1,0 +1,27 @@
+meta {
+  name: Second user - sign up
+  type: http
+  seq: 21
+}
+
+post {
+  url: {{baseUrl}}/api/auth/sign-up/email
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "API Second",
+    "email": "{{email2}}",
+    "password": "{{process.env.TEST_PASSWORD}}"
+  }
+}
+
+script:pre-request {
+  bru.setVar("email2", `api2.${Date.now()}@example.com`);
+}
+
+assert {
+  res.status: eq 200
+}

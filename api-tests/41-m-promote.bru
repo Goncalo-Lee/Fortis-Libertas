@@ -1,0 +1,24 @@
+meta {
+  name: Members - promote second to owner
+  type: http
+  seq: 41
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}/members/{{userId2}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "role": "owner" }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.role: eq owner
+}

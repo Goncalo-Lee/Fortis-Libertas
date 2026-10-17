@@ -1,0 +1,23 @@
+meta {
+  name: Members - viewer cannot add
+  type: http
+  seq: 38
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}/members
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  { "email": "x@example.com", "role": "viewer" }
+}
+
+assert {
+  res.status: eq 403
+}

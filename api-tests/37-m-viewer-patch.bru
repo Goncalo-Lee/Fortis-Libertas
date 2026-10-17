@@ -1,0 +1,24 @@
+meta {
+  name: Members - viewer cannot update
+  type: http
+  seq: 37
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  { "name": "X" }
+}
+
+assert {
+  res.status: eq 403
+  res.body.code: eq FORBIDDEN
+}

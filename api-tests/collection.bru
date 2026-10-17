@@ -1,3 +1,10 @@
 headers {
   Origin: {{baseUrl}}
 }
+
+script:pre-request {
+  // The CLI keeps cookies between requests. Clear them so every request
+  // authenticates only with its own Bearer token (or with nothing at all).
+  const jar = bru.cookies.jar();
+  await jar.clear();
+}

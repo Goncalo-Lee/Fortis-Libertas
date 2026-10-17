@@ -1,0 +1,24 @@
+meta {
+  name: Profile - clear phone
+  type: http
+  seq: 8
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/me/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "phone": null }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.phone: isNull
+}

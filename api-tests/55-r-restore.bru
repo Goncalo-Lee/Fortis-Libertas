@@ -1,0 +1,20 @@
+meta {
+  name: Restore - restore
+  type: http
+  seq: 55
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}/restore
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.role: eq owner
+}

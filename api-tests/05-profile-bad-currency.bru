@@ -1,0 +1,25 @@
+meta {
+  name: Profile - invalid currency
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/me/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "currency": "usd" }
+}
+
+assert {
+  res.status: eq 422
+  res.body.code: eq VALIDATION_ERROR
+  res.body.errors[0].pointer: eq /currency
+}

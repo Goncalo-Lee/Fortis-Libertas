@@ -1,0 +1,24 @@
+meta {
+  name: Members - unknown email
+  type: http
+  seq: 34
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}/members
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "email": "nobody.{{userId}}@example.com", "role": "viewer" }
+}
+
+assert {
+  res.status: eq 422
+  res.body.errors[0].pointer: eq /email
+}

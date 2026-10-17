@@ -1,0 +1,32 @@
+meta {
+  name: Second user - sign in
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{baseUrl}}/api/auth/sign-in/email
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{email2}}",
+    "password": "{{process.env.TEST_PASSWORD}}"
+  }
+}
+
+script:post-response {
+  bru.setVar("token2", res.getHeader("set-auth-token"));
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns a bearer token", function () {
+    expect(bru.getVar("token2")).to.be.a("string").and.have.length.above(10);
+  });
+}

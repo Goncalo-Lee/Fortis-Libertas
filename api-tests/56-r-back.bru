@@ -1,0 +1,19 @@
+meta {
+  name: Restore - dashboard is back
+  type: http
+  seq: 56
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 200
+}

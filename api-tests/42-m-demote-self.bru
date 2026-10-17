@@ -1,0 +1,24 @@
+meta {
+  name: Members - first user steps down to editor
+  type: http
+  seq: 42
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}/members/{{userId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "role": "editor" }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.role: eq editor
+}

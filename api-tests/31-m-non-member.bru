@@ -1,0 +1,19 @@
+meta {
+  name: Members - non-member gets 404
+  type: http
+  seq: 31
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 404
+}
