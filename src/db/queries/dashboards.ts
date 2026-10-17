@@ -1,7 +1,8 @@
-import { and, asc, count, desc, eq, isNull, like } from "drizzle-orm";
+import { and, asc, count, desc, eq, isNotNull, isNull, like } from "drizzle-orm";
 import { db } from "..";
 import { dashboard, recordType, userDashboard } from "../schema";
 import { generateId } from "../types";
+import { isNotNil } from "recharts/types/util/DataUtils";
 
 export type Role = "owner" | "editor" | "viewer";
 
@@ -24,7 +25,11 @@ const escapeLike = (value: string) => value.replace(/[\\%_]/, "\\$&");
  * @param userId - The user ID to check
  * @returns Membership object { dashboard, role } or null
  */
-export async function findMembership(dashboardId: string, userId: string) {
+export async function findMembership(
+  dashboardId: string,
+  userId: string,
+  includeDeleted = false,
+) {
   const [row] = await db
     .select({ dashboard, role: userDashboard.role })
     .from(userDashboard)
@@ -33,8 +38,8 @@ export async function findMembership(dashboardId: string, userId: string) {
       and(
         eq(userDashboard.dashboardId, dashboardId),
         eq(userDashboard.userId, userId),
-        isNull(userDashboard.deletedAt), // Active membership
-        isNull(dashboard.deletedAt),     // Active dashboard
+        isNull(userDashboard.deletedAt),
+        includeDeleted ? undefined : isNull(dashboard.deletedAt),
       ),
     )
     .limit(1);
@@ -68,6 +73,7 @@ type ListFilters = {
   sort: "name" | "-name" | "created_at" | "-created_at";
   limit: number;
   offset: number;
+   deleted?: boolean
 }
 
 /**
@@ -87,12 +93,24 @@ export async function listDashboards(userId: string, f: ListFilters) {
   // Build dynamic WHERE clause
   const where = and(
     eq(userDashboard.userId, userId),
+
+    // Default behavior: Exclude soft-deleted memberships
     isNull(userDashboard.deletedAt),
-    isNull(dashboard.deletedAt),
+
+    // NEW LOGIC: Handle dashboard deletion status based on `f.deleted` flag
+    // If f.deleted is true: Show ONLY deleted dashboards (isNotNull)
+    // If f.deleted is false/undefined: Show ONLY active dashboards (isNull)
+    f.deleted ? isNotNull(dashboard.deletedAt) : isNull(dashboard.deletedAt),
+
     // Optional filters: only include if defined
     f.is_active === undefined ? undefined : eq(dashboard.isActive, f.is_active),
     f.role ? eq(userDashboard.role, f.role) : undefined,
     f.q ? like(dashboard.name, `%${escapeLike(f.q)}%`) : undefined,
+
+    // SECURITY CONSTRAINT: Only owners can see deleted dashboards.
+    // If f.deleted is true, we enforce that the user must have "owner" role.
+    // This prevents viewers/editors from enumerating deleted dashboards they don't own.
+    f.deleted ? eq(userDashboard.role, "owner") : undefined,
   );
 
   // Map sort string to Drizzle column direction
@@ -114,6 +132,8 @@ export async function listDashboards(userId: string, f: ListFilters) {
     .offset(f.offset);
 
   // Fetch total count for pagination metadata
+  // Note: The COUNT query uses the SAME `where` clause, ensuring consistency
+  // between the number of rows returned and the `total` value.
   const [totalRow] = await db
     .select({ total: count() })
     .from(userDashboard)
@@ -208,4 +228,30 @@ export async function softDeleteDashboard(id: string) {
     .update(dashboard)
     .set({ deletedAt: new Date(), updatedAt: new Date() })
     .where(and(eq(dashboard.id, id), isNull(dashboard.deletedAt)));
+}
+
+/**
+ * Restores a soft-deleted dashboard by clearing its `deletedAt` timestamp.
+ *
+ * Only affects dashboards that are currently deleted (guarded by
+ * `isNotNull(dashboard.deletedAt)`), making the operation idempotent-ish:
+ * restoring an already-active dashboard is a no-op rather than an error.
+ *
+ * @param id - Dashboard ID
+ * @returns The restored dashboard row, or null if not found
+ */
+export async function restoreDashboard(id: string) {
+  // Clear deletedAt, but ONLY if the row is currently deleted.
+  // The isNotNull guard prevents accidentally bumping updatedAt on
+  // an already-active dashboard.
+  await db
+    .update(dashboard)
+    .set({ deletedAt: null, updatedAt: new Date() })
+    .where(and(eq(dashboard.id, id), isNotNull(dashboard.deletedAt)));
+
+  // Read back the row — note this SELECT does NOT filter on deletedAt,
+  // so it returns the row regardless of whether the UPDATE matched.
+  const [row] = await db.select().from(dashboard).where(eq(dashboard.id, id)).limit(1);
+
+  return row ?? null;
 }
