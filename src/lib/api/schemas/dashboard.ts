@@ -61,4 +61,9 @@ export const listDashboardQuery = z.object({
 
   // Sort order with default
   sort: z.enum(["name", "-name", "created_at", "-created_at"]).default("name"),
+
+  // Show soft delete
+  // Transforms the string "true"/"false" from the URL into a boolean.
+  // If omitted, defaults to undefined (which triggers the default behavior: show only active).
+  deleted: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
 });
