@@ -2,7 +2,6 @@ import { and, asc, count, desc, eq, isNotNull, isNull, like } from "drizzle-orm"
 import { db } from "..";
 import { dashboard, recordType, userDashboard } from "../schema";
 import { generateId } from "../types";
-import { isNotNil } from "recharts/types/util/DataUtils";
 
 export type Role = "owner" | "editor" | "viewer";
 
