@@ -1,0 +1,24 @@
+meta {
+  name: Record types - rename to existing name
+  type: http
+  seq: 72
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{rtDashboardId}}/record-types/{{savingsTypeId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Income" }
+}
+
+assert {
+  res.status: eq 409
+  res.body.code: eq NAME_ALREADY_EXISTS
+}

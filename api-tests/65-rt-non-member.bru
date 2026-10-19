@@ -1,0 +1,19 @@
+meta {
+  name: Record types - non-member gets 404
+  type: http
+  seq: 65
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{rtDashboardId}}/record-types
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 404
+}

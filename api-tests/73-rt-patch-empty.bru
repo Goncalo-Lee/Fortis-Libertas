@@ -1,0 +1,23 @@
+meta {
+  name: Record types - empty patch
+  type: http
+  seq: 73
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{rtDashboardId}}/record-types/{{savingsTypeId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {}
+}
+
+assert {
+  res.status: eq 422
+}

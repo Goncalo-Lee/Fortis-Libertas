@@ -1,0 +1,24 @@
+meta {
+  name: Record types - add second user as editor
+  type: http
+  seq: 75
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{rtDashboardId}}/members
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "email": "{{email2}}", "role": "editor" }
+}
+
+assert {
+  res.status: eq 201
+  res.body.data.role: eq editor
+}

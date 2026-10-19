@@ -1,0 +1,23 @@
+meta {
+  name: Record types - editor cannot update
+  type: http
+  seq: 78
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{rtDashboardId}}/record-types/{{savingsTypeId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  { "description": "x" }
+}
+
+assert {
+  res.status: eq 403
+}
