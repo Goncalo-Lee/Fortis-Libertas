@@ -366,8 +366,9 @@ Manages `Bank_Account__User`. Scope: **bank account**.
 
 | Field | Type | Required | Constraints | Notes |
 | :--- | :--- | :-: | :--- | :--- |
-| `user_id` | uuid | `POST`: Cond. | Existing, non-deleted user | Provide `user_id` **or** `email`. |
+| `user_id` | uuid | `POST`: Cond. | Existing, non-deleted user | Provide exactly one of `user_id`, `email` or `user_name`. |
 | `email` | string | `POST`: Cond. | Valid email of an existing user | |
+| `user_name` | string | `POST`: Cond. | 3–254 chars, existing unique user name | |
 | `role` | enum | Yes | `owner`, `editor`, `viewer` | |
 
 ### 6.4 Business Rules
@@ -482,6 +483,7 @@ A dashboard is the multi-tenant workspace that contains record types, categories
 | `role` | enum | Filter by the caller's role. |
 | `q` | string | Matches `name`. |
 | `sort` | string | `name`, `created_at` (default `name`). |
+| `deleted` | boolean | `true` → only soft-deleted dashboards where the caller is `owner` (candidates for restore). |
 
 ### 8.5 Business Rules
 
@@ -508,7 +510,7 @@ Manages `User__Dashboard`. Scope: **dashboard**.
 
 ### 9.2 Representation and Request Fields
 
-The representation and request fields are identical to [Bank Account Members](#62-representation) (`user_id`, `user_name`, `full_name`, `image`, `role`, `created_at`, `updated_at`; request: `user_id` or `email`, plus `role`).
+The representation and request fields are identical to [Bank Account Members](#62-representation) (`user_id`, `user_name`, `full_name`, `image`, `role`, `created_at`, `updated_at`; request: `user_id` or `email` or `user_name`, plus `role`).
 
 ### 9.3 Business Rules
 
