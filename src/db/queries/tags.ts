@@ -1,6 +1,6 @@
-import { and, asc, count, desc, eq, isNull, like } from "drizzle-orm";
+import { and, asc, count, desc, eq, isNull, like, inArray } from "drizzle-orm";
 import { db } from "..";
-import { tag, tagCategory, tagFinancialRecord } from "../schema";
+import { tag, category ,tagCategory, tagFinancialRecord } from "../schema";
 import { generateId } from "../types";
 import { ApiError } from "../../lib/api/errors";
 import { escapeLike } from "../utils";
@@ -11,6 +11,7 @@ import { escapeLike } from "../utils";
 
 type ListFilters = {
   q?: string;
+  categoryId?: string;
   sort: "name" | "-name" | "created_at" | "-created_at";
   limit: number;
   offset: number;
@@ -46,6 +47,15 @@ export async function listTags(dashboardId: string, f: ListFilters) {
     eq(tag.dashboardId, dashboardId),
     isNull(tag.deletedAt),
     f.q ? like(tag.name, `%${escapeLike(f.q)}%`) : undefined,
+    f.categoryId
+      ? inArray(
+          tag.id,
+          db
+            .select({ id: tagCategory.tagId })
+            .from(tagCategory)
+            .where(eq(tagCategory.categoryId, f.categoryId)),
+        )
+      : undefined,
   );
 
   const order = {
@@ -131,4 +141,29 @@ export async function softDeleteTag(dashboardId: string, id: string) {
       .set({ deletedAt: new Date(), updatedAt: new Date() })
       .where(inDashboard(dashboardId, id));
   });
+}
+
+/**
+ *
+ * Categories linked to each tag (non-deleted only), keyed by lowercase tag id.
+ *
+ * @param tagIds
+ * @returns
+ */
+export async function getCategoriesByTag(tagIds: string[]) {
+  const map = new Map<string, (typeof category.$inferSelect)[]>();
+  if (tagIds.length === 0) return map;
+
+  const rows = await db
+    .select({ tagId: tagCategory.tagId, category })
+    .from(tagCategory)
+    .innerJoin(category, eq(category.id, tagCategory.categoryId))
+    .where(and(inArray(tagCategory.tagId, tagIds), isNull(category.deletedAt)))
+    .orderBy(asc(category.name));
+
+  for (const r of rows) {
+    const key = r.tagId.toLowerCase();
+    map.set(key, [...(map.get(key) ?? []), r.category]);
+  }
+  return map;
 }
