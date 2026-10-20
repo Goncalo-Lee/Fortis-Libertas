@@ -16,7 +16,7 @@ export function Logout() {
         await authClient.signOut({
             fetchOptions: {
                 onSuccess: () => {
-                    toast.success("Signed out successfully");
+                    toast.success("Até a próxima!");
                     router.push("/");
                     router.refresh(); // Clears cached server components/session state
                 },

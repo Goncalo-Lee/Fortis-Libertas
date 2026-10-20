@@ -46,7 +46,7 @@ export default function SignInForm({
       toast.error(error.message);
     }
     else {
-      toast.success("Password modified successfully. You can now log in with your new password.");
+      toast.success("Bem-vindo ao Fortis Libertas!");
       await router.push("/dashboard");
     }
   }

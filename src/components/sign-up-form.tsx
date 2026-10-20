@@ -49,7 +49,7 @@ export default function SignUpForm({
       toast.error(error.message);
     }
     else {
-      toast.success("Password modified successfully. You can now log in with your new password.");
+      toast.success("Conta criada com sucesso! Faz agora login para continuar.");
       await router.push("/sign-in");
     }
     await router.push("/sign-in");
