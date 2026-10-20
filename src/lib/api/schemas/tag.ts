@@ -15,5 +15,9 @@ export const updateTagSchema = z
 
 export const listTagsQuery = z.object({
   q: z.string().trim().min(1).max(100).optional(),
+  category_id: z.guid().optional(),
+  include: z.enum(["categories"]).optional(),
   sort: z.enum(["name", "-name", "created_at", "-created_at"]).default("name"),
 });
+
+export const getTagQuery = z.object({ include: z.enum(["categories"]).optional() });
