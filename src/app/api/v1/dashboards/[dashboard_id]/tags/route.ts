@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { getCategoriesByTag } from "@/db/queries/tags";
 import { createTag, listTags } from "@/db/queries/tags";
 import { requireDashboardRole } from "@/lib/api/access";
 import { parseJson } from "@/lib/api/body";
@@ -19,10 +20,26 @@ export const GET = withErrors(async (request: NextRequest, { params }: Ctx) => {
 
   const { searchParams } = request.nextUrl;
   const { page, perPage, offset } = parsePagination(searchParams);
-  const filters = listTagsQuery.parse(Object.fromEntries(searchParams));
+  const { include, category_id, ...filters } = listTagsQuery.parse(
+    Object.fromEntries(searchParams),
+  );
 
-  const { rows, total } = await listTags(dashboardId, { ...filters, limit: perPage, offset });
-  return paginated(rows.map(serializeTag), { page, perPage, total });
+  const { rows, total } = await listTags(dashboardId, {
+    ...filters,
+    categoryId: category_id?.toLowerCase(),
+    limit: perPage,
+    offset,
+  });
+
+  const categories =
+    include === "categories" ? await getCategoriesByTag(rows.map((r) => r.id)) : undefined;
+
+  return paginated(
+    rows.map((r) =>
+      serializeTag(r, categories ? (categories.get(r.id.toLowerCase()) ?? []) : undefined),
+    ),
+    { page, perPage, total },
+  );
 });
 
 export const POST = withErrors(async (request: NextRequest, { params }: Ctx) => {
