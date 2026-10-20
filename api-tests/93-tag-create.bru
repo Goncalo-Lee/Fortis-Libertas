@@ -1,0 +1,36 @@
+meta {
+  name: Tags - create
+  type: http
+  seq: 93
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{tagDashboardId}}/tags
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Essential", "description": "first" }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("essentialTagId", res.body.data.tag_id);
+}
+
+assert {
+  res.status: eq 201
+  res.body.data.name: eq Essential
+}
+
+tests {
+  test("Location header points to the new tag", function () {
+    expect(res.getHeader("location")).to.equal(
+      "/api/v1/dashboards/" + bru.getVar("tagDashboardId") + "/tags/" + res.body.data.tag_id,
+    );
+  });
+}

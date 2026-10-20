@@ -1,0 +1,19 @@
+meta {
+  name: Tags - viewer cannot delete
+  type: http
+  seq: 110
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/dashboards/{{tagDashboardId}}/tags/{{holidayTagId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 403
+}

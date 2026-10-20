@@ -1,0 +1,20 @@
+meta {
+  name: Tags - malformed id
+  type: http
+  seq: 100
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{tagDashboardId}}/tags/abc
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 400
+  res.body.code: eq MALFORMED_REQUEST
+}

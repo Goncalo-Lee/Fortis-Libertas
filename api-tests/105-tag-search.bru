@@ -1,0 +1,21 @@
+meta {
+  name: Tags - search by name
+  type: http
+  seq: 105
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{tagDashboardId}}/tags?q=holi
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.meta.total: eq 1
+  res.body.data[0].name: eq Holiday
+}

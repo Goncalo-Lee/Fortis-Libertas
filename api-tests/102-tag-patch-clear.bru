@@ -1,0 +1,24 @@
+meta {
+  name: Tags - clear description
+  type: http
+  seq: 102
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{tagDashboardId}}/tags/{{essentialTagId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "description": null }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.description: isNull
+}

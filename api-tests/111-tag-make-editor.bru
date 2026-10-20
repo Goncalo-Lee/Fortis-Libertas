@@ -1,0 +1,24 @@
+meta {
+  name: Tags - promote second user to editor
+  type: http
+  seq: 111
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{tagDashboardId}}/members/{{userId2}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "role": "editor" }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.role: eq editor
+}

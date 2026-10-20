@@ -1,0 +1,23 @@
+meta {
+  name: Tags - unknown key
+  type: http
+  seq: 97
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{tagDashboardId}}/tags
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Other", "foo": 1 }
+}
+
+assert {
+  res.status: eq 422
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Tags - deleted is gone
+  type: http
+  seq: 114
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{tagDashboardId}}/tags/{{holidayTagId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 404
+}

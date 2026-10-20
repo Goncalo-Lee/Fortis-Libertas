@@ -1,0 +1,19 @@
+meta {
+  name: Tags - non-member gets 404
+  type: http
+  seq: 92
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{tagDashboardId}}/tags
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 404
+}

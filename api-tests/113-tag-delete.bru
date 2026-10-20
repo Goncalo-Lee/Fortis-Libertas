@@ -1,0 +1,19 @@
+meta {
+  name: Tags - delete
+  type: http
+  seq: 113
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/dashboards/{{tagDashboardId}}/tags/{{holidayTagId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 204
+}
