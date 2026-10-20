@@ -15,6 +15,8 @@ import {useForm} from "react-hook-form";
 import {z} from "zod";
 import {useRouter} from "next/navigation";
 import {authClient} from "@/lib/auth-client";
+import {toast} from "sonner";
+import {router} from "next/client";
 
 
 export default function SignUpForm({
@@ -44,9 +46,11 @@ export default function SignUpForm({
       name: data.name,
     })
     if (error) {
-      console.log(error);
-      setIsLoading(false);
-      return;
+      toast.error(error.message);
+    }
+    else {
+      toast.success("Password modified successfully. You can now log in with your new password.");
+      await router.push("/sign-in");
     }
     await router.push("/sign-in");
   }

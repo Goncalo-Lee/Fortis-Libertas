@@ -16,6 +16,8 @@ import {z} from "zod";
 import {authClient} from "@/lib/auth-client";
 import {Loader2} from "lucide-react";
 import React from "react";
+import {Toast} from "@base-ui/react";
+import {toast} from "sonner";
 
 
 export default function SignInForm({
@@ -40,13 +42,13 @@ export default function SignInForm({
       email: data.email,
       password: data.password,
     })
-
     if (error) {
-      console.log(error);
-      setIsLoading(false);
-      return;
+      toast.error(error.message);
     }
-    await router.push("/dashboard");
+    else {
+      toast.success("Password modified successfully. You can now log in with your new password.");
+      await router.push("/dashboard");
+    }
   }
 
   return (
