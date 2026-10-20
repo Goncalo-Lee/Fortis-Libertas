@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import Link from "next/link";
 
 export default function AccountSettingsPage() {
     return (
@@ -38,7 +39,14 @@ export default function AccountSettingsPage() {
                         <Input defaultValue="66666666" id="phone"/>
                     </div>
                     <Button>Editar</Button>
-                    <Button>Alterar password</Button>
+                    <Link
+                    href={"/dashboard/settings/account/reset-password"}>
+                        <Button>
+                            Alterar password
+                        </Button>
+
+                    </Link>
+
                     <Button>2FA</Button>
                     <Button variant="destructive">Apagar conta</Button>
                 </CardContent>
