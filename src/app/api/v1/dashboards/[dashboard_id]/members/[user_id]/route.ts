@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { changeMemberRole, getMember, removeMember } from "@/db/queries/dashboard-members";
+import { changeMemberRole, getMember, removeMember } from "@/db/queries/members";
 import { requireDashboardRole } from "@/lib/api/access";
 import { parseJson } from "@/lib/api/body";
 import { ApiError, withErrors } from "@/lib/api/errors";

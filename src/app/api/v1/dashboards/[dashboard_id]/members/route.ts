@@ -1,10 +1,9 @@
 import type { NextRequest } from "next/server";
 import {
   addMember,
-  findActiveUserId,
   getMember,
   listMembers,
-} from "@/db/queries/dashboard-members";
+} from "@/db/queries/members";
 import { requireDashboardRole } from "@/lib/api/access";
 import { parseJson } from "@/lib/api/body";
 import { ApiError, withErrors } from "@/lib/api/errors";
@@ -13,6 +12,7 @@ import { parsePagination } from "@/lib/api/pagination";
 import { created, paginated } from "@/lib/api/responses";
 import { addMemberSchema } from "@/lib/api/schemas/member";
 import { serializeMember } from "@/lib/api/serializers/member";
+import { findMembership, findUser } from "@/db/queries/dashboards";
 
 // Force Node.js runtime for MySQL driver compatibility.
 export const runtime = "nodejs";
@@ -83,7 +83,7 @@ export const POST = withErrors(async (request: NextRequest, { params }: Ctx) => 
 
   // 4. Resolve the identifier to a concrete user ID.
   //    user_id is lowercased defensively (UUIDs are canonically lowercase).
-  const userId = await findActiveUserId({
+  const targetUser = await findUser({
     userId: input.user_id?.toLowerCase(),
     email: input.email,
     userName: input.user_name,
@@ -92,23 +92,29 @@ export const POST = withErrors(async (request: NextRequest, { params }: Ctx) => 
   // 5. If no active user matches, return a FIELD-LEVEL 422.
   //    The pointer is chosen to match whichever identifier the client supplied,
   //    so the error lands on the right form field in the UI.
-  if (!userId) {
+  if (!targetUser) {
     const pointer = input.user_id ? "/user_id" : input.email ? "/email" : "/user_name";
     throw new ApiError("VALIDATION_ERROR", "User not found.", [
       { pointer, message: "No active user found." },
     ]);
   }
 
+  const existing = await findMembership(dashboardId, targetUser.id);
+
+  if (existing) {
+    throw new ApiError("ALREADY_MEMBER", "This user is alreday member")
+  };
+
   // 6. Add (or reactivate) the membership — transactional, handles ALREADY_MEMBER
-  await addMember(dashboardId, userId, input.role);
+  await addMember(dashboardId, targetUser.id, input.role);
 
   // 7. Read back the created membership (with joined user data) for the response.
-  const member = await getMember(dashboardId, userId);
+  const member = await getMember(dashboardId, targetUser.id);
   if (!member) throw new ApiError("INTERNAL_ERROR");
 
   // 8. 201 Created with Location header pointing at the new member resource.
   return created(
     serializeMember(member),
-    `/api/v1/dashboards/${dashboardId}/members/${userId}`,
+    `/api/v1/dashboards/${dashboardId}/members/${targetUser}`,
   );
 });
