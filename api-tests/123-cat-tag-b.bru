@@ -1,0 +1,27 @@
+meta {
+  name: Categories - setup tag B
+  type: http
+  seq: 123
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/tags
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Holiday" }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("catTagB", res.body.data.tag_id);
+}
+
+assert {
+  res.status: eq 201
+}

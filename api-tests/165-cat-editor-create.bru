@@ -1,0 +1,23 @@
+meta {
+  name: Categories - editor can create
+  type: http
+  seq: 165
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  { "name": "ByEditor" }
+}
+
+assert {
+  res.status: eq 201
+}

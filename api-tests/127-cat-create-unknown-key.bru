@@ -1,0 +1,23 @@
+meta {
+  name: Categories - unknown key
+  type: http
+  seq: 127
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Other", "foo": 1 }
+}
+
+assert {
+  res.status: eq 422
+}

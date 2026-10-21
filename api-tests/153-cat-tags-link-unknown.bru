@@ -1,0 +1,19 @@
+meta {
+  name: Category tags - link unknown tag
+  type: http
+  seq: 153
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories/{{foodId}}/tags/00000000-0000-7000-8000-000000000001
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 404
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Categories - repeated tag ids
+  type: http
+  seq: 129
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Other", "tag_ids": ["{{catTagA}}", "{{catTagA}}"] }
+}
+
+assert {
+  res.status: eq 422
+}

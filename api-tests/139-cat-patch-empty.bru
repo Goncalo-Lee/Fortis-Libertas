@@ -1,0 +1,23 @@
+meta {
+  name: Categories - empty patch
+  type: http
+  seq: 139
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories/{{foodId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {}
+}
+
+assert {
+  res.status: eq 422
+}

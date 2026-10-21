@@ -1,0 +1,23 @@
+meta {
+  name: Categories - unknown tag id
+  type: http
+  seq: 128
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Other", "tag_ids": ["00000000-0000-7000-8000-000000000001"] }
+}
+
+assert {
+  res.status: eq 422
+}

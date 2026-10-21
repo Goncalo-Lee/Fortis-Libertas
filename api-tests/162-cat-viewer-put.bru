@@ -1,0 +1,23 @@
+meta {
+  name: Categories - viewer cannot replace tags
+  type: http
+  seq: 162
+}
+
+put {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories/{{foodId}}/tags
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  { "tag_ids": [] }
+}
+
+assert {
+  res.status: eq 403
+}

@@ -1,0 +1,25 @@
+meta {
+  name: Category tags - replace set
+  type: http
+  seq: 145
+}
+
+put {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories/{{foodId}}/tags
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "tag_ids": ["{{catTagB}}"] }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.length: eq 1
+  res.body.data[0].name: eq Holiday
+}

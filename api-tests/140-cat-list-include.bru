@@ -1,0 +1,29 @@
+meta {
+  name: Categories - list with tags
+  type: http
+  seq: 140
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories?include=tags
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.meta.total: eq 2
+}
+
+tests {
+  test("Food has one tag, Travel none", function () {
+    const food = res.body.data.find((c) => c.name === "Food");
+    const travel = res.body.data.find((c) => c.name === "Travel");
+    expect(food.tags.length).to.equal(1);
+    expect(travel.tags.length).to.equal(0);
+  });
+}

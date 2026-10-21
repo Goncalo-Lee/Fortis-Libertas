@@ -1,0 +1,21 @@
+meta {
+  name: Categories - get one with tags
+  type: http
+  seq: 132
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories/{{foodId}}?include=tags
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.tags.length: eq 1
+  res.body.data.tags[0].name: eq Essential
+}

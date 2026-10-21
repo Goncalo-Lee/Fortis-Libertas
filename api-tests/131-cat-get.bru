@@ -1,0 +1,26 @@
+meta {
+  name: Categories - get one
+  type: http
+  seq: 131
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories/{{foodId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.name: eq Food
+}
+
+tests {
+  test("no tags without include", function () {
+    expect(res.body.data.tags).to.equal(undefined);
+  });
+}

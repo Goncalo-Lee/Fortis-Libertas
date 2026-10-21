@@ -1,0 +1,19 @@
+meta {
+  name: Categories - non-member gets 404
+  type: http
+  seq: 135
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 404
+}

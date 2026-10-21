@@ -1,0 +1,19 @@
+meta {
+  name: Category tags - link again before delete
+  type: http
+  seq: 158
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories/{{foodId}}/tags/{{catTagA}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 204
+}
