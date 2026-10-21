@@ -35,8 +35,31 @@ export default function SignUpForm({
       name: "",
       email: "",
       password: "",
+      confirmPassword: "",
     }
   })
+
+  const signInWithGoogle = async () => {
+    setIsLoading(true);
+    try {
+      const res = await authClient.signIn.social({
+        provider: "google",
+        mode: "popup",
+        redirectTo: "/dashboard",
+      });
+
+      if (res?.error) {
+        toast.error(res.error.message || "Sign-in failed");
+      } else {
+        toast.success("Signed in successfully!");
+        router.push("/dashboard");
+      }
+    } catch (err) {
+      toast.error("An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   async function onSubmit(data: z.infer<typeof contactSchema>) {
     setIsLoading(true);
@@ -44,15 +67,17 @@ export default function SignUpForm({
       email: data.email,
       password: data.password,
       name: data.name,
+      callbackURL: "/confirm-email",
     })
     if (error) {
       toast.error(error.message);
     }
     else {
-      toast.success("Conta criada com sucesso! Faz agora login para continuar.");
+      toast.success("Conta criada com sucesso! Verifica a tua caixa de entrada para activar a tua conta.");
       await router.push("/sign-in");
     }
-    await router.push("/sign-in");
+    setIsLoading(false);
+
   }
 
 
@@ -85,11 +110,20 @@ export default function SignUpForm({
           </Field>
           <Field>
             <div className="flex items-center">
-              <FieldLabel htmlFor="password">Password</FieldLabel>
+              <FieldLabel htmlFor="password">Palavra-passe</FieldLabel>
             </div>
             <Input id="password" type="password" {...form.register("password")}/>
             {form.formState.errors.password && (
                 <p className="text-sm text-red-500">{form.formState.errors.password.message}</p>
+            )}
+          </Field>
+          <Field>
+            <div className="flex items-center">
+              <FieldLabel htmlFor="confirmPassword">Confirma a tua palavra-passe</FieldLabel>
+            </div>
+            <Input id="confirmPassword" type="password" {...form.register("confirmPassword")}/>
+            {form.formState.errors.confirmPassword && (
+                <p className="text-sm text-red-500">{form.formState.errors.confirmPassword.message}</p>
             )}
           </Field>
           <Button type="submit" className="w-full" disabled={isLoading}>

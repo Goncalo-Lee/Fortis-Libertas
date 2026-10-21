@@ -47,9 +47,8 @@ export const auth = betterAuth({
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({ user, url }) => {
-      console.log("A tentar enviar email para:", user.email);
 
+    sendVerificationEmail: async ({ user, url }) => {
       await transporter.sendMail({
         from: '"Fortis Libertas" <no-reply@fortislibertas.com>',
         to: user.email,
@@ -62,12 +61,13 @@ export const auth = betterAuth({
       } else {
         console.log("Email enviado com sucesso!");
       }
-    },
+    }
   },
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
     maxPasswordLength: 32,
+    requireEmailVerification: true,
 
     sendResetPassword: async ({ user, url }) => {
       await transporter.sendMail({
