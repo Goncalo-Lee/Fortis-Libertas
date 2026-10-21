@@ -3,29 +3,11 @@ import { db } from "../..";
 import { category, tagCategory } from "../../schema";
 import { escapeLike } from "../../utils";
 import type { ListFiltersCategory } from "./type";
+import { inDashboard } from "../utils";
 
 /* ======
   READ
 ======= */
-
-/**
- * Builds a condition that matches a single active (non-deleted) category within a dashboard.
- *
- * Shared with `write.ts`. It is not re-exported from `index.ts`.
- *
- * @param dashboardId - The unique identifier of the dashboard owning the category
- * @param id - The unique identifier of the category
- * @returns A Drizzle condition checking the dashboard, the category ID and that `deleted_at` is null
- *
- * @example
- * const [row] = await db
- *   .select()
- *   .from(category)
- *   .where(inDashboard("dash_123", "cat_456"))
- *   .limit(1);
- */
-export const inDashboard = (dashboardId: string, id: string) =>
-  and(eq(category.dashboardId, dashboardId), eq(category.id, id), isNull(category.deletedAt));
 
 /**
  * Retrieves a single active category by its ID within a specific dashboard.
@@ -43,7 +25,7 @@ export const inDashboard = (dashboardId: string, id: string) =>
  * }
  */
 export async function getCategory(dashboardId: string, id: string) {
-  const [row] = await db.select().from(category).where(inDashboard(dashboardId, id)).limit(1);
+  const [row] = await db.select().from(category).where(inDashboard(category, dashboardId, id)).limit(1);
   return row ?? null;
 }
 

@@ -4,36 +4,12 @@ import { category, financialRecord, tagCategory } from "../../schema";
 import { generateId } from "../../types";
 import { ApiError } from "../../../lib/api/errors";
 import { assertTagsInDashboard } from "./relations";
-import { getCategory, inDashboard } from "./read";
+import { getCategory } from "./read";
+import { inDashboard, nameTaken } from "../utils";
 
 /* ======
   WRITE
 ======= */
-
-/**
- * Checks whether a category name is already used within a dashboard.
- *
- * Soft-deleted rows are included in the check, because the unique index `(dashboard_id, name)`
- * also covers them.
- *
- * @param dashboardId - The unique identifier of the dashboard to check
- * @param name - The category name to check
- * @param exceptId - Optional category ID to ignore, typically the category being updated
- * @returns `true` if another category already uses the name, `false` otherwise
- *
- * @example
- * if (await nameTaken("dash_123", "Groceries", "cat_456")) {
- *   throw new ApiError("NAME_ALREADY_EXISTS");
- * }
- */
-async function nameTaken(dashboardId: string, name: string, exceptId?: string) {
-  const rows = await db
-    .select({ id: category.id })
-    .from(category)
-    .where(and(eq(category.dashboardId, dashboardId), eq(category.name, name)))
-    .limit(2);
-  return rows.some((r) => r.id.toLowerCase() !== exceptId?.toLowerCase());
-}
 
 /**
  * Creates a new category in a dashboard and optionally links it to a set of tags.
@@ -63,7 +39,7 @@ export async function createCategory(
 ) {
   const tagIds = input.tag_ids ?? [];
   await assertTagsInDashboard(dashboardId, tagIds);
-  if (await nameTaken(dashboardId, input.name)) throw new ApiError("NAME_ALREADY_EXISTS");
+  if (await nameTaken({ table: category, dashboardId, name: input.name })) throw new ApiError("NAME_ALREADY_EXISTS");
 
   const id = generateId();
   try {
@@ -79,7 +55,7 @@ export async function createCategory(
       }
     });
   } catch (error) {
-    if (await nameTaken(dashboardId, input.name, id)) throw new ApiError("NAME_ALREADY_EXISTS");
+    if (await nameTaken({ table: category, dashboardId, name: input.name, exceptId: id })) throw new ApiError("NAME_ALREADY_EXISTS");
     throw error;
   }
   return getCategory(dashboardId, id);
@@ -117,7 +93,7 @@ export async function updateCategory(
   if (changes.name !== undefined && changes.name !== current.name) set.name = changes.name;
   if (changes.description !== undefined) set.description = changes.description;
 
-  if (set.name !== undefined && (await nameTaken(dashboardId, set.name, id))) {
+  if (set.name !== undefined && (await nameTaken({ table: category, dashboardId, name: set.name, exceptId: id }))) {
     throw new ApiError("NAME_ALREADY_EXISTS");
   }
 
@@ -126,9 +102,9 @@ export async function updateCategory(
       await db
         .update(category)
         .set({ ...set, updatedAt: new Date() })
-        .where(inDashboard(dashboardId, id));
+        .where(inDashboard(category, dashboardId, id));
     } catch (error) {
-      if (set.name !== undefined && (await nameTaken(dashboardId, set.name, id))) {
+      if (set.name !== undefined && (await nameTaken({ table: category, dashboardId, name: set.name, exceptId: id }))) {
         throw new ApiError("NAME_ALREADY_EXISTS");
       }
       throw error;
@@ -168,6 +144,6 @@ export async function softDeleteCategory(dashboardId: string, id: string) {
     await tx
       .update(category)
       .set({ deletedAt: new Date(), updatedAt: new Date() })
-      .where(inDashboard(dashboardId, id));
+      .where(inDashboard(category, dashboardId, id));
   });
 }
