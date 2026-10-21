@@ -1,6 +1,6 @@
-import { and, count, desc, asc, eq, isNotNull, isNull, like } from "drizzle-orm";
+import { and, count, desc, asc, eq, isNotNull, isNull, like, or } from "drizzle-orm";
 import { db } from "../..";
-import { dashboard, userDashboard } from "../../schema";
+import { dashboard, userDashboard, user } from "../../schema";
 import { ListFiltersDashboards } from "./type";
 
 /* ======
@@ -53,6 +53,48 @@ export async function findMembership(
         includeDeleted ? undefined : isNull(dashboard.deletedAt),
       ),
     )
+    .limit(1);
+
+  return row ?? null;
+}
+
+/**
+ * Procura um utilizador por ID, email ou nome de utilizador, ignorando os que foram eliminados (soft delete).
+ *
+ * Os critérios são combinados com OR: basta um dos campos fornecidos para encontrar o utilizador.
+ * Se nenhum campo for fornecido, a função devolve `null` sem consultar a base de dados.
+ *
+ * @param params - Objeto com um ou mais critérios de pesquisa
+ * @param params.userId - Identificador único do utilizador
+ * @param params.email - Email do utilizador (convertido para minúsculas antes da pesquisa)
+ * @param params.userName - Nome de utilizador
+ * @returns Objeto com o `id` do utilizador se encontrado, ou `null` caso contrário
+ *
+ * @example
+ * const found = await findUser({ email: "ana@exemplo.pt" });
+ * if (found) {
+ *   console.log(`Utilizador encontrado: ${found.id}`);
+ * } else {
+ *   console.log("Utilizador não encontrado ou eliminado.");
+ * }
+ */
+export async function findUser(params: {
+  userId?: string;
+  email?: string;
+  userName?: string;
+}) {
+  const conditions = [
+    params.userId ? eq(user.id, params.userId) : undefined,
+    params.email ? eq(user.email, params.email.toLowerCase()) : undefined,
+    params.userName ? eq(user.userName, params.userName) : undefined,
+  ].filter(Boolean);
+
+  if (conditions.length === 0) return null;
+
+  const [row] = await db
+    .select({ id: user.id })
+    .from(user)
+    .where(and(or(...conditions), isNull(user.deletedAt)))
     .limit(1);
 
   return row ?? null;
