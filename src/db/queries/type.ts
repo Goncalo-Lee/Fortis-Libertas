@@ -3,7 +3,7 @@
 ========== */
 
 /**
- * Query filters accepted by `listCategories`.
+ * Query filters accepted by `ListFilters`.
  *
  * @property q - Optional partial match on the category name
  * @property sort - Ordering of the results. A leading `-` means descending order
