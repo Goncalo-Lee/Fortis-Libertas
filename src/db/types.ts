@@ -54,6 +54,11 @@ export const uuidBinary = customType<{
 
   toDriver(value: string): Buffer {
     // 1. THE SAFETY NET: Prevents the app from crashing on bad data
+    if (typeof value === "string" && value.startsWith("base64:type254:")) {
+      const base64Part = value.substring("base64:type254:".length);
+      return Buffer.from(base64Part, "base64");
+    }
+
     if (!uuidValidate(value)) {
       console.warn(`[WARNING] Invalid UUID received: "${value}". Falling back to zero-UUID.`);
       return Buffer.from(uuidParse("00000000-0000-0000-0000-000000000000"));
@@ -64,9 +69,19 @@ export const uuidBinary = customType<{
   },
 
   fromDriver(value: unknown): string {
+    if (Buffer.isBuffer(value)) {
+      return uuidStringify(value);
+    }
+
     if (typeof value === "string") {
+      // Handle PlanetScale/Serverless base64 prefixed binary strings
+      if (value.startsWith("base64:type254:")) {
+        const base64Part = value.substring("base64:type254:".length);
+        return uuidStringify(Buffer.from(base64Part, "base64"));
+      }
       return value;
     }
+
     return uuidStringify(value as Uint8Array);
   },
 });

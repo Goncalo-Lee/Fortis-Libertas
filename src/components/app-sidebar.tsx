@@ -25,6 +25,7 @@ import {
   BadgeEuroIcon, MinusCircleIcon, CalendarArrowDownIcon,
   ClipboardMinusIcon, PiggyBankIcon, FileOutputIcon, BellIcon, ArrowLeftRightIcon
 } from "lucide-react"
+import { Logout } from "./logout"
 
 const data = {
   user: {
