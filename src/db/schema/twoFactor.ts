@@ -33,7 +33,7 @@ export const twoFactor = mysqlTable("two_factor", {
    * Not exposed externally; application-internal only
    * ⚠️ UUID provides no security benefit here; separate random token needed
    */
-  id: t.varchar("two_factor_id", { length: 255 }).primaryKey(),
+  id: uuidBinary("two_factor_id").primaryKey(),
 
   /**
    * Foreign key to owning user (UUID binary)

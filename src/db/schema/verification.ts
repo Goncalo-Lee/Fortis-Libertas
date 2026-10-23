@@ -1,6 +1,7 @@
 import { mysqlTable } from "drizzle-orm/mysql-core";
 import * as t from "drizzle-orm/mysql-core";
 import { timestamps } from "../columns";
+import {uuidBinary} from "@/db/types";
 
 /**
  * Verification Token Table (Better Auth)
@@ -34,7 +35,7 @@ export const verification = mysqlTable("verification", {
    * Not exposed to users; used only in application logic
    * ⚠️ UUID v7 provides temporal ordering but not security (use cryptographically random token separately)
    */
-  id: t.varchar("verification_id", { length: 255 }).primaryKey(),
+  id: uuidBinary("verification_id").primaryKey(),
 
   /**
    * Verification purpose/type identifier

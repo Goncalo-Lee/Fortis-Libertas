@@ -14,7 +14,7 @@ export const account = mysqlTable("account", {
    * 🚨 CORRIGIDO: O Better Auth gera strings Base64 para o ID da conta.
    * Tem de ser varchar(255) para o MySQL aceitar.
    */
-  id: t.varchar("account_id", { length: 255 }).primaryKey(),
+  id: uuidBinary("account_id").primaryKey(),
 
   /**
    * ✅ MANTIDO: O foreign key para o User tem de continuar a ser UUID,

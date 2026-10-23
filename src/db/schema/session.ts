@@ -2,6 +2,7 @@ import { mysqlTable } from "drizzle-orm/mysql-core";
 import * as t from "drizzle-orm/mysql-core";
 import * as s from "./index";
 import { uuidBinary } from "../types";
+import {timestamps} from "@/db/columns";
 
 /**
  * Session table for Better Auth session management
@@ -13,7 +14,7 @@ export const session = mysqlTable("session", {
    * 🚨 CORRIGIDO: O ID da sessão gerado pelo Better Auth é uma string Base64.
    * Tem de ser varchar(255) para o MySQL aceitar.
    */
-  id: t.varchar("session_id", { length: 255 }).primaryKey(),
+  id: uuidBinary("session_id").primaryKey(),
 
   /**
    * ✅ MANTIDO: Foreign key para a tabela user, mantém-se UUID.
