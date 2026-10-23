@@ -1,0 +1,23 @@
+meta {
+  name: Tags - empty patch
+  type: http
+  seq: 104
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{tagDashboardId}}/tags/{{essentialTagId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {}
+}
+
+assert {
+  res.status: eq 422
+}

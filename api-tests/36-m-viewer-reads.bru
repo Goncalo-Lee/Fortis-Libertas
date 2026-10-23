@@ -1,0 +1,20 @@
+meta {
+  name: Members - viewer can read
+  type: http
+  seq: 36
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.role: eq viewer
+}

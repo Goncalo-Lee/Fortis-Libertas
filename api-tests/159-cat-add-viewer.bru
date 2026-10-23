@@ -1,0 +1,24 @@
+meta {
+  name: Categories - add second user as viewer
+  type: http
+  seq: 159
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/members
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "email": "{{email2}}", "role": "viewer" }
+}
+
+assert {
+  res.status: eq 201
+  res.body.data.role: eq viewer
+}

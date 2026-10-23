@@ -1,0 +1,31 @@
+meta {
+  name: Get me
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:post-response {
+  if (res.status === 200) bru.setVar("userId", res.body.data.user_id);
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns the signed-in user with a profile", function () {
+    expect(res.body.data.email).to.equal(bru.getVar("email"));
+    expect(res.body.data.profile.currency).to.equal("EUR");
+    expect(res.body.data).to.not.have.property("deleted_at");
+  });
+}

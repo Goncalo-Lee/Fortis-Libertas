@@ -1,0 +1,20 @@
+meta {
+  name: Tags - list is empty
+  type: http
+  seq: 91
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{tagDashboardId}}/tags
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.meta.total: eq 0
+}

@@ -1,0 +1,29 @@
+meta {
+  name: Second user - get me
+  type: http
+  seq: 23
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+script:post-response {
+  if (res.status === 200) bru.setVar("userId2", res.body.data.user_id);
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("is a different user", function () {
+    expect(res.body.data.user_id).to.not.equal(bru.getVar("userId"));
+  });
+}

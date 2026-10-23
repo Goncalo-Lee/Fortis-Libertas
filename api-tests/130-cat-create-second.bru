@@ -1,0 +1,28 @@
+meta {
+  name: Categories - create second
+  type: http
+  seq: 130
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Travel" }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("travelId", res.body.data.category_id);
+}
+
+assert {
+  res.status: eq 201
+  res.body.data.description: isNull
+}

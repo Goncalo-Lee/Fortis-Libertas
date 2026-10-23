@@ -1,0 +1,24 @@
+meta {
+  name: Record types - rename
+  type: http
+  seq: 74
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{rtDashboardId}}/record-types/{{savingsTypeId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Renamed" }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.name: eq Renamed
+}

@@ -1,0 +1,24 @@
+meta {
+  name: Profile - back to EUR
+  type: http
+  seq: 9
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/me/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "currency": "EUR" }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.currency: eq EUR
+}

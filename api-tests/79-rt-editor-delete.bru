@@ -1,0 +1,19 @@
+meta {
+  name: Record types - editor cannot delete
+  type: http
+  seq: 79
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/dashboards/{{rtDashboardId}}/record-types/{{savingsTypeId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 403
+}

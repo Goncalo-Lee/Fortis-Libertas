@@ -1,0 +1,20 @@
+meta {
+  name: Tags - unknown id
+  type: http
+  seq: 99
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{tagDashboardId}}/tags/00000000-0000-7000-8000-000000000001
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 404
+  res.body.code: eq NOT_FOUND
+}

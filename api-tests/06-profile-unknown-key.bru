@@ -1,0 +1,23 @@
+meta {
+  name: Profile - unknown key
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/me/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "foo": 1 }
+}
+
+assert {
+  res.status: eq 422
+}

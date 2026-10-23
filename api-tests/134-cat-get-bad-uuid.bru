@@ -1,0 +1,20 @@
+meta {
+  name: Categories - malformed id
+  type: http
+  seq: 134
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories/abc
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 400
+  res.body.code: eq MALFORMED_REQUEST
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Members - editor cannot remove others
+  type: http
+  seq: 43
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}/members/{{userId2}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 403
+}

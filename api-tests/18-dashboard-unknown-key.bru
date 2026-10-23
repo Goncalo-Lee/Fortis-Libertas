@@ -1,0 +1,23 @@
+meta {
+  name: Dashboard - unknown key
+  type: http
+  seq: 18
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "foo": 1 }
+}
+
+assert {
+  res.status: eq 422
+}

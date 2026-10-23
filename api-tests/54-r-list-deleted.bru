@@ -1,0 +1,26 @@
+meta {
+  name: Restore - list deleted (owner)
+  type: http
+  seq: 54
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards?deleted=true
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("deleted dashboard is listed", function () {
+    const ids = res.body.data.map((d) => d.dashboard_id);
+    expect(ids).to.include(bru.getVar("dashboardId"));
+  });
+}

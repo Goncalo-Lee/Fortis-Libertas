@@ -1,0 +1,26 @@
+meta {
+  name: Record types - get one
+  type: http
+  seq: 62
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{rtDashboardId}}/record-types/{{incomeTypeId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.name: eq Income
+}
+
+tests {
+  test("belongs to the dashboard", function () {
+    expect(res.body.data.dashboard_id).to.equal(bru.getVar("rtDashboardId"));
+  });
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Members - owner removes first user
+  type: http
+  seq: 44
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}/members/{{userId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 204
+}

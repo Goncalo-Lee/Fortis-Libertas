@@ -1,0 +1,23 @@
+meta {
+  name: Record types - unknown key
+  type: http
+  seq: 69
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{rtDashboardId}}/record-types
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Other", "foo": 1 }
+}
+
+assert {
+  res.status: eq 422
+}

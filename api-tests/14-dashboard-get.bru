@@ -1,0 +1,20 @@
+meta {
+  name: Dashboard - get
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.member_count: eq 1
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Restore - delete dashboard
+  type: http
+  seq: 51
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 204
+}

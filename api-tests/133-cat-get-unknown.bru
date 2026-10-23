@@ -1,0 +1,20 @@
+meta {
+  name: Categories - unknown id
+  type: http
+  seq: 133
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories/00000000-0000-7000-8000-000000000001
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 404
+  res.body.code: eq NOT_FOUND
+}

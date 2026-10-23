@@ -1,0 +1,19 @@
+meta {
+  name: Record types - delete
+  type: http
+  seq: 80
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/dashboards/{{rtDashboardId}}/record-types/{{savingsTypeId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 204
+}

@@ -1,0 +1,20 @@
+meta {
+  name: Categories - viewer can read
+  type: http
+  seq: 160
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.meta.total: eq 2
+}

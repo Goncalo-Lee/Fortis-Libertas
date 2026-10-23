@@ -1,0 +1,27 @@
+meta {
+  name: Tags - create dashboard
+  type: http
+  seq: 90
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Tags-Dashboard" }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("tagDashboardId", res.body.data.dashboard_id);
+}
+
+assert {
+  res.status: eq 201
+}

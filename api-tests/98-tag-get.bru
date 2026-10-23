@@ -1,0 +1,26 @@
+meta {
+  name: Tags - get one
+  type: http
+  seq: 98
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{tagDashboardId}}/tags/{{essentialTagId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.name: eq Essential
+}
+
+tests {
+  test("belongs to the dashboard", function () {
+    expect(res.body.data.dashboard_id).to.equal(bru.getVar("tagDashboardId"));
+  });
+}

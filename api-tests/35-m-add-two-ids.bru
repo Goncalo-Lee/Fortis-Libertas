@@ -1,0 +1,23 @@
+meta {
+  name: Members - two identifiers
+  type: http
+  seq: 35
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}/members
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "email": "a@example.com", "user_id": "{{userId2}}", "role": "viewer" }
+}
+
+assert {
+  res.status: eq 422
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Categories - deleted is gone
+  type: http
+  seq: 167
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories/{{foodId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 404
+}

@@ -1,0 +1,20 @@
+meta {
+  name: Tags - list excludes deleted
+  type: http
+  seq: 116
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{tagDashboardId}}/tags
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.meta.total: eq 2
+}

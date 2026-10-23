@@ -1,0 +1,24 @@
+meta {
+  name: Members - re-add reactivates membership
+  type: http
+  seq: 46
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}/members
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  { "user_id": "{{userId}}", "role": "viewer" }
+}
+
+assert {
+  res.status: eq 201
+  res.body.data.role: eq viewer
+}

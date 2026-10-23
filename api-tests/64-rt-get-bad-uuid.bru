@@ -1,0 +1,20 @@
+meta {
+  name: Record types - malformed id
+  type: http
+  seq: 64
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{rtDashboardId}}/record-types/abc
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 400
+  res.body.code: eq MALFORMED_REQUEST
+}

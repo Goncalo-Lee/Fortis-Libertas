@@ -1,0 +1,19 @@
+meta {
+  name: Record types - deleted is gone
+  type: http
+  seq: 81
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{rtDashboardId}}/record-types/{{savingsTypeId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 404
+}

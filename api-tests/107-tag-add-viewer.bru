@@ -1,0 +1,24 @@
+meta {
+  name: Tags - add second user as viewer
+  type: http
+  seq: 107
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{tagDashboardId}}/members
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "email": "{{email2}}", "role": "viewer" }
+}
+
+assert {
+  res.status: eq 201
+  res.body.data.role: eq viewer
+}

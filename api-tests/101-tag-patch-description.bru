@@ -1,0 +1,24 @@
+meta {
+  name: Tags - same name, new description
+  type: http
+  seq: 101
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{tagDashboardId}}/tags/{{essentialTagId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Essential", "description": "updated" }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.description: eq updated
+}

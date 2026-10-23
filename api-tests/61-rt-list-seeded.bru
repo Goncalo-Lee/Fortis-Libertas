@@ -1,0 +1,34 @@
+meta {
+  name: Record types - seeded defaults
+  type: http
+  seq: 61
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{rtDashboardId}}/record-types
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:post-response {
+  if (res.status === 200) {
+    const income = res.body.data.find((r) => r.name === "Income");
+    if (income) bru.setVar("incomeTypeId", income.record_type_id);
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.meta.total: eq 3
+}
+
+tests {
+  test("has the three default types", function () {
+    const names = res.body.data.map((r) => r.name).sort();
+    expect(names).to.deep.equal(["Expenses", "Income", "Investment"]);
+  });
+}

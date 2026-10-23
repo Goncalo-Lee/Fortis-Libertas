@@ -1,0 +1,19 @@
+meta {
+  name: Members - viewer leaves
+  type: http
+  seq: 48
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}/members/{{userId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 204
+}

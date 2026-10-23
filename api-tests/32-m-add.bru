@@ -1,0 +1,24 @@
+meta {
+  name: Members - add viewer by email
+  type: http
+  seq: 32
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}/members
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "email": "{{email2}}", "role": "viewer" }
+}
+
+assert {
+  res.status: eq 201
+  res.body.data.role: eq viewer
+}

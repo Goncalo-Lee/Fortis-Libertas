@@ -1,0 +1,20 @@
+meta {
+  name: Tags - viewer can read
+  type: http
+  seq: 108
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{tagDashboardId}}/tags
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.meta.total: eq 2
+}

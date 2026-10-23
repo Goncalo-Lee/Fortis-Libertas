@@ -1,0 +1,19 @@
+meta {
+  name: Categories - viewer cannot delete
+  type: http
+  seq: 163
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories/{{travelId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 403
+}

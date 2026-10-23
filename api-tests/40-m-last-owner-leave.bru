@@ -1,0 +1,20 @@
+meta {
+  name: Members - last owner cannot leave
+  type: http
+  seq: 40
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}/members/{{userId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 409
+  res.body.code: eq LAST_OWNER
+}

@@ -1,0 +1,36 @@
+meta {
+  name: Categories - create with tag
+  type: http
+  seq: 124
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Food", "description": "first", "tag_ids": ["{{catTagA}}"] }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("foodId", res.body.data.category_id);
+}
+
+assert {
+  res.status: eq 201
+  res.body.data.name: eq Food
+}
+
+tests {
+  test("Location header points to the new category", function () {
+    expect(res.getHeader("location")).to.equal(
+      "/api/v1/dashboards/" + bru.getVar("catDashboardId") + "/categories/" + res.body.data.category_id,
+    );
+  });
+}

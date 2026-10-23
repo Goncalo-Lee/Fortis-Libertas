@@ -1,0 +1,24 @@
+meta {
+  name: Categories - rename to existing name
+  type: http
+  seq: 138
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories/{{foodId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Travel" }
+}
+
+assert {
+  res.status: eq 409
+  res.body.code: eq NAME_ALREADY_EXISTS
+}
