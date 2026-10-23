@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Poppins } from 'next/font/google';
 import "./globals.css";
+import {Toaster} from "sonner";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -20,9 +21,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className="h-dvh"
       suppressHydrationWarning
     >
-        <body className={poppins.variable}>
+        <body className={poppins.variable} suppressHydrationWarning>
         <ThemeProvider>
           {children}
+            <Toaster />
+
         </ThemeProvider>
         </body>
     </html>

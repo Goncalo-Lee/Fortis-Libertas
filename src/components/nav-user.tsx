@@ -20,7 +20,22 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { EllipsisVerticalIcon, CircleUserRoundIcon, CreditCardIcon, BellIcon, LogOutIcon } from "lucide-react"
+import {
+  EllipsisVerticalIcon,
+  CircleUserRoundIcon,
+  CreditCardIcon,
+  BellIcon,
+  LogOutIcon,
+  Loader2,
+  LogOut
+} from "lucide-react"
+
+import Link from "next/link";
+import {authClient} from "@/lib/auth-client";
+import {toast} from "sonner";
+import {useRouter} from "next/navigation";
+import {useState} from "react";
+import {Button} from "@/components/ui/button";
 
 export function NavUser({
   user,
@@ -31,7 +46,27 @@ export function NavUser({
     avatar: string
   }
 }) {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoading(true);
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          toast.success("Signed out successfully");
+          router.push("/");
+          router.refresh(); // Clears cached server components/session state
+        },
+        onError: (ctx) => {
+          toast.error(ctx.error.message || "Failed to sign out");
+          setIsLoading(false);
+        },
+      },
+    });
+  };
   const { isMobile } = useSidebar()
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -77,27 +112,41 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem render={
+                <Link href="/dashboard/settings/account" className="w-full flex items-center cursor-pointer">
                 <CircleUserRoundIcon
                 />
-                Account
+                Conta do utilizador
+              </Link>}>
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <CreditCardIcon
                 />
-                Billing
+                Faturação
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <BellIcon
                 />
-                Notifications
+                Notificações
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOutIcon
-              />
-              Log out
+            <DropdownMenuItem
+                onClick={handleLogout}
+                disabled={isLoading}
+                className="flex items-center gap-2 cursor-pointer"
+            >
+              {isLoading ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    <span>Signing out...</span>
+                  </>
+              ) : (
+                  <>
+                    <LogOut className="size-4" />
+                    <span>Logout</span>
+                  </>
+              )}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
