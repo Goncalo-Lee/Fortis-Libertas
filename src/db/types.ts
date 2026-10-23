@@ -112,8 +112,9 @@ export const booleanAsDatetime = customType<{
     return "datetime(3)";
   },
 
-  toDriver(value: boolean | null | undefined): Date | null {
-    return value ? new Date() : null;
+  toDriver(value: boolean | null | undefined): string | null {
+    // Same format Drizzle uses for its own datetime columns (UTC)
+    return value ? new Date().toISOString().replace("T", " ").replace("Z", "") : null;
   },
 
   fromDriver(value: unknown): boolean {
