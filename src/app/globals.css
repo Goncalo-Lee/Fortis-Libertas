@@ -107,7 +107,6 @@
 
    /* Tema azul escuro */
 
-
   --sidebar: oklch(0.336 0.07 239.24);
   --sidebar-foreground: oklch(0.973 0 0);
 
@@ -118,6 +117,13 @@
 
   --sidebar-border: oklch(0.30 0.04 230);
   --sidebar-ring: oklch(0.70 0.16 45);
+
+  /* Custom colours */
+
+  --primary-app: oklch(0.336 0.07 239.24);
+  --app-gains: oklch(0.793 0.126 48.564);
+  --app-loses: oklch(0.729 0.11 200.305);
+
 
 
 

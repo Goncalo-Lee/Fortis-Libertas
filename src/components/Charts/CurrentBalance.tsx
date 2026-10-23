@@ -4,7 +4,7 @@ import { ArrowUpRight } from "lucide-react"
 
 export default function CurrentBalance() {
     return (
-        <Card className="h-full max-w-sm">
+        <Card className="h-full max-w-sm font-poppins">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                     Saldo Disponível

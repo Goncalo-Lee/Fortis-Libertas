@@ -1,9 +1,9 @@
-import ChartPie from "@/components/Charts/ChartPie";
+import BankBalance from "@/components/Charts/BankBalance";
 
 export default function IncomesPage() {
     return (
         <div>
-            Teste
+            <BankBalance/>
 
         </div>
     )

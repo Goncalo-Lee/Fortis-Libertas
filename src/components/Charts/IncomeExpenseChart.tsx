@@ -46,12 +46,12 @@ export function IncomeExpenseChart() {
     const isPositive = lastMonth.entradas > lastMonth.saidas
 
     return (
-        <Card className="w-full max-w-2xl shadow-sm border-slate-200">
+        <Card className="w-full max-w-2xl shadow-sm border-slate-200 font-poppins">
             <CardHeader>
-                <CardTitle className="text-xl font-semibold text-slate-800">
+                <CardTitle className="text-xl font-semibold text-cyan-800 flex items-center gap-2">
                     Entradas vs Saídas
                 </CardTitle>
-                <CardDescription className="text-slate-500">
+                <CardDescription className="text-cyan-700">
                     O teu histórico dos últimos 6 meses
                 </CardDescription>
             </CardHeader>
@@ -71,8 +71,8 @@ export function IncomeExpenseChart() {
                             cursor={false}
                             content={<ChartTooltipContent indicator="dashed" />}
                         />
-                        <Bar dataKey="entradas" fill="var(--color-entradas)" radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="saidas" fill="var(--color-saidas)" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="entradas" fill="var(--app-gains)" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="saidas" fill="var(--app-loses)" radius={[4, 4, 0, 0]} />
                     </BarChart>
                 </ChartContainer>
             </CardContent>

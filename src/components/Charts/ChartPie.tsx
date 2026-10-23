@@ -56,7 +56,7 @@ const chartConfig = {
 
 export default function ChartPie() {
   return (
-      <Card className="flex flex-col">
+      <Card className="flex flex-col font-poppins">
         <CardHeader className="items-center pb-0">
           <CardTitle>Pie Chart</CardTitle>
           <CardDescription>January - June 2024</CardDescription>
