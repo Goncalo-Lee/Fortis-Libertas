@@ -87,13 +87,24 @@ export const auth = betterAuth({
   advanced: {
     database: {
       // Enforces application-wide UUIDv7 generation for all Better Auth models
-      generateId: () => generateId(),
+      generateId: () => {
+        const novoId = crypto.randomUUID();
+        console.log("🚨 BETTER AUTH PEDIU UM ID NOVO! Gerei o UUID:", novoId);
+        return novoId;
+      },
       joins: true,
     },
   },
   appName: "FortisLibertas",
   plugins: [
-    twoFactor(),
+    twoFactor({
+      issuer: "Fortis Libertas", // Name shown in the authenticator app (Google Auth, Authy, etc.)
+      totpOptions: {
+        digits: 6,
+        period: 30, // 30-second token rotation
+        window: 1,  // Allows ±1 step (30s grace) to handle client/server clock drift
+      },
+    }),
     nextCookies(),
   ],
 });

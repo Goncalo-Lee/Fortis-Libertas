@@ -14,6 +14,7 @@ export default function ForgotPasswordPage() {
                     Acme Inc.
                 </a>
                 <RequestResetPasswordForm />
+
             </div>
         </div>
     )

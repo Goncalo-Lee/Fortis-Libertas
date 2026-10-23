@@ -7,15 +7,12 @@ export default function EmailConfirmed() {
             className={`min-h-screen relative flex flex-col items-center justify-center p-4 bg-cover bg-center bg-no-repeat overflow-hidden font-poppins`}
             style={{ backgroundImage: "url('/background3.jpeg')" }}
         >
-            {/* Título da App */}
             <h1 className="absolute top-4 left-4 md:top-6 md:left-6 text-xl sm:text-2xl md:text-4xl lg:text-5xl font-extrabold text-[#194b7c] tracking-wide z-50">
                 FORTIS LIBERTAS
             </h1>
 
-            {/* Bloco Central - Ajustado com mb-24 md:mb-32 para subir na página */}
             <div className="text-center text-white max-w-2xl px-4 mb-24 md:mb-32 z-10 flex flex-col items-center">
 
-                {/* Ícone de Sucesso (Checkmark) */}
                 <div className="mb-6 drop-shadow-[0_4px_6px_rgba(0,0,0,0.5)] text-[#4ade80]">
                     <svg
                         xmlns="http://www.w3.org/2000/svg"

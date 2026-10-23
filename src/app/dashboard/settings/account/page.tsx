@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import Link from "next/link";
 
-export default function AccountSettingsPage() {
+export default async function AccountSettingsPage() {
+
     return (
         <div className="flex-1 w-full space-y-4 p-8 pt-6 font-poppins">
             <div className="flex items-center justify-between space-y-2">
@@ -44,10 +45,14 @@ export default function AccountSettingsPage() {
                         <Button>
                             Alterar password
                         </Button>
-
+                    </Link>
+                    <Link
+                        href={"/dashboard/settings/account/two-factor"}>
+                        <Button>
+                            Ativar 2FA
+                            </Button>
                     </Link>
 
-                    <Button>2FA</Button>
                     <Button variant="destructive">Apagar conta</Button>
                 </CardContent>
             </Card>

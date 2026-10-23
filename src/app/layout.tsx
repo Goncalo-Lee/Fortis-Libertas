@@ -21,7 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className="h-dvh"
       suppressHydrationWarning
     >
-        <body className={poppins.variable}>
+        <body className={poppins.variable} suppressHydrationWarning>
         <ThemeProvider>
           {children}
             <Toaster />

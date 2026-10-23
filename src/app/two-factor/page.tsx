@@ -1,19 +1,63 @@
 "use client"
 
-import { EnableTwoFactorForm } from "@/components/enable-two-factor-form"
-import { ShieldCheckIcon } from "lucide-react"
+import { z } from "zod"
+import React, {useState} from "react";
+import {authClient} from "@/lib/auth-client";
+import {useRouter} from "next/navigation";
+import { auth } from "@/lib/auth";
 
-export default function EnableTwoFactorPage() {
+const formSchema = z.object({
+    email: z.string().email(),
+    password: z.string().min(8),
+})
+
+export default function TwoFactor() {
+    const [code, setCode] = useState("");
+    const [error, setError] = useState("");
+    const router = useRouter();
+
+    const verify = async () => {
+        setError("");
+        const { data, error: verifyError } = await authClient.twoFactor.verifyTotp({
+            code,
+            trustDevice: false,
+        });
+
+        if (verifyError) {
+            setError(verifyError.message || "Failed to verify code");
+            return; // stay on page
+        }
+
+        router.push("/dashboard");
+    };
+
+
+
     return (
-        <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
-            <div className="flex w-full max-w-sm flex-col gap-6">
-                <a href="#" className="flex items-center gap-2 self-center font-medium">
-                    <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                        <ShieldCheckIcon className="size-4" />
-                    </div>
-                    Acme Inc.
-                </a>
-                <EnableTwoFactorForm />
+        <div className="min-h-screen flex items-center justify-center bg-background">
+            <div className="w-full max-w-md p-8 space-y-6">
+                <h2 className="text-2xl font-bold text-center">
+                    Two-Factor Authentication
+                </h2>
+
+                <input
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter your code"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    type="text"
+                    maxLength={6}
+                />
+
+                {error && <p className="text-red-500 text-sm">{error}</p>}
+
+
+                <button
+                    onClick={verify}
+                    className="w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                    Verify
+                </button>
             </div>
         </div>
     )
