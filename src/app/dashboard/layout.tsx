@@ -17,6 +17,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
     return (
         <SidebarProvider
+            className="h-svh"
             style={
                 {
                     "--sidebar-width": "calc(var(--spacing) * 65)",
@@ -31,14 +32,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 user={{
                     name: session.user.name,
                     email: session.user.email,
-                    avatar: session.user.image, // Usa image ou avatar consoante o que tens na BD
+                    avatar: session.user.image,
                 }}
             />
-            <SidebarInset>
+            <SidebarInset className="flex flex-col min-h-0">
                 <SiteHeader />
-                <div className="flex flex-1 flex-col">
+                <main className="flex-1 min-h-0 overflow-hidden">
                     {children}
-                </div>
+                </main>
             </SidebarInset>
         </SidebarProvider>
     )

@@ -56,33 +56,25 @@ const chartConfig = {
 
 export default function ChartPie() {
   return (
-      <Card className="flex flex-col font-poppins">
-        <CardHeader className="items-center pb-0">
-          <CardTitle>Pie Chart</CardTitle>
-          <CardDescription>January - June 2024</CardDescription>
+      <Card className="flex h-full w-full flex-col gap-2 py-3 font-poppins text-center">
+        <CardHeader className="shrink-0 items-center px-3 pb-0">
+          <CardTitle className="text-sm">Rendimentos/Despesas</CardTitle>
+          <CardDescription className="text-xs">January - June 2024</CardDescription>
         </CardHeader>
-        <CardContent className="flex-1 pb-0">
-          <ChartContainer
-              config={chartConfig}
-              className="mx-auto aspect-square max-h-[250px]"
-          >
+
+        <CardContent className="min-h-0 flex-1 px-3 pb-0">
+          <ChartContainer config={chartConfig} className="mx-auto aspect-auto h-full w-full">
             <PieChart>
-              <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent hideLabel />}
+              <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+              <Pie
+                  data={chartData}
+                  dataKey="visitors"
+                  nameKey="browser"
+                  outerRadius="80%"
               />
-              <Pie data={chartData} dataKey="visitors" nameKey="browser" />
             </PieChart>
           </ChartContainer>
         </CardContent>
-        <CardFooter className="flex-col gap-2 text-sm">
-          <div className="flex items-center gap-2 leading-none font-medium">
-            Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
-          </div>
-          <div className="leading-none text-muted-foreground">
-            Showing total visitors for the last 6 months
-          </div>
-        </CardFooter>
       </Card>
   )
 }

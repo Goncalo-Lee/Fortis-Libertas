@@ -1,13 +1,11 @@
 "use client"
 
-import { TrendingUp, TrendingDown, Smile } from "lucide-react"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
 
 import {
     Card,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
@@ -46,8 +44,8 @@ export function IncomeExpenseChart() {
     const isPositive = lastMonth.entradas > lastMonth.saidas
 
     return (
-        <Card className="w-full max-w-2xl shadow-sm border-slate-200 font-poppins">
-            <CardHeader>
+        <Card className="flex h-full min-h-0 w-full flex-col gap-3 overflow-hidden py-4 shadow-sm font-poppins">
+            <CardHeader className="shrink-0 px-4 pb-0">
                 <CardTitle className="text-xl font-semibold text-cyan-800 flex items-center gap-2">
                     Entradas vs Saídas
                 </CardTitle>
@@ -56,9 +54,9 @@ export function IncomeExpenseChart() {
                 </CardDescription>
             </CardHeader>
 
-            <CardContent>
-                <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
-                    <BarChart accessibilityLayer data={chartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
+            <CardContent className="min-h-0 flex-1 px-4">
+                <ChartContainer config={chartConfig} className="aspect-auto h-full w-full">
+                    <BarChart accessibilityLayer data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
                         <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.5} />
                         <XAxis
                             dataKey="month"

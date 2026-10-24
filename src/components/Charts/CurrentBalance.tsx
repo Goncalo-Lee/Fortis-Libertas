@@ -1,23 +1,26 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { ArrowUpRight } from "lucide-react"
+import {CreditCard} from "lucide-react";
+
 
 export default function CurrentBalance() {
     return (
-        <Card className="h-full max-w-sm font-poppins">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+        <Card className="@container flex h-full w-full flex-col justify-center gap-1 py-3 font-poppins">
+            
+            <CardHeader className="pb-2 md:pb-4 w-full z-10">
+                <CardTitle className="text-sm sm:text-base md:text-lg font-medium text-muted-foreground flex items-center justify-center gap-2">
+                    {/* Pequeno ícone de destaque para embelezar */}
+                    <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-md">
+                        <CreditCard className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                    </div>
                     Saldo Disponível
                 </CardTitle>
             </CardHeader>
-            <CardContent>
-                <div className="text-3xl font-bold">€ 2.450,00</div>
-                <div className="flex items-center gap-2 mt-2">
-                    <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">
-                        <ArrowUpRight className="w-3 h-3 mr-1" />
-                        +4.5%
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">vs mês passado</span>
+
+
+
+            <CardContent className="px-4 pb-2">
+                <div className="text-primary-app dark:text-white text-center text-xl font-bold @[220px]:text-xl @[320px]:text-2xl lg:text-3xl">
+                    € 2.450,00
                 </div>
             </CardContent>
         </Card>
