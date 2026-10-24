@@ -16,10 +16,9 @@ export default function Home() {
     const handleFastAdminLogin = async () => {
 
         await authClient.signIn.email({
-
-            email: "admin@fortislibertas.com",
-
-            password: "Password123!", 
+            email: "admin@yourdomain.com",
+            password: "SuperSecurePassword123!",
+            name: "Administrator",
 
         }, {
 
