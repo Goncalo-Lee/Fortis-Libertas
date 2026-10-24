@@ -3,7 +3,6 @@
 import { TrendingUp } from "lucide-react"
 import {
     Label,
-    PolarGrid,
     PolarRadiusAxis,
     RadialBar,
     RadialBarChart,
@@ -40,31 +39,28 @@ const chartConfig = {
 
 export default function ChartRadial() {
     return (
-        <Card className="flex flex-col">
-            <CardHeader className="items-center pb-0">
-                <CardTitle>Radial Chart - Text</CardTitle>
-                <CardDescription>January - June 2024</CardDescription>
+        <Card className="flex h-full min-h-0 flex-col gap-3 overflow-hidden py-4 font-poppins">
+            <CardHeader className="shrink-0 items-center text-center  px-4 pb-0">
+                <CardTitle>Meta financeira</CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 pb-0">
+            <CardContent className="min-h-0 flex-1 px-4 pb-0">
                 <ChartContainer
                     config={chartConfig}
-                    className="mx-auto aspect-square max-h-[250px]"
+                    className="mx-auto aspect-auto h-full w-full"
                 >
                     <RadialBarChart
                         data={chartData}
                         startAngle={0}
                         endAngle={250}
-                        outerRadius={90}
-                        innerRadius={80}
+                        innerRadius="80%"
+                        outerRadius="100%"
                     >
-                        <PolarGrid
-                            gridType="circle"
-                            radialLines={false}
-                            stroke="none"
-                            className="first:fill-muted last:fill-background"
-                            polarRadius={[90, 80]}
+                        <RadialBar 
+                            dataKey="visitors" 
+                            background 
+                            cornerRadius={10} 
+                            style={{ filter: "drop-shadow(0px 2px 2px rgba(0,0,0,0.1))" }}
                         />
-                        <RadialBar dataKey="visitors" background cornerRadius={10} />
                         <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
                             <Label
                                 content={({ viewBox }) => {
@@ -79,14 +75,14 @@ export default function ChartRadial() {
                                                 <tspan
                                                     x={viewBox.cx}
                                                     y={viewBox.cy}
-                                                    className="fill-foreground text-4xl font-bold"
+                                                    className="fill-primary-app dark:fill-white text-xl sm:text-2xl font-bold"
                                                 >
                                                     {chartData[0].visitors.toLocaleString()}
                                                 </tspan>
                                                 <tspan
                                                     x={viewBox.cx}
-                                                    y={(viewBox.cy || 0) + 24}
-                                                    className="fill-muted-foreground"
+                                                    y={(viewBox.cy || 0) + 20}
+                                                    className="fill-muted-foreground text-xs"
                                                 >
                                                     Visitors
                                                 </tspan>
@@ -99,14 +95,6 @@ export default function ChartRadial() {
                     </RadialBarChart>
                 </ChartContainer>
             </CardContent>
-            <CardFooter className="flex-col gap-2 text-sm">
-                <div className="flex items-center gap-2 leading-none font-medium">
-                    Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
-                </div>
-                <div className="leading-none text-muted-foreground">
-                    Showing total visitors for the last 6 months
-                </div>
-            </CardFooter>
         </Card>
     )
 }

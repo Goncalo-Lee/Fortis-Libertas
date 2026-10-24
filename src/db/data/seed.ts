@@ -3,17 +3,13 @@ import { seed, reset } from "drizzle-seed";
 import mysql from "mysql2/promise";
 import { getTableColumns, isTable } from "drizzle-orm";
 
-// 1. IMPORTAÇÃO ÚNICA (O index já traz as tabelas e as relações)
 import * as schema from "../schema/index";
 import { generateId } from "../types";
 
-/**
- * Automatically scans the ENTIRE schema for custom binary(16) UUID columns
- * and maps them to our valid UUIDv7 generator.
- */
+const globalUuids = Array.from({ length: 10000 }, () => generateId());
+
 function buildAutoUUIDRefinements(schemaObj: Record<string, any>, f: any) {
     const refinements: Record<string, any> = {};
-    const validUuids = Array.from({ length: 10000 }, () => generateId());
 
     for (const [key, entity] of Object.entries(schemaObj)) {
         if (!isTable(entity)) continue;
@@ -31,7 +27,7 @@ function buildAutoUUIDRefinements(schemaObj: Record<string, any>, f: any) {
                 colDef.getSQLType() === 'binary(16)'
             ) {
                 columnRefinements[colName] = f.valuesFromArray({
-                    values: validUuids,
+                    values: globalUuids,
                     isUnique: true
                 });
             }
@@ -55,26 +51,65 @@ async function main() {
         uri: process.env.DATABASE_URL,
     });
 
-    // 2. Passa o schema limpo, que agora já contém tudo
     const db = drizzle(connection, { schema, mode: "default" });
 
-    console.log("A limpar a base de dados (dados residuais de tentativas anteriores)...");
+    console.log("Cleaning the database (removing residual data from previous attempts)...");
     await reset(db, schema as any);
 
-    console.log("Iniciando o povoamento da base de dados com 10 registos...");
+    const MOCK_PASSWORD_HASH = "Password123!";
+    const SEED_COUNT = 10;
 
-    // 3. Define count: 10 e remove as injeções manuais de 1:1,
-    // confiando apenas nas relations definidas no schema.
-    await seed(db, schema as any, { count: 10 }).refine((f) => {
-        return buildAutoUUIDRefinements(schema, f);
+    const sharedUserIds = Array.from({ length: SEED_COUNT }, () => generateId());
+
+    console.log(`Starting database seeding with ${SEED_COUNT} records per table...`);
+
+    // 1. UPDATED: Using exact singular names as exported in your schema
+    const tableCounts = {
+        user: SEED_COUNT,
+        profile: SEED_COUNT,
+        bankAccount: SEED_COUNT,
+        account: SEED_COUNT
+    };
+
+    await seed(db, schema as any, tableCounts).refine((f) => {
+        const autoRefinements = buildAutoUUIDRefinements(schema, f);
+
+        return {
+            ...autoRefinements,
+
+            // 2. UPDATED: Match the 'user' table name
+            user: {
+                columns: {
+                    ...(autoRefinements.user?.columns || {}),
+                    id: f.valuesFromArray({ values: sharedUserIds, isUnique: true }),
+                    password: f.default({ defaultValue: MOCK_PASSWORD_HASH })
+                }
+            },
+
+            profile: {
+                columns: {
+                    ...(autoRefinements.profile?.columns || {}),
+                    userId: f.valuesFromArray({ values: sharedUserIds, isUnique: true })
+                }
+            },
+
+            // 3. UPDATED: Match the 'bankAccount' table name
+            bankAccount: {
+                columns: {
+                    ...(autoRefinements.bankAccount?.columns || {}),
+                    userId: f.valuesFromArray({ values: sharedUserIds, isUnique: true }),
+                    balance: f.int({ minValue: 100, maxValue: 5000 })
+                }
+            }
+        };
     });
 
-    console.log("Base de dados povoada com sucesso!");
+    console.log("Database seeded successfully!");
 
     await connection.end();
 }
 
 main().catch((err) => {
-    console.error("Erro fatal durante o seed:", err);
+    console.error("Fatal error during seeding:", err);
     process.exit(1);
 });
