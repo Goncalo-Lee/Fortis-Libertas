@@ -1,6 +1,6 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth} from "better-auth";
-import { twoFactor } from "better-auth/plugins";
+import { admin, twoFactor } from "better-auth/plugins";
 import { db } from "../db";
 import * as schema from "../db/schema";
 import { generateId } from "../db/types";
@@ -49,6 +49,11 @@ export const auth = betterAuth({
     autoSignInAfterVerification: true,
 
     sendVerificationEmail: async ({ user, url }) => {
+      if (process.env.SEEDING === "true") {
+        console.log(`Bypassing email verification for: ${user.email}`);
+        return;
+      }
+
       await transporter.sendMail({
         from: '"Fortis Libertas" <no-reply@fortislibertas.com>',
         to: user.email,
@@ -118,6 +123,7 @@ export const auth = betterAuth({
         window: 1,  // Allows ±1 step (30s grace) to handle client/server clock drift
       },
     }),
+      admin(),
     nextCookies(),
   ],
 });
