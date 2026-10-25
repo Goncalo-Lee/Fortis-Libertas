@@ -1,8 +1,8 @@
 package pt.fortislibertas
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -24,6 +24,10 @@ import pt.fortislibertas.ui.navigation.ProfileRoute
 import pt.fortislibertas.ui.navigation.TopLevelDestination
 import pt.fortislibertas.ui.navigation.TransactionsRoute
 import pt.fortislibertas.ui.navigation.isOn
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
+
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 
 @Composable
 fun FortisApp(navController: NavHostController = rememberNavController()) {
@@ -31,14 +35,15 @@ fun FortisApp(navController: NavHostController = rememberNavController()) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     val currentTab = TopLevelDestination.entries.firstOrNull { currentDestination.isOn(it) }
+    val hazeState = rememberHazeState()
 
     Scaffold(
         bottomBar = {
-            // Só mostra a barra nos 5 ecrãs principais (esconde em detalhes, login, etc.)
             if (currentTab != null) {
                 FortisBottomBar(
                     current = currentTab,
                     onNavigate = { navController.navigateToTab(it) },
+                    hazeState = hazeState,
                 )
             }
         },
@@ -46,7 +51,9 @@ fun FortisApp(navController: NavHostController = rememberNavController()) {
         NavHost(
             navController = navController,
             startDestination = HomeRoute,
-            modifier = Modifier.padding(innerPadding),
+            modifier = Modifier
+                .fillMaxSize()
+                .hazeSource(hazeState),
         ) {
             // Placeholders: troca cada um pelo ecrã verdadeiro quando o criares
             composable<HomeRoute> { PlaceholderScreen("Home") }
