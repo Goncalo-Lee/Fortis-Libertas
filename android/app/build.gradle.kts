@@ -1,16 +1,17 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
-    namespace = "pt.atec.goncalo.fortislibertas_appandroid"
+    namespace = "pt.fortislibertas"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "pt.atec.goncalo.fortislibertas_appandroid"
+        applicationId = "pt.fortislibertas"
         minSdk = 28
         targetSdk = 37
         versionCode = 1
@@ -51,4 +52,10 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.kotlinx.serialization.json)
 }

@@ -22,6 +22,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Fortis Libertas - App Android"
+rootProject.name = "Fortislibertas"
 include(":app")
  
