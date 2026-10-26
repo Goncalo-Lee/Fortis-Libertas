@@ -27,7 +27,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeChild
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 import pt.fortislibertas.core.designsystem.theme.CuriousBlue
@@ -56,7 +56,7 @@ fun FortisBottomBar(
                 .clip(barShape)
                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f))
                 .border(1.dp, Color.Gray, barShape)
-                .hazeEffect(hazeState, style = HazeMaterials.thin())
+                .hazeChild(state = hazeState, style = HazeMaterials.thin())
                 .padding(6.dp),                       // espaço entre a barra e o quadrado
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically,

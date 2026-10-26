@@ -1,0 +1,58 @@
+<resources>
+    <!-- Perfil -->
+    <string name="profile_title">O meu perfil</string>
+    <string name="profile_edit">Editar perfil</string>
+    <string name="profile_switch_account">Trocar de conta</string>
+    <string name="profile_account_details">Detalhes da conta</string>
+    <string name="profile_account_id">ID: %1$s</string>
+    <string name="profile_balance">Saldo da conta</string>
+    <string name="profile_saved">Valor poupado</string>
+    <string name="profile_password">Palavra-passe</string>
+    <string name="profile_password_desc">Altera aqui a tua palavra-passe.</string>
+    <string name="profile_banks">Bancos</string>
+    <string name="profile_banks_desc">Vê as tuas contas bancárias e cartões.</string>
+    <string name="profile_dashboards">Painéis</string>
+    <string name="profile_dashboards_desc">Vê os teus painéis.</string>
+    <string name="profile_section_account">Conta</string>
+    <string name="profile_sign_out">Terminar sessão</string>
+    <string name="profile_sign_out_desc">Sai desta conta neste dispositivo.</string>
+    <string name="profile_deactivate">Desativar conta</string>
+    <string name="profile_deactivate_desc">Suspende a conta. Podes reativá-la mais tarde.</string>
+    <string name="profile_delete">Apagar conta</string>
+    <string name="profile_delete_desc">Apaga a tua conta e os teus dados.</string>
+    <string name="avatar_description">Fotografia de perfil</string>
+
+    <!-- Contas -->
+    <string name="accounts_title">Contas</string>
+    <string name="accounts_add">Adicionar conta</string>
+
+    <!-- Diálogos -->
+    <string name="dialog_sign_out_title">Terminar sessão?</string>
+    <string name="dialog_sign_out_message">Podes voltar a iniciar sessão quando quiseres.</string>
+    <string name="dialog_deactivate_title">Desativar conta?</string>
+    <string name="dialog_deactivate_message">A conta fica suspensa e escondida. Para a reativar, inicia sessão de novo.</string>
+    <string name="dialog_delete_title">Apagar conta?</string>
+    <string name="dialog_delete_message">A conta será apagada. Podes recuperá-la durante 30 dias. Depois disso, os dados são removidos de vez.</string>
+    <string name="dialog_delete_confirm_hint">Escreve %1$s para confirmar</string>
+
+    <!-- Ações -->
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_deactivate">Desativar</string>
+    <string name="action_delete">Apagar</string>
+    <string name="action_retry">Tentar novamente</string>
+    <string name="action_sign_in">Iniciar sessão</string>
+
+    <!-- Estados -->
+    <string name="empty_signed_out_title">Sem sessão iniciada</string>
+    <string name="empty_signed_out_message">Inicia sessão para veres o teu perfil.</string>
+
+    <!-- Mensagens -->
+    <string name="msg_signed_out">Sessão terminada</string>
+    <string name="msg_deactivated">Conta desativada</string>
+    <string name="msg_deleted">Conta apagada</string>
+
+    <!-- Erros -->
+    <string name="error_network">Não foi possível ligar ao servidor. Verifica a ligação.</string>
+    <string name="error_session_expired">A sessão expirou. Inicia sessão de novo.</string>
+    <string name="error_generic">Algo correu mal. Tenta novamente.</string>
+</resources>

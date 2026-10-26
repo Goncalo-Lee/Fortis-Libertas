@@ -24,8 +24,10 @@ import pt.fortislibertas.ui.navigation.ProfileRoute
 import pt.fortislibertas.ui.navigation.TopLevelDestination
 import pt.fortislibertas.ui.navigation.TransactionsRoute
 import pt.fortislibertas.ui.navigation.isOn
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
+import androidx.compose.runtime.remember
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
+import pt.fortislibertas.ui.profile.ProfileScreen
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 
@@ -35,7 +37,7 @@ fun FortisApp(navController: NavHostController = rememberNavController()) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     val currentTab = TopLevelDestination.entries.firstOrNull { currentDestination.isOn(it) }
-    val hazeState = rememberHazeState()
+    val hazeState = remember { HazeState() }
 
     Scaffold(
         bottomBar = {
@@ -53,14 +55,14 @@ fun FortisApp(navController: NavHostController = rememberNavController()) {
             startDestination = HomeRoute,
             modifier = Modifier
                 .fillMaxSize()
-                .hazeSource(hazeState),
+                .haze(hazeState),
         ) {
             // Placeholders: troca cada um pelo ecrã verdadeiro quando o criares
             composable<HomeRoute> { PlaceholderScreen("Home") }
             composable<DashboardRoute> { PlaceholderScreen("Dashboard") }
             composable<NewRecordRoute> { PlaceholderScreen("Novo registo") }
             composable<TransactionsRoute> { PlaceholderScreen("Transações") }
-            composable<ProfileRoute> { PlaceholderScreen("Perfil") }
+            composable<ProfileRoute> { ProfileScreen(innerPadding, onNavigateToSignIn = { }) }
         }
     }
 }

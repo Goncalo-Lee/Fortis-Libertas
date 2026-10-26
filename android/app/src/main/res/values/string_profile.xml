@@ -1,0 +1,58 @@
+<resources>
+    <!-- Profile -->
+    <string name="profile_title">My profile</string>
+    <string name="profile_edit">Edit profile</string>
+    <string name="profile_switch_account">Switch account</string>
+    <string name="profile_account_details">Account details</string>
+    <string name="profile_account_id">ID: %1$s</string>
+    <string name="profile_balance">Account balance</string>
+    <string name="profile_saved">Amount saved</string>
+    <string name="profile_password">Password</string>
+    <string name="profile_password_desc">Change your password here.</string>
+    <string name="profile_banks">Banks</string>
+    <string name="profile_banks_desc">See your bank accounts and cards.</string>
+    <string name="profile_dashboards">Dashboards</string>
+    <string name="profile_dashboards_desc">See your dashboards.</string>
+    <string name="profile_section_account">Account</string>
+    <string name="profile_sign_out">Sign out</string>
+    <string name="profile_sign_out_desc">Sign out of this account on this device.</string>
+    <string name="profile_deactivate">Deactivate account</string>
+    <string name="profile_deactivate_desc">Suspend your account. You can reactivate it later.</string>
+    <string name="profile_delete">Delete account</string>
+    <string name="profile_delete_desc">Delete your account and your data.</string>
+    <string name="avatar_description">Profile picture</string>
+
+    <!-- Accounts -->
+    <string name="accounts_title">Accounts</string>
+    <string name="accounts_add">Add account</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_sign_out_title">Sign out?</string>
+    <string name="dialog_sign_out_message">You can sign in again at any time.</string>
+    <string name="dialog_deactivate_title">Deactivate account?</string>
+    <string name="dialog_deactivate_message">Your account will be suspended and hidden. Sign in again to reactivate it.</string>
+    <string name="dialog_delete_title">Delete account?</string>
+    <string name="dialog_delete_message">Your account will be deleted. You can recover it within 30 days. After that, your data is removed permanently.</string>
+    <string name="dialog_delete_confirm_hint">Type %1$s to confirm</string>
+
+    <!-- Actions -->
+    <string name="action_cancel">Cancel</string>
+    <string name="action_deactivate">Deactivate</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_retry">Try again</string>
+    <string name="action_sign_in">Sign in</string>
+
+    <!-- States -->
+    <string name="empty_signed_out_title">No account signed in</string>
+    <string name="empty_signed_out_message">Sign in to see your profile.</string>
+
+    <!-- Messages -->
+    <string name="msg_signed_out">Signed out</string>
+    <string name="msg_deactivated">Account deactivated</string>
+    <string name="msg_deleted">Account deleted</string>
+
+    <!-- Errors -->
+    <string name="error_network">Couldn\'t reach the server. Check your connection.</string>
+    <string name="error_session_expired">Your session expired. Sign in again.</string>
+    <string name="error_generic">Something went wrong. Try again.</string>
+</resources>
