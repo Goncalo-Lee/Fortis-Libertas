@@ -14,9 +14,13 @@ import pt.fortislibertas.data.local.AccountStore
 import pt.fortislibertas.data.local.FakeData
 import pt.fortislibertas.data.remote.AuthInterceptor
 import pt.fortislibertas.data.remote.FortisApi
+import pt.fortislibertas.data.remote.RecordApi
 import pt.fortislibertas.data.repository.FakeProfileRepository
+import pt.fortislibertas.data.repository.FakeRecordRepository
 import pt.fortislibertas.data.repository.ProfileRepository
+import pt.fortislibertas.data.repository.RecordRepository
 import pt.fortislibertas.data.repository.RemoteProfileRepository
+import pt.fortislibertas.data.repository.RemoteRecordRepository
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
@@ -46,18 +50,22 @@ class AppContainer(context: Context) {
             .build()
     }
 
-    private val api: FortisApi by lazy {
+    private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BuildConfig.API_URL)
             .client(okHttp)
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
-            .create(FortisApi::class.java)
     }
+
+    // ── Repositórios ─────────────────────────────────────
 
     val profileRepository: ProfileRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeProfileRepository(accountStore)
-        else RemoteProfileRepository(api)
+        else RemoteProfileRepository(retrofit.create(FortisApi::class.java))
+    val recordRepository: RecordRepository =
+        if (BuildConfig.USE_FAKE_DATA) FakeRecordRepository()
+        else RemoteRecordRepository(retrofit.create(RecordApi::class.java))
 
     init {
         if (BuildConfig.USE_FAKE_DATA) {
@@ -65,3 +73,4 @@ class AppContainer(context: Context) {
         }
     }
 }
+

@@ -2,7 +2,9 @@ package pt.fortislibertas
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -27,17 +29,17 @@ import pt.fortislibertas.ui.navigation.isOn
 import androidx.compose.runtime.remember
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
+import pt.fortislibertas.ui.newrecord.NewRecordScreen
 import pt.fortislibertas.ui.profile.ProfileScreen
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 
 @Composable
 fun FortisApp(navController: NavHostController = rememberNavController()) {
-    // Observa o ecrã atual para saber que item da barra pintar
+    val hazeState = remember { HazeState() }                 // Haze 1.0.0
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     val currentTab = TopLevelDestination.entries.firstOrNull { currentDestination.isOn(it) }
-    val hazeState = remember { HazeState() }
 
     Scaffold(
         bottomBar = {
@@ -55,14 +57,21 @@ fun FortisApp(navController: NavHostController = rememberNavController()) {
             startDestination = HomeRoute,
             modifier = Modifier
                 .fillMaxSize()
-                .haze(hazeState),
+                .haze(hazeState),                            // Haze 1.0.0 (nos novos: hazeSource)
         ) {
-            // Placeholders: troca cada um pelo ecrã verdadeiro quando o criares
-            composable<HomeRoute> { PlaceholderScreen("Home") }
-            composable<DashboardRoute> { PlaceholderScreen("Dashboard") }
-            composable<NewRecordRoute> { PlaceholderScreen("Novo registo") }
-            composable<TransactionsRoute> { PlaceholderScreen("Transações") }
-            composable<ProfileRoute> { ProfileScreen(innerPadding, onNavigateToSignIn = { }) }
+            composable<HomeRoute> { PlaceholderScreen("Home", innerPadding) }
+            composable<DashboardRoute> { PlaceholderScreen("Dashboard", innerPadding) }
+            composable<NewRecordRoute> {
+                NewRecordScreen(contentPadding = innerPadding)
+            }
+            composable<TransactionsRoute> { PlaceholderScreen("Transações", innerPadding) }
+            composable<ProfileRoute> {
+                ProfileScreen(
+                    contentPadding = innerPadding,
+                    // TODO: trocar quando existir o ecrã de login
+                    onNavigateToSignIn = {},
+                )
+            }
         }
     }
 }
@@ -82,8 +91,13 @@ private fun NavHostController.navigateToTab(destination: TopLevelDestination) {
 }
 
 @Composable
-private fun PlaceholderScreen(title: String) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+private fun PlaceholderScreen(title: String, contentPadding: PaddingValues) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .padding(contentPadding),
+        contentAlignment = Alignment.Center,
+    ) {
         Text(title, style = MaterialTheme.typography.headlineMedium)
     }
 }

@@ -1,0 +1,75 @@
+<resources>
+    <!-- Register -->
+    <string name="register_title">Register</string>
+    <string name="register_new_record">New financial record</string>
+    <string name="register_new_plan">New instalment plan</string>
+    <string name="register_new_savings">New savings</string>
+    <string name="register_savings_soon">Savings are coming soon</string>
+    <string name="notifications">Notifications</string>
+
+    <!-- Fields -->
+    <string name="field_name">Name</string>
+    <string name="field_description">Description (optional)</string>
+    <string name="field_record_type">Record type</string>
+    <string name="field_price">Price</string>
+    <string name="field_currency">Currency</string>
+    <string name="field_payment_method">Payment method</string>
+    <string name="field_payment_date">Payment date</string>
+    <string name="field_status">Status</string>
+    <string name="field_category">Category</string>
+    <string name="field_tags">Tags</string>
+    <string name="field_instalment_plan">Instalment plan</string>
+    <string name="field_total_amount">Total amount</string>
+    <string name="field_total_instalments">Instalments</string>
+    <string name="field_first_due_date">First due date</string>
+
+    <!-- Hints -->
+    <string name="hint_select">Select</string>
+    <string name="hint_none">None</string>
+    <string name="hint_add_tags">Add</string>
+    <string name="instalment_value">%1$d × %2$s</string>
+    <plurals name="tags_count">
+        <item quantity="one">%d tag</item>
+        <item quantity="other">%d tags</item>
+    </plurals>
+
+    <!-- Enums -->
+    <string name="type_expense">Expense</string>
+    <string name="type_income">Income</string>
+    <string name="type_investment">Investment</string>
+    <string name="status_paid">Paid</string>
+    <string name="status_pending">Pending</string>
+
+    <!-- Actions -->
+    <string name="action_save">Save</string>
+    <string name="action_ok">OK</string>
+    <string name="action_apply">Apply</string>
+    <string name="action_clear_all">Clear all</string>
+    <string name="action_select_all">Select all</string>
+    <string name="action_new_tag">New tag</string>
+    <string name="action_new_category">New category</string>
+    <string name="action_create">Create</string>
+
+    <!-- Pickers -->
+    <string name="search">Search</string>
+    <string name="no_results">No results</string>
+    <string name="tags_title">Select tags</string>
+    <string name="tags_related">Related to %1$s</string>
+    <string name="tags_all">All tags</string>
+    <string name="tags_new_name">Tag name</string>
+    <plurals name="tags_selected">
+        <item quantity="one">%d tag selected</item>
+        <item quantity="other">%d tags selected</item>
+    </plurals>
+    <string name="category_title">Select category</string>
+    <string name="category_new_name">Category name</string>
+    <string name="category_color">Color</string>
+    <string name="category_choose_type_first">Choose the record type first to create a category.</string>
+
+    <!-- Validation and messages -->
+    <string name="error_required">Required</string>
+    <string name="error_invalid_amount">Enter a valid amount</string>
+    <string name="error_min_instalments">At least 2 instalments</string>
+    <string name="msg_record_saved">Record saved</string>
+    <string name="msg_plan_saved">Instalment plan saved</string>
+</resources>

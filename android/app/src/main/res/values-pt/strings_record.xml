@@ -1,0 +1,77 @@
+<resources>
+    <!-- Registar -->
+    <string name="register_title">Registar</string>
+    <string name="register_new_record">Novo registo financeiro</string>
+    <string name="register_new_plan">Novo plano de prestações</string>
+    <string name="register_new_savings">Nova poupança</string>
+    <string name="register_savings_soon">As poupanças chegam em breve</string>
+    <string name="notifications">Notificações</string>
+
+    <!-- Campos -->
+    <string name="field_name">Nome</string>
+    <string name="field_description">Descrição (opcional)</string>
+    <string name="field_record_type">Tipo de registo</string>
+    <string name="field_price">Valor</string>
+    <string name="field_currency">Moeda</string>
+    <string name="field_payment_method">Método de pagamento</string>
+    <string name="field_payment_date">Data de pagamento</string>
+    <string name="field_status">Estado</string>
+    <string name="field_category">Categoria</string>
+    <string name="field_tags">Tags</string>
+    <string name="field_instalment_plan">Plano de prestações</string>
+    <string name="field_total_amount">Valor total</string>
+    <string name="field_total_instalments">N.º de prestações</string>
+    <string name="field_first_due_date">1.ª prestação</string>
+
+    <!-- Ajudas -->
+    <string name="hint_select">Escolher</string>
+    <string name="hint_none">Nenhum</string>
+    <string name="hint_add_tags">Adicionar</string>
+    <string name="instalment_value">%1$d × %2$s</string>
+    <plurals name="tags_count">
+        <item quantity="one">%d tag</item>
+        <item quantity="many">%d tags</item>
+        <item quantity="other">%d tags</item>
+    </plurals>
+
+    <!-- Enums -->
+    <string name="type_expense">Despesa</string>
+    <string name="type_income">Receita</string>
+    <string name="type_investment">Investimento</string>
+    <string name="status_paid">Pago</string>
+    <string name="status_pending">Pendente</string>
+
+    <!-- Ações -->
+    <string name="action_save">Guardar</string>
+    <string name="action_ok">OK</string>
+    <string name="action_apply">Aplicar</string>
+    <string name="action_clear_all">Limpar</string>
+    <string name="action_select_all">Selecionar todas</string>
+    <string name="action_new_tag">Nova tag</string>
+    <string name="action_new_category">Nova categoria</string>
+    <string name="action_create">Criar</string>
+
+    <!-- Seletores -->
+    <string name="search">Pesquisar</string>
+    <string name="no_results">Sem resultados</string>
+    <string name="tags_title">Escolher tags</string>
+    <string name="tags_related">Relacionadas com %1$s</string>
+    <string name="tags_all">Todas as tags</string>
+    <string name="tags_new_name">Nome da tag</string>
+    <plurals name="tags_selected">
+        <item quantity="one">%d tag selecionada</item>
+        <item quantity="many">%d tags selecionadas</item>
+        <item quantity="other">%d tags selecionadas</item>
+    </plurals>
+    <string name="category_title">Escolher categoria</string>
+    <string name="category_new_name">Nome da categoria</string>
+    <string name="category_color">Cor</string>
+    <string name="category_choose_type_first">Escolhe primeiro o tipo de registo para criar uma categoria.</string>
+
+    <!-- Validação e mensagens -->
+    <string name="error_required">Obrigatório</string>
+    <string name="error_invalid_amount">Indica um valor válido</string>
+    <string name="error_min_instalments">Pelo menos 2 prestações</string>
+    <string name="msg_record_saved">Registo guardado</string>
+    <string name="msg_plan_saved">Plano de prestações guardado</string>
+</resources>
