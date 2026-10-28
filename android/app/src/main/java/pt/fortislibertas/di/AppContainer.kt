@@ -14,11 +14,15 @@ import pt.fortislibertas.data.local.AccountStore
 import pt.fortislibertas.data.local.FakeData
 import pt.fortislibertas.data.remote.AuthInterceptor
 import pt.fortislibertas.data.remote.FortisApi
+import pt.fortislibertas.data.remote.HomeApi
 import pt.fortislibertas.data.remote.RecordApi
+import pt.fortislibertas.data.repository.FakeHomeRepository
 import pt.fortislibertas.data.repository.FakeProfileRepository
 import pt.fortislibertas.data.repository.FakeRecordRepository
+import pt.fortislibertas.data.repository.HomeRepository
 import pt.fortislibertas.data.repository.ProfileRepository
 import pt.fortislibertas.data.repository.RecordRepository
+import pt.fortislibertas.data.repository.RemoteHomeRepository
 import pt.fortislibertas.data.repository.RemoteProfileRepository
 import pt.fortislibertas.data.repository.RemoteRecordRepository
 import retrofit2.Retrofit
@@ -66,6 +70,10 @@ class AppContainer(context: Context) {
     val recordRepository: RecordRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeRecordRepository()
         else RemoteRecordRepository(retrofit.create(RecordApi::class.java))
+
+    val homeRepository: HomeRepository =
+        if (BuildConfig.USE_FAKE_DATA) FakeHomeRepository()
+        else RemoteHomeRepository(retrofit.create(HomeApi::class.java))
 
     init {
         if (BuildConfig.USE_FAKE_DATA) {

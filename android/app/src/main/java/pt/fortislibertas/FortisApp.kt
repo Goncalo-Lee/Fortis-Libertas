@@ -29,6 +29,7 @@ import pt.fortislibertas.ui.navigation.isOn
 import androidx.compose.runtime.remember
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
+import pt.fortislibertas.ui.home.HomeScreen
 import pt.fortislibertas.ui.newrecord.NewRecordScreen
 import pt.fortislibertas.ui.profile.ProfileScreen
 
@@ -59,7 +60,16 @@ fun FortisApp(navController: NavHostController = rememberNavController()) {
                 .fillMaxSize()
                 .haze(hazeState),                            // Haze 1.0.0 (nos novos: hazeSource)
         ) {
-            composable<HomeRoute> { PlaceholderScreen("Home", innerPadding) }
+            composable<HomeRoute> {
+                HomeScreen(
+                    contentPadding = innerPadding,
+                    onOpenBanks = { /* TODO: ecrã Bancos e cartões */ },
+                    onSeeAllTransactions = {
+                        navController.navigateToTab(TopLevelDestination.TRANSACTIONS)
+                    },
+                    onSignIn = { /* TODO: ecrã de login */ },
+                )
+            }
             composable<DashboardRoute> { PlaceholderScreen("Dashboard", innerPadding) }
             composable<NewRecordRoute> {
                 NewRecordScreen(contentPadding = innerPadding)
@@ -68,8 +78,7 @@ fun FortisApp(navController: NavHostController = rememberNavController()) {
             composable<ProfileRoute> {
                 ProfileScreen(
                     contentPadding = innerPadding,
-                    // TODO: trocar quando existir o ecrã de login
-                    onNavigateToSignIn = {},
+                    onNavigateToSignIn = { /* TODO: ecrã de login */ },
                 )
             }
         }

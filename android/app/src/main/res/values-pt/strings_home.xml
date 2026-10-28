@@ -1,0 +1,18 @@
+<resources>
+    <string name="home_title">Início</string>
+    <string name="greeting_morning">Bom dia,</string>
+    <string name="greeting_afternoon">Boa tarde,</string>
+    <string name="greeting_evening">Boa noite,</string>
+    <string name="total_balance">Saldo total</string>
+    <string name="vs_last_week">vs semana passada</string>
+    <string name="banks_and_cards">Bancos e cartões</string>
+    <string name="overview_week">Esta semana</string>
+    <string name="legend_income">Receitas</string>
+    <string name="legend_expense">Despesas</string>
+    <string name="chart_week_description">Esta semana: receitas %1$s, despesas %2$s</string>
+    <string name="recent_transactions">Movimentos recentes</string>
+    <string name="see_all">Ver todos</string>
+    <string name="today">Hoje</string>
+    <string name="yesterday">Ontem</string>
+    <string name="home_no_transactions">Ainda não tens movimentos. Adiciona o primeiro em Novo.</string>
+</resources>
