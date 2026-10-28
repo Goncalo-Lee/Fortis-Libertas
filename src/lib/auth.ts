@@ -1,6 +1,6 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth} from "better-auth";
-import { admin, twoFactor } from "better-auth/plugins";
+import {admin, bearer, twoFactor} from "better-auth/plugins";
 import { db } from "../db";
 import * as schema from "../db/schema";
 import { generateId } from "../db/types";
@@ -45,7 +45,7 @@ export const auth = betterAuth({
   }),
 
   emailVerification: {
-    sendOnSignUp: true,
+    sendOnSignUp: false,
     autoSignInAfterVerification: true,
 
     sendVerificationEmail: async ({ user, url }) => {
@@ -72,7 +72,7 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 8,
     maxPasswordLength: 32,
-    requireEmailVerification: true,
+    requireEmailVerification: false,
 
     sendResetPassword: async ({ user, url }) => {
       await transporter.sendMail({
@@ -117,6 +117,7 @@ export const auth = betterAuth({
   },
   appName: "FortisLibertas",
   plugins: [
+      bearer(),
     twoFactor({
       issuer: "Fortis Libertas", // Name shown in the authenticator app (Google Auth, Authy, etc.)
       totpOptions: {

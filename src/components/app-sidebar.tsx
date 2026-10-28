@@ -32,10 +32,10 @@ const userMenus = {
     { title: "Notificações", url: "/dashboard/notifications", icon: <BellIcon /> },
   ],
   documents: [
-    { name: "Exportações", url: "/exportations", icon: <FileOutputIcon /> },
-    { name: "Gerador de relatórios", url: "/reports-generator", icon: <FileChartColumnIcon /> },
-    { name: "Faturas", url: "/invoices", icon: <FileTextIcon /> },
-    { name: "Registo de transações", url: "/transactions-log", icon: <ArrowLeftRightIcon /> },
+    { name: "Exportações", url: "/dashboard/documents/exportations", icon: <FileOutputIcon /> },
+    { name: "Gerador de relatórios", url: "/dashboard/documents/reports-generator", icon: <FileChartColumnIcon /> },
+    { name: "Faturas", url: "/dashboard/documents/invoices", icon: <FileTextIcon /> },
+    { name: "Registo de transações", url: "/dashboard/documents/transactions-log", icon: <ArrowLeftRightIcon /> },
   ]
 }
 
