@@ -709,7 +709,7 @@ All paths are relative to `/dashboards/{dashboard_id}`.
 
 ## 14. Installment Plans
 
-Multi-installment financing plans that can group several financial records. Scope: **dashboard**. Base path: `/dashboards/{dashboard_id}/installment-plans`.
+Multi-installment financing plans that can group several financial records. Scope: **dashboard**[cite: 2]. Base path: `/dashboards/{dashboard_id}/installment-plans`[cite: 2].
 
 ### 14.1 Endpoints
 
@@ -722,7 +722,7 @@ Multi-installment financing plans that can group several financial records. Scop
 | `DELETE` | `/installment-plans/{installment_plan_id}` | Soft-delete a plan | `editor` | `204` | `401`, `404`, `409` |
 | `GET` | `/installment-plans/{installment_plan_id}/financial-records` | List records of the plan | `viewer` | `200` | `401`, `404` |
 
-All paths are relative to `/dashboards/{dashboard_id}`.
+All paths are relative to `/dashboards/{dashboard_id}`[cite: 2].
 
 ### 14.2 Representation
 
@@ -731,6 +731,8 @@ All paths are relative to `/dashboards/{dashboard_id}`.
 | `installment_plan_id` | uuid | |
 | `dashboard_id` | uuid | |
 | `register_by_id` | uuid | Creator. Read-only. |
+| `name` | string | ≤ 255 chars. |
+| `description` | string \| null | |
 | `total_amount` | decimal string | `decimal(10,2)`. |
 | `total_installments` | integer | |
 | `due_date` | date | Final due date of the whole plan. |
@@ -744,6 +746,8 @@ All paths are relative to `/dashboards/{dashboard_id}`.
 
 | Field | Type | Required | Constraints | Notes |
 | :--- | :--- | :-: | :--- | :--- |
+| `name` | string | `POST`: Yes | 1–255 chars | |
+| `description` | string \| null | No | | |
 | `total_amount` | decimal string | `POST`: Yes | `> 0`, `^\d{1,8}(\.\d{1,2})?$` | |
 | `total_installments` | integer | `POST`: Yes | ≥ 1 | |
 | `due_date` | date | `POST`: Yes | `YYYY-MM-DD` | |
@@ -751,9 +755,9 @@ All paths are relative to `/dashboards/{dashboard_id}`.
 
 ### 14.4 Business Rules
 
-- List query: `status` (multi-value), `due_from`, `due_to` (dates), `sort` = `due_date` (default), `total_amount`, `created_at`.
-- `PATCH` rejects `total_installments` lower than the number of linked non-deleted records (`422 VALIDATION_ERROR`).
-- `DELETE` returns `409 IN_USE` while records are linked. Use `DELETE ...?detach_records=true` to set `installment_plan_id = NULL` on those records (mirrors `SET NULL`) and soft-delete the plan in one transaction. Detaching is explicit because it changes financial history.
+- List query: `status` (multi-value), `due_from`, `due_to` (dates), `sort` = `due_date` (default), `total_amount`, `created_at`[cite: 2]. (Consider adding `q` to match `name` and `description` here as well).
+- `PATCH` rejects `total_installments` lower than the number of linked non-deleted records (`422 VALIDATION_ERROR`)[cite: 2].
+- `DELETE` returns `409 IN_USE` while records are linked[cite: 2]. Use `DELETE ...?detach_records=true` to set `installment_plan_id = NULL` on those records (mirrors `SET NULL`) and soft-delete the plan in one transaction[cite: 2]. Detaching is explicit because it changes financial history[cite: 2].
 
 ---
 

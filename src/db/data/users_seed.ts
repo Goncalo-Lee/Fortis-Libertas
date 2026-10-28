@@ -169,9 +169,9 @@ async function seed() {
 
         await connection.execute(`
       INSERT INTO installment_plan (
-        installment_plan_id, dashboard_id, register_by_id, total_amount, total_installments, due_date, status, created_at, updated_at
+        installment_plan_id, dashboard_id, register_by_id, name, description, total_amount, total_installments, due_date, status, created_at, updated_at
       ) VALUES (
-        UUID_TO_BIN(:installmentPlanId), UUID_TO_BIN(:dashboardId), UUID_TO_BIN(:userId), 120.00, 3, '2026-11-25', 'pending', NOW(), NOW()
+        UUID_TO_BIN(:installmentPlanId), UUID_TO_BIN(:dashboardId), UUID_TO_BIN(:userId), 'Compra do Computador', 'Descrição do computador', 120.00, 3, '2026-11-25', 'pending', NOW(), NOW()
       )
     `, { installmentPlanId, dashboardId, userId });
 
