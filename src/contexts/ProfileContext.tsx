@@ -6,9 +6,13 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 interface UserProfile {
     user_id: string;
     full_name: string;
+    user_name: string | null;
     email: string;
+    phone: string | null;
+    birth_date: string | null;
     currency: string;
     language: string;
+    image?: string | null;
 }
 
 const ProfileContext = createContext<{ profile: UserProfile | null; loading: boolean } | undefined>(undefined);
@@ -19,7 +23,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         // Vai buscar a informação de quem fez login através do cookie do Better Auth
-        fetch('/api/v1/me') // Substitua pelo endpoint correto do seu colega
+        fetch('/api/v1/me') // endpoint
             .then(res => {
                 if (!res.ok) throw new Error("Não autorizado");
                 return res.json();
