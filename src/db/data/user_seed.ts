@@ -19,7 +19,7 @@ async function seed() {
         console.log("🚀 A gerar identificadores e a preparar dados relacionais...");
 
         // 1. Gerar UUIDs para todas as entidades principais
-        const userId = randomUUID();
+        const userId = "01a183f3-c947-77f3-b678-96e46d13f7dc";
         const accountPkId = randomUUID();
         const accountIdentifierId = randomUUID(); // Gerado como UUID para o Better Auth
         const dashboardId = randomUUID();
@@ -40,53 +40,36 @@ async function seed() {
         await connection.beginTransaction();
         console.log("📦 A inserir entidades principais (User, Account, Profile, Dashboard)...");
 
+// ==========================================
+        // BLOCK 1: PROFILE & WORKSPACE
         // ==========================================
-        // BLOCO 1: UTILIZADOR, CONTA (AUTH) & WORKSPACE
-        // ==========================================
+        console.log("📦 Inserting Profile and Dashboard for the existing user...");
+
+        // Using INSERT IGNORE prevents crashes if the profile already exists
         await connection.execute(`
-      INSERT INTO user (
-        user_id, user_name, full_name, email, email_verified_at, two_factor_enabled, created_at, updated_at
-      ) VALUES (
-        UUID_TO_BIN(:userId), 'maria.nova', 'Maria Silva', :email, NOW(), 0, NOW(), NOW()
-      )
-    `, { userId, email });
+            INSERT IGNORE INTO profile (
+                user_id, birth_date, phone, currency, language, created_at, updated_at
+            ) VALUES (
+                UUID_TO_BIN(:userId), '1990-05-20', '+351912345678', 'EUR', 'pt-PT', NOW(), NOW()
+            )
+        `, { userId });
 
         await connection.execute(`
-      INSERT INTO account (
-        account_id, account_identifier_id, user_id, provider_id, password, created_at, updated_at
-      ) VALUES (
-        UUID_TO_BIN(:accountPkId), :accountIdentifierId, UUID_TO_BIN(:userId), 'credential', :password, NOW(), NOW()
-      )
-    `, {
-            accountPkId,
-            accountIdentifierId,
-            userId,
-            password: hashedPassword
-        });
+            INSERT INTO dashboard (
+                dashboard_id, name, is_active, created_at, updated_at
+            ) VALUES (
+                         UUID_TO_BIN(:dashboardId), 'Finanças da Maria', 1, NOW(), NOW()
+                     )
+        `, { dashboardId });
 
+        // Using INSERT IGNORE here as well just to be completely safe
         await connection.execute(`
-      INSERT INTO profile (
-        user_id, birth_date, phone, currency, language, created_at, updated_at
-      ) VALUES (
-        UUID_TO_BIN(:userId), '1990-05-20', '+351912345678', 'EUR', 'pt-PT', NOW(), NOW()
-      )
-    `, { userId });
-
-        await connection.execute(`
-      INSERT INTO dashboard (
-        dashboard_id, name, is_active, created_at, updated_at
-      ) VALUES (
-        UUID_TO_BIN(:dashboardId), 'Finanças da Maria', 1, NOW(), NOW()
-      )
-    `, { dashboardId });
-
-        await connection.execute(`
-      INSERT INTO user__dashboard (
-        dashboard_id, user_id, role, created_at, updated_at
-      ) VALUES (
-        UUID_TO_BIN(:dashboardId), UUID_TO_BIN(:userId), 'owner', NOW(), NOW()
-      )
-    `, { dashboardId, userId });
+            INSERT IGNORE INTO user__dashboard (
+                dashboard_id, user_id, role, created_at, updated_at
+            ) VALUES (
+                UUID_TO_BIN(:dashboardId), UUID_TO_BIN(:userId), 'owner', NOW(), NOW()
+            )
+        `, { dashboardId, userId });
 
         // ==========================================
         // BLOCO 2: BANCOS & CARTÕES

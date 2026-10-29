@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:users_seed": "tsx --env-file=.env src/db/data/users_seed.ts",
+    "db:user_seed": "tsx --env-file=.env src/db/data/user_seed.ts",
     "db:seed": "src/db/data/seed.ts",
     "db:seed:admin": "tsx --env-file=.env src/db/data/seed_admin.ts",
     "db:delete": "tsx --env-file=.env src/db/data/delete.ts",

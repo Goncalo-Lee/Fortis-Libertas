@@ -1,43 +1,51 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useDashboard } from '@/contexts/DashboardContext'; // Importar o cérebro
 
-export default function UserProfile() {
-    const [userName, setUserName] = useState('');
+export default function InitialBalanceComponent() {
+    const { activeDashboard, loading: contextLoading } = useDashboard();
+
+    const [initialBalance, setInitialBalance] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        async function fetchUserData() {
-            try {
-                const response = await fetch('/api/v1/me');
+        // Se o contexto ainda está a carregar ou não há dashboard ativo, espera.
+        if (contextLoading || !activeDashboard) return;
 
-                if (!response.ok) {
-                    throw new Error('Não foi possível obter os dados do utilizador.');
+        setLoading(true); // Se o utilizador trocou de dashboard, ativamos o loading
+
+        // Faz fetch direto usando o ID do dashboard que o contexto diz que está ativo!
+        fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/bank-accounts`)
+            .then(async (res) => {
+                if (!res.ok) throw new Error(`Falha HTTP ${res.status}`);
+                return res.json();
+            })
+            .then((data) => {
+                let balance = null;
+                if (Array.isArray(data) && data.length > 0) {
+                    balance = data[0].initial_balance ?? data[0].initialBalance;
+                } else if (data && Array.isArray(data.data) && data.data.length > 0) {
+                    balance = data.data[0].initial_balance ?? data.data[0].initialBalance;
                 }
 
-                const data = await response.json();
-
-                // Ajusta 'data.name' caso a propriedade na vossa API tenha outro nome
-                // (por exemplo: data.nome, data.user.name, etc.)
-                setUserName(data.data.full_name || data.data.user_name || 'Utilizador');
-            } catch (err) {
-                setError(err.message);
-            } finally {
+                setInitialBalance(balance !== null ? Number(balance) : 0);
                 setLoading(false);
-            }
-        }
+            })
+            .catch((err) => {
+                setError(err.message);
+                setLoading(false);
+            });
 
-        fetchUserData();
-    }, []);
+    }, [activeDashboard, contextLoading]); // <-- A MAGIA: Sempre que o activeDashboard mudar, isto corre outra vez automaticamente!
 
-    if (loading) return <p>A carregar o perfil...</p>;
-    if (error) return <p>Erro: {error}</p>;
+    if (contextLoading || loading) return <p>A sincronizar saldo...</p>;
+    if (error) return <p style={{ color: 'red' }}>Erro: {error}</p>;
 
     return (
-        <div className="p-4">
-            <h2>Olá, {userName || 'Utilizador'}!</h2>
-            <h3>dasdasd</h3>
+        <div>
+            <h2>Saldo de "{activeDashboard?.name}": {initialBalance?.toFixed(2)} €</h2>
         </div>
     );
 }

@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import Link from "next/link";
+import DashboardSwitcher from "@/components/layout/DashboardSwitcher";
 
 export default async function AccountSettingsPage() {
     return (
@@ -18,6 +19,8 @@ export default async function AccountSettingsPage() {
                         Gere as definições da tua conta e as preferências de segurança.
                     </p>
                 </div>
+
+
 
                 <div className="grid gap-8">
                     {/* 1. Cartão de Informações Pessoais */}
@@ -54,6 +57,7 @@ export default async function AccountSettingsPage() {
                             </div>
                         </CardContent>
                     </Card>
+
 
                     {/* 2. Cartão de Segurança */}
                     <Card className="shadow-sm">
@@ -97,6 +101,7 @@ export default async function AccountSettingsPage() {
                             </Button>
                         </CardContent>
                     </Card>
+
                 </div>
             </div>
         </div>
