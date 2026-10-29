@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
-import { ThemeProvider } from "@/components/theme-provider";
 import { Poppins } from 'next/font/google';
 import "./globals.css";
 import {Toaster} from "sonner";
-import {DashboardProvider} from "@/contexts/DashboardContext";
-import {ProfileProvider} from "@/contexts/ProfileContext";
+
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -24,14 +22,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
         <body className={poppins.variable} suppressHydrationWarning>
-        <ThemeProvider>
-            <ProfileProvider>       {/* 1º: Descobre quem é a pessoa e as suas preferências globais */}
-                <DashboardProvider> {/* 2º: Descobre os workspaces dessa pessoa */}
-                    {children}      {/* 3º: (O FinancialProvider só entra no sub-layout das páginas financeiras) */}
-                    <Toaster />
-                </DashboardProvider>
-            </ProfileProvider>
-        </ThemeProvider>
+        {children}
+        <Toaster />
         </body>
     </html>
   );

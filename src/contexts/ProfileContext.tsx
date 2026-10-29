@@ -23,14 +23,17 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         // Vai buscar a informação de quem fez login através do cookie do Better Auth
-        fetch('/api/v1/me') // endpoint
+        fetch('/api/v1/me', {
+            credentials: 'include' // 👈 Garante que envia sempre os cookies de sessão
+        })
             .then(res => {
                 if (!res.ok) throw new Error("Não autorizado");
                 return res.json();
             })
-            .then(data => {
-                // Junta os dados do User e do Profile
-                setProfile(data);
+            .then(resData => {
+                // A API devolve { success: true, data: { ... } }
+                // Portanto, guardamos o resData.data no estado
+                setProfile(resData.data || resData);
                 setLoading(false);
             })
             .catch(err => {
