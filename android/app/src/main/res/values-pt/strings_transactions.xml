@@ -1,0 +1,10 @@
+<resources>
+    <string name="transactions_title">Transações</string>
+    <string name="transactions_empty">Nenhum movimento corresponde à pesquisa ou aos filtros.</string>
+    <string name="filter_title">Filtros</string>
+    <string name="filter_all">Todos</string>
+    <string name="filter_investments">Investimentos</string>
+    <string name="filter_categories">Categorias</string>
+    <string name="filter_tags">Tags</string>
+    <string name="filter_amount">Valor</string>
+</resources>

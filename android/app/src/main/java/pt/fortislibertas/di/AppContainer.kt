@@ -16,15 +16,19 @@ import pt.fortislibertas.data.remote.AuthInterceptor
 import pt.fortislibertas.data.remote.FortisApi
 import pt.fortislibertas.data.remote.HomeApi
 import pt.fortislibertas.data.remote.RecordApi
+import pt.fortislibertas.data.remote.TransactionApi
 import pt.fortislibertas.data.repository.FakeHomeRepository
 import pt.fortislibertas.data.repository.FakeProfileRepository
 import pt.fortislibertas.data.repository.FakeRecordRepository
+import pt.fortislibertas.data.repository.FakeTransactionRepository
 import pt.fortislibertas.data.repository.HomeRepository
 import pt.fortislibertas.data.repository.ProfileRepository
 import pt.fortislibertas.data.repository.RecordRepository
 import pt.fortislibertas.data.repository.RemoteHomeRepository
 import pt.fortislibertas.data.repository.RemoteProfileRepository
 import pt.fortislibertas.data.repository.RemoteRecordRepository
+import pt.fortislibertas.data.repository.RemoteTransactionRepository
+import pt.fortislibertas.data.repository.TransactionRepository
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
@@ -74,6 +78,11 @@ class AppContainer(context: Context) {
     val homeRepository: HomeRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeHomeRepository()
         else RemoteHomeRepository(retrofit.create(HomeApi::class.java))
+
+    val transactionRepository: TransactionRepository =
+        if (BuildConfig.USE_FAKE_DATA) FakeTransactionRepository()
+        else RemoteTransactionRepository(retrofit.create(TransactionApi::class.java))
+
 
     init {
         if (BuildConfig.USE_FAKE_DATA) {

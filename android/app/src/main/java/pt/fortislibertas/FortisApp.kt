@@ -32,6 +32,7 @@ import dev.chrisbanes.haze.haze
 import pt.fortislibertas.ui.home.HomeScreen
 import pt.fortislibertas.ui.newrecord.NewRecordScreen
 import pt.fortislibertas.ui.profile.ProfileScreen
+import pt.fortislibertas.ui.transactions.TransactionsScreen
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 
@@ -74,7 +75,9 @@ fun FortisApp(navController: NavHostController = rememberNavController()) {
             composable<NewRecordRoute> {
                 NewRecordScreen(contentPadding = innerPadding)
             }
-            composable<TransactionsRoute> { PlaceholderScreen("Transações", innerPadding) }
+            composable<TransactionsRoute> {
+                TransactionsScreen(contentPadding = innerPadding)
+            }
             composable<ProfileRoute> {
                 ProfileScreen(
                     contentPadding = innerPadding,
