@@ -2,13 +2,19 @@ import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { dashboard, recordType, userDashboard } from "@/db/schema";
 import { generateId } from "@/db/types";
+import { getColorIdsByName, getIconIdsByCode } from "@/db/queries/catalogs";
 
 /* =======
   WRITE
 ======== */
 
 /** Record types seeded automatically when a dashboard is created. */
-const DEFAULT_RECORD_TYPES = ["Expenses", "Income", "Investment"];
+// Income and Expenses use the two reserved colors; Investment uses a free one.
+const DEFAULT_RECORD_TYPES = [
+  { name: "Expenses", color: "Expenses Red", icon: "trending_down" },
+  { name: "Income", color: "Income Green", icon: "payments" },
+  { name: "Investment", color: "Blue", icon: "trending_up" },
+];
 
 /**
  * Creates a new dashboard atomically.
@@ -33,6 +39,9 @@ export async function createDashboard(
 ) {
   const id = generateId();
 
+  const colors = await getColorIdsByName(DEFAULT_RECORD_TYPES.map((r) => r.color));
+  const icons = await getIconIdsByCode(DEFAULT_RECORD_TYPES.map((r) => r.icon));
+
   await db.transaction(async (tx) => {
     await tx.insert(dashboard).values({
       id,
@@ -43,7 +52,13 @@ export async function createDashboard(
     await tx.insert(userDashboard).values({ dashboardId: id, userId, role: "owner" });
 
     await tx.insert(recordType).values(
-      DEFAULT_RECORD_TYPES.map((name) => ({ id: generateId(), dashboardId: id, name })),
+      DEFAULT_RECORD_TYPES.map((r) => ({
+        id: generateId(),
+        dashboardId: id,
+        name: r.name,
+        colorId: colors.get(r.color)!,
+        iconId: icons.get(r.icon)!,
+      })),
     );
   });
 

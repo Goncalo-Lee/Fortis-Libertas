@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { profile } from "@/db/schema";
 import { getOrCreateProfile } from "./read";
+import { requireCurrencyId, requireLanguageId } from "../catalogs";
 import type { ProfileChanges } from "./type";
 import { user } from "@/db/schema";
 
@@ -39,8 +40,9 @@ export async function updateProfile(userId: string, changes: ProfileChanges) {
     set.birthDate = changes.birth_date ? new Date(changes.birth_date) : null;
   }
 
-  if (changes.currency !== undefined) set.currency = changes.currency;
-  if (changes.language !== undefined) set.language = changes.language;
+  // The API receives codes; the table stores ids. Unknown codes answer 422.
+  if (changes.currency !== undefined) set.currencyId = await requireCurrencyId(changes.currency);
+  if (changes.language !== undefined) set.languageId = await requireLanguageId(changes.language);
 
   // A new phone number is unverified until confirmed again.
   if (changes.phone !== undefined && changes.phone !== current.phone) {

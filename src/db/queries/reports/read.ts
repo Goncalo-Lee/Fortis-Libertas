@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { financialRecord, recordType, category, paymentMethod } from "@/db/schema";
+import { financialRecord, recordType, category, paymentMethod, currency } from "@/db/schema";
 import { and, eq, isNull, gte, lte, sql } from "drizzle-orm";
 
 /* ======
@@ -22,7 +22,9 @@ export async function getSummaryReport(dashboardId: string, options: SummaryRepo
     ];
 
     if (options.currency) {
-        conditions.push(eq(financialRecord.currency, options.currency));
+        conditions.push(
+            eq(financialRecord.currencyId, sql`(select ${currency.id} from ${currency} where ${currency.code} = ${options.currency})`),
+        );
     }
 
     let groupColumn: any = financialRecord.recordTypeId;

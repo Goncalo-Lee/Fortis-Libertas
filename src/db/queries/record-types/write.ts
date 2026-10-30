@@ -1,9 +1,10 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "../..";
-import { financialRecord, recordType } from "../../schema";
+import { financialRecord, installmentPlan, recordType, recordTypeCategory } from "../../schema";
 import { generateId } from "../../types";
 import { ApiError } from "../../../lib/api/errors";
 import { inDashboard, nameTaken } from "./../utils";
+import { assertColorAvailable, assertIconExists, isColorTaken } from "../catalogs";
 import { getRecordType } from "./read";
 import { CreateRecordTypeInput, UpdateRecordTypeInput } from "./type";
 
@@ -33,6 +34,10 @@ export async function createRecordType(dashboardId: string, input: CreateRecordT
     throw new ApiError("NAME_ALREADY_EXISTS");
   }
 
+  // Ordinary record types cannot take the reserved colors (those belong to Income and Expenses).
+  await assertColorAvailable({ table: recordType, dashboardId, colorId: input.color_id, reserved: false });
+  await assertIconExists(input.icon_id);
+
   const id = generateId();
   try {
     await db.insert(recordType).values({
@@ -40,8 +45,13 @@ export async function createRecordType(dashboardId: string, input: CreateRecordT
       dashboardId,
       name: input.name,
       description: input.description ?? null,
+      colorId: input.color_id,
+      iconId: input.icon_id,
     });
   } catch (error) {
+    if (await isColorTaken({ table: recordType, dashboardId, colorId: input.color_id, exceptId: id })) {
+      throw new ApiError("COLOR_IN_USE");
+    }
     if (await nameTaken({ table: recordType, dashboardId, name: input.name, exceptId: id })) {
       throw new ApiError("NAME_ALREADY_EXISTS");
     }
@@ -80,6 +90,22 @@ export async function updateRecordType(
   if (changes.name !== undefined && changes.name !== current.name) set.name = changes.name;
   if (changes.description !== undefined) set.description = changes.description;
 
+  // Income and Expenses (reserved color) can only swap to another reserved color; the others cannot take one.
+  if (changes.color_id !== undefined && changes.color_id !== current.colorId.toLowerCase()) {
+    await assertColorAvailable({
+      table: recordType,
+      dashboardId,
+      colorId: changes.color_id,
+      exceptId: id,
+      reserved: current.color.isReserved,
+    });
+    set.colorId = changes.color_id;
+  }
+  if (changes.icon_id !== undefined) {
+    await assertIconExists(changes.icon_id);
+    set.iconId = changes.icon_id;
+  }
+
   if (set.name !== undefined && (await nameTaken({ table: recordType, dashboardId, name: set.name, exceptId: id }))) {
     throw new ApiError("NAME_ALREADY_EXISTS");
   }
@@ -91,6 +117,9 @@ export async function updateRecordType(
         .set({ ...set, updatedAt: new Date() })
         .where(inDashboard(recordType, dashboardId, id));
     } catch (error) {
+      if (set.colorId !== undefined && (await isColorTaken({ table: recordType, dashboardId, colorId: set.colorId, exceptId: id }))) {
+        throw new ApiError("COLOR_IN_USE");
+      }
       if (set.name !== undefined && (await nameTaken({ table: recordType, dashboardId, name: set.name, exceptId: id }))) {
         throw new ApiError("NAME_ALREADY_EXISTS");
       }
@@ -132,8 +161,19 @@ export async function softDeleteRecordType(dashboardId: string, id: string) {
 
   if (used) throw new ApiError("IN_USE");
 
-  await db
-    .update(recordType)
-    .set({ deletedAt: new Date(), updatedAt: new Date() })
-    .where(inDashboard(recordType, dashboardId, id));
+  const [usedByPlan] = await db
+    .select({ id: installmentPlan.id })
+    .from(installmentPlan)
+    .where(and(eq(installmentPlan.recordTypeId, id), isNull(installmentPlan.deletedAt)))
+    .limit(1);
+
+  if (usedByPlan) throw new ApiError("IN_USE");
+
+  await db.transaction(async (tx) => {
+    await tx.delete(recordTypeCategory).where(eq(recordTypeCategory.recordTypeId, id));
+    await tx
+      .update(recordType)
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(inDashboard(recordType, dashboardId, id));
+  });
 }

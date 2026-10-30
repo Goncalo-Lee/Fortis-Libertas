@@ -1,9 +1,11 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { category, financialRecord, tagCategory } from "@/db/schema";
+import { category, financialRecord, installmentPlan, recordTypeCategory, tagCategory } from "@/db/schema";
 import { generateId } from "@/db/types";
 import { ApiError } from "@/lib/api/errors";
-import { assertTagsInDashboard } from "./relations";
+import { assertRecordTypesInDashboard, assertTagsInDashboard } from "./relations";
+import type { CreateCategoryInput, UpdateCategoryInput } from "./type";
+import { assertColorAvailable, assertIconExists, isColorTaken } from "../catalogs";
 import { getCategory } from "./read";
 import { inDashboard, nameTaken } from "../utils";
 
@@ -35,10 +37,13 @@ import { inDashboard, nameTaken } from "../utils";
  */
 export async function createCategory(
   dashboardId: string,
-  input: { name: string; description?: string | null; tag_ids?: string[] },
+  input: CreateCategoryInput,
 ) {
-  const tagIds = input.tag_ids ?? [];
+  const tagIds = input.tagIds ?? [];
   await assertTagsInDashboard(dashboardId, tagIds);
+  await assertRecordTypesInDashboard(dashboardId, input.recordTypeIds);
+  await assertColorAvailable({ table: category, dashboardId, colorId: input.colorId, reserved: false });
+  await assertIconExists(input.iconId);
   if (await nameTaken({ table: category, dashboardId, name: input.name })) throw new ApiError("NAME_ALREADY_EXISTS");
 
   const id = generateId();
@@ -49,12 +54,18 @@ export async function createCategory(
         dashboardId,
         name: input.name,
         description: input.description ?? null,
+        colorId: input.colorId,
+        iconId: input.iconId,
       });
+      await tx.insert(recordTypeCategory).values(
+        input.recordTypeIds.map((recordTypeId) => ({ recordTypeId, categoryId: id })),
+      );
       if (tagIds.length > 0) {
         await tx.insert(tagCategory).values(tagIds.map((tagId) => ({ categoryId: id, tagId })));
       }
     });
   } catch (error) {
+    if (await isColorTaken({ table: category, dashboardId, colorId: input.colorId, exceptId: id })) throw new ApiError("COLOR_IN_USE");
     if (await nameTaken({ table: category, dashboardId, name: input.name, exceptId: id })) throw new ApiError("NAME_ALREADY_EXISTS");
     throw error;
   }
@@ -84,7 +95,7 @@ export async function createCategory(
 export async function updateCategory(
   dashboardId: string,
   id: string,
-  changes: { name?: string; description?: string | null },
+  changes: UpdateCategoryInput,
 ) {
   const current = await getCategory(dashboardId, id);
   if (!current) return null;
@@ -92,6 +103,14 @@ export async function updateCategory(
   const set: Partial<typeof category.$inferInsert> = {};
   if (changes.name !== undefined && changes.name !== current.name) set.name = changes.name;
   if (changes.description !== undefined) set.description = changes.description;
+  if (changes.colorId !== undefined && changes.colorId !== current.colorId.toLowerCase()) {
+    await assertColorAvailable({ table: category, dashboardId, colorId: changes.colorId, exceptId: id, reserved: false });
+    set.colorId = changes.colorId;
+  }
+  if (changes.iconId !== undefined) {
+    await assertIconExists(changes.iconId);
+    set.iconId = changes.iconId;
+  }
 
   if (set.name !== undefined && (await nameTaken({ table: category, dashboardId, name: set.name, exceptId: id }))) {
     throw new ApiError("NAME_ALREADY_EXISTS");
@@ -104,6 +123,9 @@ export async function updateCategory(
         .set({ ...set, updatedAt: new Date() })
         .where(inDashboard(category, dashboardId, id));
     } catch (error) {
+      if (set.colorId !== undefined && (await isColorTaken({ table: category, dashboardId, colorId: set.colorId, exceptId: id }))) {
+        throw new ApiError("COLOR_IN_USE");
+      }
       if (set.name !== undefined && (await nameTaken({ table: category, dashboardId, name: set.name, exceptId: id }))) {
         throw new ApiError("NAME_ALREADY_EXISTS");
       }
@@ -139,8 +161,16 @@ export async function softDeleteCategory(dashboardId: string, id: string) {
     .limit(1);
   if (used) throw new ApiError("IN_USE");
 
+  const [usedByPlan] = await db
+    .select({ id: installmentPlan.id })
+    .from(installmentPlan)
+    .where(and(eq(installmentPlan.categoryId, id), isNull(installmentPlan.deletedAt)))
+    .limit(1);
+  if (usedByPlan) throw new ApiError("IN_USE");
+
   await db.transaction(async (tx) => {
     await tx.delete(tagCategory).where(eq(tagCategory.categoryId, id));
+    await tx.delete(recordTypeCategory).where(eq(recordTypeCategory.categoryId, id));
     await tx
       .update(category)
       .set({ deletedAt: new Date(), updatedAt: new Date() })

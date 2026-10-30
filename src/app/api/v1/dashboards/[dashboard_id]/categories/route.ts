@@ -57,6 +57,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
       name: body.name,
       description: body.description ?? null,
       tagIds: body.tag_ids ?? [],
+      colorId: body.color_id,
+      iconId: body.icon_id,
+      recordTypeIds: body.record_type_ids ?? [],
     });
 
     return NextResponse.json(

@@ -26,6 +26,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const updated = await updateCategory(dashboard_id, category_id, {
       name: body.name,
       description: body.description,
+      colorId: body.color_id,
+      iconId: body.icon_id,
     });
 
     return NextResponse.json({ data: updated }, { status: 200 });

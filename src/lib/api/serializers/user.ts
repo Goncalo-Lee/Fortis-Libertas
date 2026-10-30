@@ -11,7 +11,7 @@ type UserRow = Omit<InferSelectModel<typeof user>, "emailVerified"> & {
 
 // Type representing the raw database row for 'profile' table.
 // Uses the standard inferred type from Drizzle.
-type ProfileRow = InferSelectModel<typeof profile>;
+type ProfileRow = InferSelectModel<typeof profile> & { currency: string; language: string };
 
 /**
  * Serializes a raw database 'profile' row into a safe, standardized API response object.

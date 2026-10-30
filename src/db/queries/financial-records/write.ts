@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { financialRecord, tagFinancialRecord, installmentPlan } from "@/db/schema";
 import { generateId } from "@/db/types";
 import { inDashboard } from "../utils";
+import { DEFAULT_CURRENCY, requireCurrencyId } from "../catalogs";
 import { getFinancialRecord } from "./read";
 import { CreateFinancialRecordInput, UpdateFinancialRecordInput } from "./type";
 import { and, eq, isNull, sql } from "drizzle-orm";
@@ -40,6 +41,7 @@ export async function createFinancialRecord(
     }
 
     const id = generateId();
+    const currencyId = await requireCurrencyId(input.currency ?? DEFAULT_CURRENCY);
 
     await db.transaction(async (tx) => {
         await tx.insert(financialRecord).values({
@@ -55,7 +57,7 @@ export async function createFinancialRecord(
             name: input.name,
             description: input.description ?? null,
             price: input.price,
-            currency: input.currency ?? "EUR",
+            currencyId,
             paymentDate: input.paymentDate,
             status: input.status,
         });
@@ -106,7 +108,7 @@ export async function updateFinancialRecord(
     if (changes.name !== undefined) set.name = changes.name;
     if (changes.description !== undefined) set.description = changes.description;
     if (changes.price !== undefined) set.price = changes.price;
-    if (changes.currency !== undefined) set.currency = changes.currency;
+    if (changes.currency !== undefined) set.currencyId = await requireCurrencyId(changes.currency);
     if (changes.paymentDate !== undefined) set.paymentDate = changes.paymentDate;
     if (changes.status !== undefined) set.status = changes.status;
     if (changes.recordTypeId !== undefined) set.recordTypeId = sql`UUID_TO_BIN(${changes.recordTypeId})` as any;

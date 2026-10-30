@@ -26,10 +26,15 @@ export interface CreateCategoryInput {
     name: string;
     description?: string | null;
     tagIds?: string[];
+    colorId: string;
+    iconId: string;
+    recordTypeIds: string[];
 }
 
 export interface UpdateCategoryInput {
     name?: string;
+    colorId?: string;
+    iconId?: string;
     description?: string | null;
 }
 

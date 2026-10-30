@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "../..";
-import { tag, tagCategory } from "../../schema";
+import { recordType, tag, tagCategory } from "../../schema";
 import { ApiError } from "../../../lib/api/errors";
 
 /* ======
@@ -28,7 +28,44 @@ export async function assertTagsInDashboard(dashboardId: string, tagIds: string[
   const missing = tagIds.filter((id) => !found.has(id));
   if (missing.length > 0) {
     throw new ApiError("VALIDATION_ERROR", "Some tags do not exist in this dashboard.", [
-      { pointer: "/tag_ids", detail: `Unknown tag ids: ${missing.join(", ")}` },
+      { pointer: "/tag_ids", message: `Unknown tag ids: ${missing.join(", ")}` },
+    ]);
+  }
+}
+
+/**
+ * Ensures a non-empty list of record type IDs exists, is not soft-deleted, and belongs to the dashboard.
+ *
+ * @param dashboardId - The unique identifier of the dashboard the record types must belong to
+ * @param recordTypeIds - The record type IDs to validate. Must contain at least one
+ * @throws {ApiError} `VALIDATION_ERROR` pointing at `/record_type_ids` when empty or when some are unknown
+ *
+ * @example
+ * await assertRecordTypesInDashboard("dash_123", ["rt_1", "rt_2"]);
+ */
+export async function assertRecordTypesInDashboard(dashboardId: string, recordTypeIds: string[]) {
+  if (recordTypeIds.length === 0) {
+    throw new ApiError("VALIDATION_ERROR", "One or more fields are invalid.", [
+      { pointer: "/record_type_ids", message: "At least one record type is required." },
+    ]);
+  }
+
+  const rows = await db
+    .select({ id: recordType.id })
+    .from(recordType)
+    .where(
+      and(
+        eq(recordType.dashboardId, dashboardId),
+        isNull(recordType.deletedAt),
+        inArray(recordType.id, recordTypeIds),
+      ),
+    );
+
+  const found = new Set(rows.map((r) => r.id.toLowerCase()));
+  const missing = recordTypeIds.filter((id) => !found.has(id));
+  if (missing.length > 0) {
+    throw new ApiError("VALIDATION_ERROR", "Some record types do not exist in this dashboard.", [
+      { pointer: "/record_type_ids", message: `Unknown record type ids: ${missing.join(", ")}` },
     ]);
   }
 }

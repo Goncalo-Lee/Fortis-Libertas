@@ -1,5 +1,6 @@
 // src/db/queries/financial-records/read.ts
 import { db } from "@/db";
+import { currencyCodeOf } from "../catalogs";
 import {
     financialRecord,
     recordType,
@@ -29,7 +30,7 @@ export async function getFinancialRecord(dashboardId: string, id: string) {
             name: financialRecord.name,
             description: financialRecord.description,
             price: financialRecord.price,
-            currency: financialRecord.currency,
+            currency: currencyCodeOf(financialRecord.currencyId),
             paymentDate: financialRecord.paymentDate,
             status: financialRecord.status,
             createdAt: financialRecord.createdAt,
@@ -99,7 +100,7 @@ export async function getFinancialRecordsByDashboardId(dashboardId: string) {
             name: financialRecord.name,
             description: financialRecord.description,
             price: financialRecord.price,
-            currency: financialRecord.currency,
+            currency: currencyCodeOf(financialRecord.currencyId),
             paymentDate: financialRecord.paymentDate,
             status: financialRecord.status,
             createdAt: financialRecord.createdAt,
@@ -174,7 +175,7 @@ export async function getRecordsByInstallmentPlanId(dashboardId: string, install
             id: financialRecord.id,
             name: financialRecord.name,
             price: financialRecord.price,
-            currency: financialRecord.currency,
+            currency: currencyCodeOf(financialRecord.currencyId),
             paymentDate: financialRecord.paymentDate,
             status: financialRecord.status,
         })

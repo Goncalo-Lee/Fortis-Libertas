@@ -4,6 +4,7 @@ import {admin, bearer, twoFactor} from "better-auth/plugins";
 import { db } from "../db";
 import * as schema from "../db/schema";
 import { generateId } from "../db/types";
+import { getDefaultProfileCatalogIds } from "../db/queries/catalogs";
 import {nextCookies} from "better-auth/next-js";
 import nodemailer from "nodemailer";
 import {error} from "better-auth/api";
@@ -108,8 +109,12 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (createdUser) => {
+          // Currency and language are required: new profiles start with the defaults (EUR, pt-PT).
+          const { currencyId, languageId } = await getDefaultProfileCatalogIds()
           await db.insert(schema.profile).values({
             userId: createdUser.id,
+            currencyId,
+            languageId,
           })
         }
       },

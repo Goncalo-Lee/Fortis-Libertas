@@ -4,6 +4,16 @@ import { z } from "zod";
 const name = z.string().trim().min(1).max(50);
 const description = z.string().trim().max(5000).nullable();
 
+// Catalog ids are lowercased to match the ids stored in the database.
+const uuid = z.guid().transform((v) => v.toLowerCase());
+
+const recordTypeIds = z
+  .array(z.guid())
+  .min(1)
+  .max(50)
+  .transform((ids) => ids.map((id) => id.toLowerCase()))
+  .refine((ids) => new Set(ids).size === ids.length, { message: "Record type ids must be distinct." });
+
 
 export const tagIds = z
   .array(z.guid())
@@ -15,10 +25,13 @@ export const createCategorySchema = z.strictObject({
   name,
   description: description.optional(),
   tag_ids: tagIds.optional(),
+  record_type_ids: recordTypeIds,
+  color_id: uuid,
+  icon_id: uuid,
 });
 
 export const updateCategorySchema = z
-  .strictObject({ name, description })
+  .strictObject({ name, description, color_id: uuid, icon_id: uuid })
   .partial()
   .refine((v) => Object.keys(v).length > 0, { message: "At least one field is required." });
 

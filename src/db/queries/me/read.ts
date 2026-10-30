@@ -1,6 +1,7 @@
 import { eq, getTableColumns, sql } from "drizzle-orm";
 import { db } from "../..";
-import { profile, user } from "../../schema";
+import { currency, language, profile, user } from "../../schema";
+import { getDefaultProfileCatalogIds } from "../catalogs";
 
 /* ======
   READ
@@ -22,7 +23,14 @@ import { profile, user } from "../../schema";
  */
 export async function getOrCreateProfile(userId: string) {
   const find = async () => {
-    const [row] = await db.select().from(profile).where(eq(profile.userId, userId)).limit(1);
+    // The API exposes currency and language as codes ("EUR", "pt-PT"), the table stores their ids.
+    const [row] = await db
+      .select({ ...getTableColumns(profile), currency: currency.code, language: language.code })
+      .from(profile)
+      .innerJoin(currency, eq(currency.id, profile.currencyId))
+      .innerJoin(language, eq(language.id, profile.languageId))
+      .where(eq(profile.userId, userId))
+      .limit(1);
     return row;
   };
 
@@ -30,7 +38,8 @@ export async function getOrCreateProfile(userId: string) {
 
   // onDuplicateKeyUpdate covers the race where two requests create the profile at the same time.
   if (!row) {
-    await db.insert(profile).values({ userId }).onDuplicateKeyUpdate({ set: { userId } });
+    const defaults = await getDefaultProfileCatalogIds();
+    await db.insert(profile).values({ userId, ...defaults }).onDuplicateKeyUpdate({ set: { userId } });
     row = await find();
   }
 

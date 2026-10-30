@@ -1,6 +1,7 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { type recordType } from "../../../db/schema";
 import { toIso } from "./common";
+import { serializeColor, serializeIcon, type ColorRow, type IconRow } from "./catalog";
 
 /**
  * Serializes a Drizzle `recordType` row into a plain, API-friendly object.
@@ -18,7 +19,9 @@ import { toIso } from "./common";
  *    - `row.updatedAt` -> `updated_at`
  * 4. Returns a flat object suitable for JSON responses.
  */
-export function serializeRecordType(row: InferSelectModel<typeof recordType>) {
+export function serializeRecordType(
+  row: InferSelectModel<typeof recordType> & { color: ColorRow; icon: IconRow },
+) {
   return {
     // Map primary key from Drizzle field to the API's expected snake_case key
     record_type_id: row.id,
@@ -29,6 +32,12 @@ export function serializeRecordType(row: InferSelectModel<typeof recordType>) {
     // Passthrough scalar fields
     name: row.name,
     description: row.description,
+
+    // Catalog references: ids plus the read-only nested objects
+    color_id: row.colorId,
+    color: serializeColor(row.color),
+    icon_id: row.iconId,
+    icon: serializeIcon(row.icon),
 
     // Normalize timestamps to ISO 8601 strings for transport
     created_at: toIso(row.createdAt),
