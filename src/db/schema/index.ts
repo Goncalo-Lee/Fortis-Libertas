@@ -24,4 +24,7 @@ export * from './tagCategory';
 export * from './tagFinancialRecord';
 export * from './recordTypeCategory';
 export * from './tagInstallmentPlan';
+export * from './transaction';
+export * from './activityLog';
+export * from './exchangeRate';
 export * from './relations';
