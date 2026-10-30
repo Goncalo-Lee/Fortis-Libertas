@@ -9,6 +9,9 @@ export const installmentPlan = mysqlTable("installment_plan", {
     dashboardId: uuidBinary("dashboard_id", { length: 36 }).notNull(),
     name: t.varchar("name", { length: 50 }).notNull(),
     description: t.text("description"),
+    categoryId: uuidBinary("category_id", { length: 36 }).notNull(),
+    recordTypeId: uuidBinary("record_type_id", { length: 36 }).notNull(),
+    currencyId: uuidBinary("currency_id", { length: 36 }).notNull(),
     registerById: uuidBinary("register_by_id", { length: 36 }).notNull(),
     totalAmount: t.decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
     totalInstallments: t.int("total_installments").notNull(),
@@ -29,8 +32,29 @@ export const installmentPlan = mysqlTable("installment_plan", {
         foreignColumns: [s.user.id],
     }).onDelete("restrict"),
 
+    t.foreignKey({
+        name: "fk_installment_plan_category",
+        columns: [table.categoryId],
+        foreignColumns: [s.category.id],
+    }).onDelete("restrict"),
+
+    t.foreignKey({
+        name: "fk_installment_plan_record_type",
+        columns: [table.recordTypeId],
+        foreignColumns: [s.recordType.id],
+    }).onDelete("restrict"),
+
+    t.foreignKey({
+        name: "fk_installment_plan_currency",
+        columns: [table.currencyId],
+        foreignColumns: [s.currency.id],
+    }).onDelete("restrict"),
+
     t.index("idx_installment_plan_dashboard_id").on(table.dashboardId),
     t.index("idx_installment_plan_register_by_id").on(table.registerById),
     t.index("idx_installment_plan_due_date").on(table.dueDate),
     t.index("idx_installment_plan_status").on(table.status),
+    t.index("idx_installment_plan_category_id").on(table.categoryId),
+    t.index("idx_installment_plan_record_type_id").on(table.recordTypeId),
+    t.index("idx_installment_plan_currency_id").on(table.currencyId),
 ]);

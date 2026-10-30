@@ -18,6 +18,12 @@ import { installmentPlan } from "./installmentPlan";
 import { financialRecord } from "./financialRecord";
 import { tagCategory } from "./tagCategory";
 import { tagFinancialRecord } from "./tagFinancialRecord";
+import { color } from "./color";
+import { icon } from "./icon";
+import { language } from "./language";
+import { currency } from "./currency";
+import { recordTypeCategory } from "./recordTypeCategory";
+import { tagInstallmentPlan } from "./tagInstallmentPlan";
 
 export const userRelations = relations(user, ({ one, many }) => ({
   // Links user to one active profile (1:1)
@@ -69,6 +75,9 @@ export const twoFactorRelations = relations(twoFactor, ({ one }) => ({
 export const profileRelations = relations(profile, ({ one }) => ({
   // Links profile back to user
   user: one(user, { fields: [profile.userId], references: [user.id] }),
+  // Preferred currency and language (catalogs)
+  currency: one(currency, { fields: [profile.currencyId], references: [currency.id] }),
+  language: one(language, { fields: [profile.languageId], references: [language.id] }),
 }));
 
 export const notificationsRelations = relations(notifications, ({ one }) => ({
@@ -116,14 +125,24 @@ export const userDashboardRelations = relations(userDashboard, ({ one }) => ({
 export const recordTypeRelations = relations(recordType, ({ one, many }) => ({
   // Associated dashboard and financial records
   dashboard: one(dashboard, { fields: [recordType.dashboardId], references: [dashboard.id] }),
+  color: one(color, { fields: [recordType.colorId], references: [color.id] }),
+  icon: one(icon, { fields: [recordType.iconId], references: [icon.id] }),
   financialRecords: many(financialRecord),
+  installmentPlans: many(installmentPlan),
+  // Categories usable with this record type (M:N)
+  categories: many(recordTypeCategory),
 }));
 
 export const categoryRelations = relations(category, ({ one, many }) => ({
   // Category ties to a workspace, records, and M:N tags
   dashboard: one(dashboard, { fields: [category.dashboardId], references: [dashboard.id] }),
+  color: one(color, { fields: [category.colorId], references: [color.id] }),
+  icon: one(icon, { fields: [category.iconId], references: [icon.id] }),
   financialRecords: many(financialRecord),
+  installmentPlans: many(installmentPlan),
   tags: many(tagCategory),
+  // Record types this category can be used with (M:N)
+  recordTypes: many(recordTypeCategory),
 }));
 
 export const tagRelations = relations(tag, ({ one, many }) => ({
@@ -131,6 +150,7 @@ export const tagRelations = relations(tag, ({ one, many }) => ({
   dashboard: one(dashboard, { fields: [tag.dashboardId], references: [dashboard.id] }),
   categories: many(tagCategory),
   financialRecords: many(tagFinancialRecord),
+  installmentPlans: many(tagInstallmentPlan),
 }));
 
 export const paymentMethodRelations = relations(paymentMethod, ({ one, many }) => ({
@@ -144,7 +164,11 @@ export const installmentPlanRelations = relations(installmentPlan, ({ one, many 
   // Links installment plan to dashboard, author, and related records
   dashboard: one(dashboard, { fields: [installmentPlan.dashboardId], references: [dashboard.id] }),
   registerBy: one(user, { fields: [installmentPlan.registerById], references: [user.id] }),
+  category: one(category, { fields: [installmentPlan.categoryId], references: [category.id] }),
+  recordType: one(recordType, { fields: [installmentPlan.recordTypeId], references: [recordType.id] }),
+  currency: one(currency, { fields: [installmentPlan.currencyId], references: [currency.id] }),
   financialRecords: many(financialRecord),
+  tags: many(tagInstallmentPlan),
 }));
 
 export const financialRecordRelations = relations(financialRecord, ({ one, many }) => ({
@@ -155,6 +179,7 @@ export const financialRecordRelations = relations(financialRecord, ({ one, many 
   category: one(category, { fields: [financialRecord.categoryId], references: [category.id] }),
   paymentMethod: one(paymentMethod, { fields: [financialRecord.paymentMethodId], references: [paymentMethod.id] }),
   installmentPlan: one(installmentPlan, { fields: [financialRecord.installmentPlanId], references: [installmentPlan.id] }),
+  currency: one(currency, { fields: [financialRecord.currencyId], references: [currency.id] }),
   tags: many(tagFinancialRecord),
 }));
 
@@ -168,4 +193,40 @@ export const tagFinancialRecordRelations = relations(tagFinancialRecord, ({ one 
   // Resolves M:N between tag and financial record
   tag: one(tag, { fields: [tagFinancialRecord.tagId], references: [tag.id] }),
   financialRecord: one(financialRecord, { fields: [tagFinancialRecord.recordId], references: [financialRecord.id] }),
+}));
+
+export const recordTypeCategoryRelations = relations(recordTypeCategory, ({ one }) => ({
+  // Resolves M:N between record type and category
+  recordType: one(recordType, { fields: [recordTypeCategory.recordTypeId], references: [recordType.id] }),
+  category: one(category, { fields: [recordTypeCategory.categoryId], references: [category.id] }),
+}));
+
+export const tagInstallmentPlanRelations = relations(tagInstallmentPlan, ({ one }) => ({
+  // Resolves M:N between tag and installment plan
+  tag: one(tag, { fields: [tagInstallmentPlan.tagId], references: [tag.id] }),
+  installmentPlan: one(installmentPlan, { fields: [tagInstallmentPlan.installmentPlanId], references: [installmentPlan.id] }),
+}));
+
+export const colorRelations = relations(color, ({ many }) => ({
+  // Record types and categories that use this color
+  recordTypes: many(recordType),
+  categories: many(category),
+}));
+
+export const iconRelations = relations(icon, ({ many }) => ({
+  // Record types and categories that use this icon
+  recordTypes: many(recordType),
+  categories: many(category),
+}));
+
+export const languageRelations = relations(language, ({ many }) => ({
+  // Profiles that prefer this language
+  profiles: many(profile),
+}));
+
+export const currencyRelations = relations(currency, ({ many }) => ({
+  // Profiles, records and plans denominated in this currency
+  profiles: many(profile),
+  financialRecords: many(financialRecord),
+  installmentPlans: many(installmentPlan),
 }));
