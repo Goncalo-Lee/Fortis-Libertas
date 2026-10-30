@@ -17,7 +17,7 @@ const memberColumns = {
   role: userDashboard.role,
   createdAt: userDashboard.createdAt,
   updatedAt: userDashboard.updatedAt,
-  userName: user.userName,
+  userName: user.username,
   fullName: user.name,
   image: user.image,
 };
