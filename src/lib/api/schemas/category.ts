@@ -37,9 +37,12 @@ export const updateCategorySchema = z
 
 export const setCategoryTagsSchema = z.strictObject({ tag_ids: tagIds });
 
+export const setCategoryRecordTypesSchema = z.strictObject({ record_type_ids: recordTypeIds });
+
 export const listCategoriesQuery = z.object({
   q: z.string().trim().min(1).max(100).optional(),
   tag_id: z.guid().optional(),
+  record_type_id: z.guid().optional(),
   include: z.enum(["tags"]).optional(),
   sort: z.enum(["name", "-name", "created_at", "-created_at"]).default("name"),
 });

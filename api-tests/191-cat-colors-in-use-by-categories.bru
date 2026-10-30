@@ -1,0 +1,28 @@
+meta {
+  name: Categories - colors in use by categories
+  type: http
+  seq: 191
+}
+
+get {
+  url: {{baseUrl}}/api/v1/colors?dashboard_id={{catDashboardId}}&scope=category&per_page=100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("color1 (Food) and color7 (Linked) are in use, a free one is not", function () {
+    const by = (id) => res.body.data.find((c) => c.color_id === id);
+    expect(by(bru.getVar("color1")).in_use).to.equal(true);
+    expect(by(bru.getVar("color7")).in_use).to.equal(true);
+    expect(by(bru.getVar("color11")).in_use).to.equal(false);
+  });
+}

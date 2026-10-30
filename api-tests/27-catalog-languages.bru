@@ -1,0 +1,26 @@
+meta {
+  name: Catalogs - list languages
+  type: http
+  seq: 27
+}
+
+get {
+  url: {{baseUrl}}/api/v1/languages
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.meta.total: eq 2
+}
+
+tests {
+  test("has en and pt-PT", function () {
+    expect(res.body.data.map((l) => l.code).sort()).to.deep.equal(["en", "pt-PT"]);
+  });
+}

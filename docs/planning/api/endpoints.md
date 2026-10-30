@@ -605,7 +605,7 @@ Groups financial records within a dashboard and can be linked to tags. Scope: **
 | `GET` | `/categories/{category_id}/record-types` | List record types the category is linked to | `viewer` | `200` | `401`, `404` |
 | `PUT` | `/categories/{category_id}/record-types` | Replace the full set of record types | `editor` | `200` | `401`, `404`, `409`, `422` |
 | `POST` | `/categories/{category_id}/record-types/{record_type_id}` | Link one record type (idempotent) | `editor` | `204` | `401`, `404` |
-| `DELETE` | `/categories/{category_id}/record-types/{record_type_id}` | Unlink one record type | `editor` | `204` | `401`, `404`, `409` |
+| `DELETE` | `/categories/{category_id}/record-types/{record_type_id}` | Unlink one record type | `editor` | `204` | `401`, `404`, `409`, `422` |
 
 All paths are relative to `/dashboards/{dashboard_id}`.
 

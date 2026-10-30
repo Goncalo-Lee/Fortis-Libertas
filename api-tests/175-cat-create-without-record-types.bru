@@ -1,0 +1,23 @@
+meta {
+  name: Categories - create without record types
+  type: http
+  seq: 175
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Empty", "color_id": "{{color7}}", "icon_id": "{{icon1}}", "record_type_ids": [] }
+}
+
+assert {
+  res.status: eq 422
+}

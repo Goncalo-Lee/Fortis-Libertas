@@ -1,7 +1,8 @@
-import { and, eq, inArray, sql, type AnyColumn } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, like, sql, type AnyColumn } from "drizzle-orm";
 import type { MySqlColumn, MySqlTable } from "drizzle-orm/mysql-core";
 import { db } from "..";
-import { color, currency, icon, language } from "../schema";
+import { category, color, currency, icon, language, recordType } from "../schema";
+import { escapeLike } from "../utils";
 import { ApiError } from "../../lib/api/errors";
 
 /* ==========
@@ -189,4 +190,96 @@ export async function attachColorIcon<T extends { colorId: string; iconId: strin
     if (!c || !i) throw new Error("Catalog row missing for color/icon.");
     return { ...r, color: c, icon: i };
   });
+}
+
+/* ==============
+  CATALOG LISTS
+=============== */
+
+type CatalogFilters = { q?: string; sort: "name" | "-name"; limit: number; offset: number };
+
+/**
+ * Lists colors. `inUse` adds the `inUse` flag: whether the dashboard already has a record type
+ * (or category) holding each color.
+ */
+export async function listColors(
+  f: CatalogFilters & {
+    isReserved?: boolean;
+    inUse?: { scope: "record_type" | "category"; dashboardId: string };
+  },
+) {
+  const where = and(
+    f.q ? like(color.name, `%${escapeLike(f.q)}%`) : undefined,
+    f.isReserved === undefined ? undefined : eq(color.isReserved, f.isReserved),
+  );
+
+  const rows = await db
+    .select()
+    .from(color)
+    .where(where)
+    .orderBy(f.sort === "name" ? asc(color.name) : desc(color.name), asc(color.id))
+    .limit(f.limit)
+    .offset(f.offset);
+
+  const [totalRow] = await db.select({ total: count() }).from(color).where(where);
+
+  let used: Set<string> | null = null;
+  if (f.inUse) {
+    const table = f.inUse.scope === "record_type" ? recordType : category;
+    const usedRows = await db
+      .select({ colorId: table.colorId })
+      .from(table)
+      .where(eq(table.dashboardId, f.inUse.dashboardId));
+    used = new Set(usedRows.map((r) => r.colorId.toLowerCase()));
+  }
+
+  return {
+    rows: rows.map((r) => ({ ...r, inUse: used ? used.has(r.id.toLowerCase()) : undefined })),
+    total: totalRow?.total ?? 0,
+  };
+}
+
+export async function listIcons(f: CatalogFilters) {
+  const where = f.q ? like(icon.name, `%${escapeLike(f.q)}%`) : undefined;
+
+  const rows = await db
+    .select()
+    .from(icon)
+    .where(where)
+    .orderBy(f.sort === "name" ? asc(icon.name) : desc(icon.name), asc(icon.id))
+    .limit(f.limit)
+    .offset(f.offset);
+
+  const [totalRow] = await db.select({ total: count() }).from(icon).where(where);
+  return { rows, total: totalRow?.total ?? 0 };
+}
+
+export async function listCurrencies(f: CatalogFilters) {
+  const where = f.q ? like(currency.name, `%${escapeLike(f.q)}%`) : undefined;
+
+  const rows = await db
+    .select()
+    .from(currency)
+    .where(where)
+    .orderBy(f.sort === "name" ? asc(currency.name) : desc(currency.name), asc(currency.id))
+    .limit(f.limit)
+    .offset(f.offset);
+
+  const [totalRow] = await db.select({ total: count() }).from(currency).where(where);
+  return { rows, total: totalRow?.total ?? 0 };
+}
+
+export async function listLanguages(f: CatalogFilters) {
+  const where = f.q ? like(language.name, `%${escapeLike(f.q)}%`) : undefined;
+
+  const rows = await db
+    .select()
+    .from(language)
+    .where(where)
+    .orderBy(f.sort === "name" ? asc(language.name) : desc(language.name), asc(language.id))
+    .limit(f.limit)
+    .offset(f.offset);
+
+  const [totalRow] = await db.select({ total: count() }).from(language).where(where);
+  return { rows, total: totalRow?.total ?? 0 };
 }

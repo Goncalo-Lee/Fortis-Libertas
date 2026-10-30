@@ -1,0 +1,27 @@
+meta {
+  name: Categories - put record types
+  type: http
+  seq: 179
+}
+
+put {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories/{{linkedId}}/record-types
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "record_type_ids": ["{{catRtExpenses}}", "{{catRtInvestment}}"] }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("now has two", function () { expect(res.body.data).to.have.length(2); });
+}

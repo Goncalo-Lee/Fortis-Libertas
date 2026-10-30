@@ -1,0 +1,36 @@
+meta {
+  name: Categories - create linked
+  type: http
+  seq: 177
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Linked", "color_id": "{{color7}}", "icon_id": "{{icon3}}", "record_type_ids": ["{{catRtExpenses}}"] }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("linkedId", res.body.data.category_id);
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("is returned with its record type, color and icon", function () {
+    expect(res.body.data.record_types).to.have.length(1);
+    expect(res.body.data.record_types[0].name).to.equal("Expenses");
+    expect(res.body.data.color.code_color).to.match(/^#[0-9A-Fa-f]{6}$/);
+    expect(res.body.data.icon.code_icon).to.be.a("string");
+  });
+}

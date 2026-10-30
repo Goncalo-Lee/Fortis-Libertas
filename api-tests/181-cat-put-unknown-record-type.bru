@@ -1,0 +1,23 @@
+meta {
+  name: Categories - put unknown record type
+  type: http
+  seq: 181
+}
+
+put {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories/{{linkedId}}/record-types
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "record_type_ids": ["00000000-0000-7000-8000-000000000001"] }
+}
+
+assert {
+  res.status: eq 422
+}

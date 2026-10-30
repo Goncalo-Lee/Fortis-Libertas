@@ -1,0 +1,23 @@
+meta {
+  name: Categories - patch reserved color
+  type: http
+  seq: 190
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories/{{linkedId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "color_id": "{{colorReservedId}}" }
+}
+
+assert {
+  res.status: eq 422
+}

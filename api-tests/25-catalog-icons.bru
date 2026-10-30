@@ -1,0 +1,32 @@
+meta {
+  name: Catalogs - list icons
+  type: http
+  seq: 25
+}
+
+get {
+  url: {{baseUrl}}/api/v1/icons?per_page=100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:post-response {
+  if (res.status === 200) {
+    res.body.data.slice(0, 3).forEach((i, n) => bru.setVar("icon" + (n + 1), i.icon_id));
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("icons carry a Material Symbols code", function () {
+    expect(res.body.meta.total).to.be.above(30);
+    expect(res.body.data[0].code_icon).to.match(/^[a-z0-9_]+$/);
+  });
+}

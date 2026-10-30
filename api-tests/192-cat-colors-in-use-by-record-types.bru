@@ -1,0 +1,25 @@
+meta {
+  name: Categories - reserved colors in use by record types
+  type: http
+  seq: 192
+}
+
+get {
+  url: {{baseUrl}}/api/v1/colors?dashboard_id={{catDashboardId}}&scope=record_type&is_reserved=true
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("both reserved colors are in use by Income and Expenses", function () {
+    expect(res.body.data.every((c) => c.in_use === true)).to.equal(true);
+  });
+}

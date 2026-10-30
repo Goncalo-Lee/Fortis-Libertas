@@ -1,0 +1,19 @@
+meta {
+  name: Categories - unlink one record type
+  type: http
+  seq: 182
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories/{{linkedId}}/record-types/{{catRtInvestment}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 204
+}

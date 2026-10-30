@@ -1,0 +1,24 @@
+meta {
+  name: Record types - reserved color rejected
+  type: http
+  seq: 86
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{rtDashboardId}}/record-types
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Reserved", "color_id": "{{colorReservedId}}", "icon_id": "{{icon1}}" }
+}
+
+assert {
+  res.status: eq 422
+  res.body.code: eq VALIDATION_ERROR
+}
