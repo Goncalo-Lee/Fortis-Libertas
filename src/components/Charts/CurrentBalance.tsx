@@ -26,7 +26,7 @@ export default function CurrentBalance() {
 
             <CardContent className="px-4 pb-2">
                 <div className="text-primary-app dark:text-white text-center text-xl font-bold @[220px]:text-xl @[320px]:text-2xl lg:text-3xl">
-                    {balance.toLocaleString("pt-PT", { style: "currency", currency: "EUR" })}
+                    {(balance ?? 0).toLocaleString("pt-PT", { style: "currency", currency: "EUR" })}
                 </div>
             </CardContent>
         </Card>

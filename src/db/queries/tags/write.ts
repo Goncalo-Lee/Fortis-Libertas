@@ -1,8 +1,8 @@
-import { db } from "../..";
+import { db } from "@/db";
 import { eq } from "drizzle-orm";
-import { tag, tagCategory, tagFinancialRecord } from "../../schema";
-import { generateId } from "../../types";
-import { ApiError } from "../../../lib/api/errors";
+import { tag, tagCategory, tagFinancialRecord } from "@/db/schema";
+import { generateId } from "@/db/types";
+import { ApiError } from "@/lib/api/errors";
 import { inDashboard, nameTaken, NameTakenParams } from "./../utils";
 import { getTag } from "./read";
 

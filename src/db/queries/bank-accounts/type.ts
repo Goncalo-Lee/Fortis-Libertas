@@ -1,15 +1,14 @@
-export type ListFiltersBankAccount = {
-    // Paginação
-    limit: number;
-    offset: number;
+export interface CreateBankAccountInput {
+    name: string;
+    initialBalance: string; // decimal string
+}
 
-    // Pesquisa
-    q?: string;
+export interface UpdateBankAccountInput {
+    name?: string;
+    initialBalance?: string;
+}
 
-    // Filtros específicos documentados na API
+export interface BankAccountFilter {
     frozen?: boolean;
-    role?: "owner" | "editor" | "viewer";
-
-    // Ordenação permitida (name ou created_at, com o prefixo '-' para descendente)
-    sort?: "name" | "-name" | "created_at" | "-created_at";
-};
+    q?: string;
+}

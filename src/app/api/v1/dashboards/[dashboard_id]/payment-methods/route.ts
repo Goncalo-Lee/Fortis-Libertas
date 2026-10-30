@@ -1,32 +1,55 @@
-// src/app/api/v1/dashboards/[dashboardId]/payment-methods/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 import { getPaymentMethodsByDashboardId } from "@/db/queries/payment-methods/read";
+import { createPaymentMethod } from "@/db/queries/payment-methods/write";
+import { ApiError } from "@/lib/api/errors";
 
 interface RouteContext {
-    params: Promise<{
-        dashboardId: string;
-    }>;
+    params: Promise<{ dashboard_id: string }>;
 }
 
 export async function GET(request: NextRequest, context: RouteContext) {
     try {
-        const { dashboardId } = await context.params;
+        const session = await auth.api.getSession({ headers: request.headers });
+        if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
 
-        if (!dashboardId || dashboardId === "undefined") {
-            return NextResponse.json(
-                { error: "Dashboard ID inválido ou em falta" },
-                { status: 400 }
-            );
-        }
+        const { dashboard_id } = await context.params;
+        const methods = await getPaymentMethodsByDashboardId(dashboard_id);
 
-        const methods = await getPaymentMethodsByDashboardId(dashboardId);
-
-        return NextResponse.json(methods, { status: 200 });
+        return NextResponse.json({
+            data: methods,
+            meta: { page: 1, per_page: methods.length, total: methods.length, total_pages: 1 }
+        }, { status: 200 });
     } catch (error) {
-        console.error("❌ Erro ao listar métodos de pagamento:", error);
+        // Fazemos console.error para veres exatamente o que falhou no terminal do servidor
+        console.error("Erro no GET /payment-methods:", error);
+        return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
+    }
+}
+
+export async function POST(request: NextRequest, context: RouteContext) {
+    try {
+        const session = await auth.api.getSession({ headers: request.headers });
+        if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
+
+        const { dashboard_id } = await context.params;
+        const body = await request.json();
+
+        const created = await createPaymentMethod(dashboard_id, session.user.id, {
+            name: body.name,
+            description: body.description ?? null,
+            cardId: body.card_id ?? null,
+        });
+
         return NextResponse.json(
-            { error: "Erro interno ao processar métodos de pagamento" },
-            { status: 500 }
+            { data: created },
+            { status: 201, headers: { Location: `/api/v1/dashboards/${dashboard_id}/payment-methods/${created?.id}` } }
         );
+    } catch (error) {
+        if (error instanceof ApiError && error.code === "NAME_ALREADY_EXISTS") {
+            return NextResponse.json({ code: "NAME_ALREADY_EXISTS", status: 409 }, { status: 409 });
+        }
+        console.error("Erro no POST /payment-methods:", error);
+        return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
     }
 }

@@ -1,77 +1,168 @@
-// src/db/queries/cards/read.ts
 import { db } from "@/db";
-import { card, bankAccount } from "@/db/schema";
-import { eq, and, isNull, sql } from "drizzle-orm";
+import {bankAccountUser, card } from "@/db/schema";
+import { generateId } from "@/db/types";
+import { getCardById } from "./read";
+import { and, eq, isNull, sql } from "drizzle-orm";
+import { ApiError } from "@/lib/api/errors";
+
 
 /* ======
-  READ
+  WRITE
 ======= */
 
+export interface UpdateCardInput {
+    cardholderName?: string;
+    typeCard?: "credit" | "debit";
+    cardNumber?: string | null;
+    expiryDate?: string | null;
+    cvv?: string | null;
+}
+
 /**
- * Retrieves a single active card by its ID within a dashboard.
- *
- * @param dashboardId The unique identifier of the dashboard owning the card's bank account
- * @param id The unique identifier of the card
- * @returns The card details, or null if not found or soft-deleted
+ * Updates an existing card.
+ * Caller must be the card owner or an 'owner' of the associated bank account.
+ * Note: 'bank_id' cannot be modified per specification (Section 7.5).
  */
-export async function getCard(dashboardId: string, id: string) {
-    const [row] = await db
+export async function updateCard(
+    cardId: string,
+    callerUserId: string,
+    changes: UpdateCardInput
+) {
+    // Verifies existence and access
+    const current = await getCardById(cardId, callerUserId);
+    if (!current) return null;
+
+    // Check permissions: either owner of the card or owner in bank_account__user
+    const [hasPermission] = await db
         .select({
-            id: card.id,
-            bankId: card.bankId,
-            userId: card.userId,
-            cardholderName: card.cardholderName,
-            typeCard: card.typeCard,
-            cardNumber: card.cardNumber,
-            expiryDate: card.expiryDate,
-            createdAt: card.createdAt,
-            updatedAt: card.updatedAt,
+            isCardOwner: sql<boolean>`${card.userId} = UUID_TO_BIN(${callerUserId})`,
+            isBankOwner: sql<boolean>`${bankAccountUser.role} = 'owner'`,
         })
         .from(card)
-        .innerJoin(
-            bankAccount,
-            eq(card.bankId, bankAccount.id)
-        )
+        .innerJoin(bankAccountUser, eq(card.bankId, bankAccountUser.bankId))
         .where(
             and(
-                eq(card.id, id),
-                eq(bankAccount.dashboardId, sql`UUID_TO_BIN(${dashboardId})`),
+                eq(card.id, sql`UUID_TO_BIN(${cardId})`),
+                eq(bankAccountUser.userId, sql`UUID_TO_BIN(${callerUserId})`),
                 isNull(card.deletedAt)
             )
         )
         .limit(1);
 
-    return row ?? null;
+    if (!hasPermission || (!hasPermission.isCardOwner && !hasPermission.isBankOwner)) {
+        throw new ApiError("FORBIDDEN");
+    }
+
+    const set: Partial<typeof card.$inferInsert> = {};
+    if (changes.cardholderName !== undefined) set.cardholderName = changes.cardholderName;
+    if (changes.typeCard !== undefined) set.typeCard = changes.typeCard;
+    if (changes.cardNumber !== undefined) set.cardNumber = changes.cardNumber;
+    if (changes.expiryDate !== undefined) set.expiryDate = changes.expiryDate;
+    if (changes.cvv !== undefined) set.cvv = changes.cvv;
+
+    if (Object.keys(set).length > 0) {
+        await db
+            .update(card)
+            .set({ ...set, updatedAt: new Date() })
+            .where(
+                and(
+                    eq(card.id, sql`UUID_TO_BIN(${cardId})`),
+                    isNull(card.deletedAt)
+                )
+            );
+    }
+
+    return getCardById(cardId, callerUserId);
 }
 
 /**
- * Retrieves all active cards associated with bank accounts of a specific dashboard.
- *
- * @param dashboardId The unique identifier of the dashboard
- * @returns An array of active cards
+ * Soft-deletes a card and sets card_id = NULL on referencing payment methods.
+ * Mirrors ON DELETE SET NULL per specification (Section 7.5).
  */
-export async function getCardsByDashboardId(dashboardId: string) {
-    return await db
+export async function softDeleteCard(cardId: string, callerUserId: string) {
+    const current = await getCardById(cardId, callerUserId);
+    if (!current) return;
+
+    // Check permissions
+    const [hasPermission] = await db
         .select({
-            id: card.id,
-            bankId: card.bankId,
-            userId: card.userId,
-            cardholderName: card.cardholderName,
-            typeCard: card.typeCard,
-            cardNumber: card.cardNumber,
-            expiryDate: card.expiryDate,
-            createdAt: card.createdAt,
-            updatedAt: card.updatedAt,
+            isCardOwner: sql<boolean>`${card.userId}
+            = UUID_TO_BIN(
+            ${callerUserId}
+            )`,
+            isBankOwner: sql<boolean>`${bankAccountUser.role}
+            = 'owner'`,
         })
         .from(card)
-        .innerJoin(
-            bankAccount,
-            eq(card.bankId, bankAccount.id)
-        )
+        .innerJoin(bankAccountUser, eq(card.bankId, bankAccountUser.bankId))
         .where(
             and(
-                eq(bankAccount.dashboardId, sql`UUID_TO_BIN(${dashboardId})`),
+                eq(card.id, sql`UUID_TO_BIN
+                (
+                ${cardId}
+                )`),
+                eq(bankAccountUser.userId, sql`UUID_TO_BIN
+                (
+                ${callerUserId}
+                )`),
                 isNull(card.deletedAt)
             )
-        );
+        )
+        .limit(1);
+}
+
+/**
+ * Freezes or unfreezes a card.
+ */
+export async function setCardFrozenState(cardId: string, userId: string, freeze: boolean) {
+    const current = await getCardById(cardId, userId);
+    if (!current) return null;
+
+    await db
+        .update(card)
+        .set({
+            frozenAt: freeze ? new Date() : null,
+            updatedAt: new Date(),
+        })
+        .where(eq(card.id, sql`UUID_TO_BIN(${cardId})`));
+
+    return getCardById(cardId, userId);
+}
+
+export interface CreateCardInput {
+    cardholderName: string;
+    typeCard: "credit" | "debit";
+    cardNumber?: string | null;
+    expiryDate?: string | null;
+    cvv?: string | null;
+    userId: string;
+}
+
+/**
+ * Creates a new card associated with a bank account and a user.
+ *
+ * @param bankAccountId The bank account ID where the card will be issued
+ * @param callerUserId The user ID making the request (for retrieving the created record)
+ * @param input The card details and owner user ID
+ * @returns The newly created card
+ */
+export async function createCard(
+    bankAccountId: string,
+    callerUserId: string,
+    input: CreateCardInput
+) {
+    const id = generateId();
+
+    await db.insert(card).values({
+        id,
+        bankId: sql`UUID_TO_BIN(${bankAccountId})`,
+        userId: sql`UUID_TO_BIN(${input.userId})`,
+        cardholderName: input.cardholderName,
+        typeCard: input.typeCard,
+        cardNumber: input.cardNumber ?? null,
+        expiryDate: input.expiryDate ?? null,
+        cvv: input.cvv ?? null,
+    });
+
+    return getCardById(id, callerUserId);
 }

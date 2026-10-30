@@ -13,8 +13,23 @@ import { type ListFilters } from "../type";
  * @property limit - Maximum number of rows to return
  * @property offset - Number of rows to skip before returning results
  */
-export type ListFiltersCategory =
-  ListFilters
-  & {
+export interface ListFiltersCategory {
+    q?: string;
     tagId?: string;
-  };
+    sort?: "name" | "-name" | "created_at" | "-created_at";
+    limit?: number;
+    offset?: number;
+    includeTags?: boolean;
+}
+
+export interface CreateCategoryInput {
+    name: string;
+    description?: string | null;
+    tagIds?: string[];
+}
+
+export interface UpdateCategoryInput {
+    name?: string;
+    description?: string | null;
+}
+
