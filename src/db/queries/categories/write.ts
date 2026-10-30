@@ -1,8 +1,8 @@
 import { and, eq, isNull } from "drizzle-orm";
-import { db } from "../..";
-import { category, financialRecord, tagCategory } from "../../schema";
-import { generateId } from "../../types";
-import { ApiError } from "../../../lib/api/errors";
+import { db } from "@/db";
+import { category, financialRecord, tagCategory } from "@/db/schema";
+import { generateId } from "@/db/types";
+import { ApiError } from "@/lib/api/errors";
 import { assertTagsInDashboard } from "./relations";
 import { getCategory } from "./read";
 import { inDashboard, nameTaken } from "../utils";

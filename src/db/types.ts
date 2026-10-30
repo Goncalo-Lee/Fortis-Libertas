@@ -2,6 +2,7 @@ import { customType } from "drizzle-orm/mysql-core";
 import { parse as uuidParse, stringify as uuidStringify, validate as uuidValidate } from "uuid";
 import { v7 as uuid7 } from "uuid";
 
+
 /**
  * Generates a time-ordered UUID version 7 (UUIDv7) string.
  *
@@ -69,20 +70,50 @@ export const uuidBinary = customType<{
   },
 
   fromDriver(value: unknown): string {
+    if (!value) {
+      return "";
+    }
+
+    // Se o MySQL nos devolver um Buffer, lemos os bytes diretamente
+    // para uma string hexadecimal e formatamos com hífens manualmente,
+    // garantindo 0 crashes!
     if (Buffer.isBuffer(value)) {
-      return uuidStringify(value);
+      if (value.length === 16) {
+        const hex = value.toString("hex");
+        // Formata: 8-4-4-4-12
+        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+      }
+      return "";
     }
 
     if (typeof value === "string") {
-      // Handle PlanetScale/Serverless base64 prefixed binary strings
       if (value.startsWith("base64:type254:")) {
         const base64Part = value.substring("base64:type254:".length);
-        return uuidStringify(Buffer.from(base64Part, "base64"));
+        const buf = Buffer.from(base64Part, "base64");
+        if (buf.length === 16) {
+          const hex = buf.toString("hex");
+          return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+        }
+        return "";
       }
-      return value;
+
+      if (uuidValidate(value)) {
+        return value;
+      }
+      return "";
     }
 
-    return uuidStringify(value as Uint8Array);
+    try {
+      const arr = value as Uint8Array;
+      if (arr.length === 16) {
+        const hex = Buffer.from(arr).toString("hex");
+        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+      }
+    } catch (e) {
+      // Ignora
+    }
+
+    return "";
   },
 });
 

@@ -1,8 +1,10 @@
 import { eq } from "drizzle-orm";
-import { db } from "../..";
-import { profile } from "../../schema";
+import { db } from "@/db";
+import { profile } from "@/db/schema";
 import { getOrCreateProfile } from "./read";
 import type { ProfileChanges } from "./type";
+import { user } from "@/db/schema";
+
 
 /* =======
   WRITE
@@ -54,4 +56,30 @@ export async function updateProfile(userId: string, changes: ProfileChanges) {
   }
 
   return getOrCreateProfile(userId);
+}
+
+
+/**
+ * Updates a user's primary identity (User table).
+ *
+ * @param userId The unique identifier of the user
+ * @param changes Partial payload with full_name, user_name, or image
+ */
+export async function updateUser(
+    userId: string,
+    changes: { full_name?: string; user_name?: string | null; image?: string | null }
+) {
+  const set: Partial<typeof user.$inferInsert> = {};
+
+  // Usamos as propriedades exatas definidas no schema.ts (`name` e `username`)
+  if (changes.full_name !== undefined) set.name = changes.full_name;
+  if (changes.user_name !== undefined) set.username = changes.user_name;
+  if (changes.image !== undefined) set.image = changes.image;
+
+  if (Object.keys(set).length > 0) {
+    await db
+        .update(user)
+        .set({ ...set }) // Os timestamps já vêm tratados pelo spread ...timestamps do schema, ou podes deixar se necessário
+        .where(eq(user.id, userId)); // O Drizzle usa "user.id" para apontar para a coluna "user_id"
+  }
 }

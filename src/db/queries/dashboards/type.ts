@@ -26,3 +26,19 @@ export type ListFiltersDashboards =
     role?: Role;
     deleted?: boolean;
   };
+
+export interface CreateDashboardInput {
+    name: string;
+    isActive?: boolean;
+}
+
+export interface UpdateDashboardInput {
+    name?: string;
+    isActive?: boolean;
+}
+
+export interface ListDashboardsFilter {
+    isActive?: boolean;
+    deleted?: boolean;
+    q?: string;
+}

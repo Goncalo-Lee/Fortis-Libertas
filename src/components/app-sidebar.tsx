@@ -54,7 +54,7 @@ const adminMenus = {
 
 // Secondary menus
 const navSecondary = [
-  { title: "Configurações", url: "#", icon: <Settings2Icon /> },
+  { title: "Configurações", url: "/dashboard/configurations", icon: <Settings2Icon /> },
   { title: "Ajuda/Chatbot", url: "#", icon: <CircleHelpIcon /> },
   { title: "Pesquisar", url: "#", icon: <SearchIcon /> },
 ]

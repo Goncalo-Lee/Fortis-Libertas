@@ -1,8 +1,14 @@
+"use client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {CreditCard} from "lucide-react";
+import { useFinancial} from "@/contexts/FinancialContext"
 
 
 export default function CurrentBalance() {
+    const { balance, loading } = useFinancial()
+
+    if (loading) return <div>Carregando...</div>;
+
     return (
         <Card className="@container flex h-full w-full flex-col justify-center gap-1 py-3 font-poppins">
             
@@ -20,7 +26,7 @@ export default function CurrentBalance() {
 
             <CardContent className="px-4 pb-2">
                 <div className="text-primary-app dark:text-white text-center text-xl font-bold @[220px]:text-xl @[320px]:text-2xl lg:text-3xl">
-                    € 2.450,00
+                    {(balance ?? 0).toLocaleString("pt-PT", { style: "currency", currency: "EUR" })}
                 </div>
             </CardContent>
         </Card>
