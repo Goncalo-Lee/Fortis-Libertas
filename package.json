@@ -10,6 +10,7 @@
     "db:user_seed": "tsx --env-file=.env src/db/data/user_seed.ts",
     "db:seed": "src/db/data/seed.ts",
     "db:seed:admin": "tsx --env-file=.env src/db/data/seed_admin.ts",
+    "db:seed:catalogs": "tsx --env-file=.env src/db/data/seed_catalogs.ts",
     "db:delete": "tsx --env-file=.env src/db/data/delete.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

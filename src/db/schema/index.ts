@@ -18,4 +18,8 @@ export * from './installmentPlan';
 export * from './financialRecord';
 export * from './tagCategory';
 export * from './tagFinancialRecord';
+export * from './color';
+export * from './icon';
+export * from './language';
+export * from './currency';
 export * from './relations';
