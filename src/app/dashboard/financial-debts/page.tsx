@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useEffect } from "react"
 import {
     Card,
     CardContent,
@@ -9,295 +9,353 @@ import {
     CardTitle,
 } from "@/components/ui/card"
 import {
-    Landmark,
-    CreditCard,
-    Car,
+    Target,
+    Trophy,
+    Lightbulb,
     Plus,
     Calendar,
     CheckCircle2,
-    Flame,
-    History,
-    Trash2,
-    TrendingDown,
-    ShieldAlert,
     Sparkles,
-    ArrowDownRight,
+    Trash2,
+    Clock,
+    Award,
+    TrendingUp,
+    Star,
+    Pencil,
+    X,
+    Save
 } from "lucide-react"
+import { toast } from "sonner"
+import { useDashboard } from "@/contexts/DashboardContext"
+import { useFinancial } from "@/contexts/FinancialContext"
 
-type DebtCategory = "credit_card" | "personal_auto" | "housing_other"
-type PayoffStrategy = "avalanche" | "snowball"
+type GoalHorizon = "short" | "medium" | "long"
 
-interface DebtItem {
-    id: string
-    title: string
-    totalAmount: number
-    remainingAmount: number
-    monthlyPayment: number
-    interestRate: number // TAEG / Juro anual (%)
-    category: DebtCategory
-}
+export default function FinancialGoalsPage() {
+    const { activeDashboard } = useDashboard()
+    const { installmentPlans, financialRecords, refresh } = useFinancial()
 
-interface DebtHistoryLog {
-    id: string
-    debtTitle: string
-    amountPaid: number
-    date: string
-    type: "installment" | "extra_payoff" | "settled"
-}
-
-export default function FinancialDebtsPage() {
-    // Estratégia pedagógica de ordenação (Avalanche vs Bola de Neve)
-    const [strategy, setStrategy] = useState<PayoffStrategy>("avalanche")
-
-    // Controlo do formulário para adicionar nova dívida (Ponto 1)
+    // Estado do Formulário de Criação
     const [isAdding, setIsAdding] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
     const [newTitle, setNewTitle] = useState("")
-    const [newTotal, setNewTotal] = useState("")
-    const [newRemaining, setNewRemaining] = useState("")
-    const [newMonthly, setNewMonthly] = useState("")
-    const [newInterest, setNewInterest] = useState("")
-    const [newCategory, setNewCategory] = useState<DebtCategory>("credit_card")
+    const [newTarget, setNewTarget] = useState("")
+    const [newMonths, setNewMonths] = useState("6")
+    const [newHorizon, setNewHorizon] = useState<GoalHorizon>("short")
 
-    // 1. Dívidas Ativas
-    const [debts, setDebts] = useState<DebtItem[]>([
-        {
-            id: "d1",
-            title: "Cartão de Crédito (Plafond Usado)",
-            totalAmount: 1500,
-            remainingAmount: 850,
-            monthlyPayment: 85,
-            interestRate: 18.5,
-            category: "credit_card",
-        },
-        {
-            id: "d2",
-            title: "Crédito Automóvel",
-            totalAmount: 9000,
-            remainingAmount: 4200,
-            monthlyPayment: 195,
-            interestRate: 7.2,
-            category: "personal_auto",
-        },
-        {
-            id: "d3",
-            title: "Pagamento Fracionado (Telemóvel)",
-            totalAmount: 600,
-            remainingAmount: 200,
-            monthlyPayment: 50,
-            interestRate: 0,
-            category: "housing_other",
-        },
-    ])
+    // Estado para Meta Destaque / Selecionada (Persistida no Browser)
+    const [primaryGoalId, setPrimaryGoalId] = useState<string | null>(null)
 
-    // 3. Histórico de Pagamentos e Dívidas Liquidadas
-    const [historyLogs, setHistoryLogs] = useState<DebtHistoryLog[]>([
-        {
-            id: "h1",
-            debtTitle: "Cartão de Crédito (Plafond Usado)",
-            amountPaid: 85,
-            date: "2026-10-05",
-            type: "installment",
-        },
-        {
-            id: "h2",
-            debtTitle: "Crédito Automóvel",
-            amountPaid: 195,
-            date: "2026-10-02",
-            type: "installment",
-        },
-        {
-            id: "h3",
-            debtTitle: "Empréstimo Pessoal Pequeno",
-            amountPaid: 1200,
-            date: "2026-08-20",
-            type: "settled",
-        },
-    ])
+    // Estado para Modal de Edição de Meta
+    const [editingGoal, setEditingGoal] = useState<{ id: string; name: string; targetAmount: number } | null>(null)
+    const [editName, setEditName] = useState("")
+    const [editTarget, setEditTarget] = useState("")
+    const [isSavingEdit, setIsSavingEdit] = useState(false)
 
-    // 2. Cálculos para a Visão Geral
-    const totalOriginalDebt = debts.reduce((acc, d) => acc + d.totalAmount, 0)
-    const totalRemainingDebt = debts.reduce((acc, d) => acc + d.remainingAmount, 0)
-    const totalPaidSoFar = Math.max(0, totalOriginalDebt - totalRemainingDebt)
-    const payoffPercentage =
-        totalOriginalDebt > 0
-            ? Math.min(Math.round((totalPaidSoFar / totalOriginalDebt) * 100), 100)
-            : 100
+    useEffect(() => {
+        const saved = localStorage.getItem("primaryFinancialGoal")
+        if (saved) setPrimaryGoalId(saved)
+    }, [])
 
-    const totalMonthlyInstallments = debts.reduce((acc, d) => acc + d.monthlyPayment, 0)
-
-    // Ordenação dinâmica segundo a estratégia escolhida
-    const sortedDebts = [...debts].sort((a, b) => {
-        if (strategy === "avalanche") {
-            // Maior taxa de juro primeiro
-            return b.interestRate - a.interestRate
-        }
-        // Bola de Neve: Menor saldo devedor primeiro
-        return a.remainingAmount - b.remainingAmount
-    })
-
-    const priorityDebt = sortedDebts[0]
-
-    // 1. Adicionar nova dívida
-    function handleAddDebt(e: React.FormEvent) {
-        e.preventDefault()
-        const total = parseFloat(newTotal)
-        const remaining = parseFloat(newRemaining) || total
-        const monthly = parseFloat(newMonthly)
-        const interest = parseFloat(newInterest) || 0
-
-        if (!newTitle.trim() || isNaN(total) || total <= 0 || isNaN(monthly) || monthly <= 0) {
-            return
-        }
-
-        const item: DebtItem = {
-            id: crypto.randomUUID(),
-            title: newTitle,
-            totalAmount: total,
-            remainingAmount: Math.min(remaining, total),
-            monthlyPayment: monthly,
-            interestRate: Math.max(0, interest),
-            category: newCategory,
-        }
-
-        setDebts((prev) => [...prev, item])
-        setNewTitle("")
-        setNewTotal("")
-        setNewRemaining("")
-        setNewMonthly("")
-        setNewInterest("")
-        setIsAdding(false)
+    function handleSetPrimaryGoal(id: string) {
+        localStorage.setItem("primaryFinancialGoal", id)
+        setPrimaryGoalId(id)
+        toast.success("Meta definida como principal para o Dashboard!")
     }
 
-    // Abater valor na dívida (Prestação normal ou Amortização Extra) e registar no Histórico
-    function handleMakePayment(debt: DebtItem, amount: number, isExtra: boolean) {
-        const actualPayment = Math.min(debt.remainingAmount, amount)
-        const newRemaining = debt.remainingAmount - actualPayment
-        const today = new Date().toISOString().split("T")[0]
+    // ==========================================
+    // 1. FILTRAR E PROCESSAR APENAS METAS ([GOAL])
+    // ==========================================
+    const enrichedPlans = useMemo(() => {
+        if (!installmentPlans) return []
 
-        if (newRemaining <= 0) {
-            // Dívida ficou 100% liquidada! Remove das ativas e regista como liquidada no histórico
-            setDebts((prev) => prev.filter((d) => d.id !== debt.id))
-            setHistoryLogs((prev) => [
-                {
-                    id: crypto.randomUUID(),
-                    debtTitle: debt.title,
-                    amountPaid: actualPayment,
-                    date: today,
-                    type: "settled",
-                },
-                ...prev,
-            ])
-        } else {
-            // Atualiza o saldo em falta e adiciona entrada ao histórico
-            setDebts((prev) =>
-                prev.map((d) =>
-                    d.id === debt.id ? { ...d, remainingAmount: newRemaining } : d
+        return installmentPlans
+            // Exclui dívidas explicitamente marcadas com [DEBT]
+            .filter((p: any) => !p.description || !p.description.startsWith("[DEBT]"))
+            .map((plan: any) => {
+                const targetAmount = Number(
+                    plan.totalAmount ?? plan.total_amount ?? plan.amount ?? plan.target_amount ?? plan.price ?? 0
                 )
-            )
-            setHistoryLogs((prev) => [
-                {
-                    id: crypto.randomUUID(),
-                    debtTitle: debt.title,
-                    amountPaid: actualPayment,
-                    date: today,
-                    type: isExtra ? "extra_payoff" : "installment",
-                },
-                ...prev,
-            ])
+
+                const savedAmount = (financialRecords || [])
+                    .filter((r: any) => (r.installmentPlanId || r.installment_plan_id) === plan.id)
+                    .reduce((acc: number, r: any) => acc + Number(r.price || 0), 0)
+
+                return {
+                    ...plan,
+                    targetAmount,
+                    savedAmount,
+                    monthsRemaining: Number(plan.totalInstallments ?? plan.total_installments ?? 6),
+                    status: plan.status || "pending",
+                    createdAt: plan.createdAt || plan.created_at || new Date().toISOString()
+                }
+            })
+    }, [installmentPlans, financialRecords])
+
+    const activeGoals = enrichedPlans.filter((p: any) => p.status !== "completed" && p.status !== "cancelled")
+    const completedGoals = enrichedPlans.filter((p: any) => p.status === "completed")
+
+    // Meta selecionada / destaque
+    const selectedGoal = useMemo(() => {
+        if (activeGoals.length === 0) return null
+        return activeGoals.find((g: any) => g.id === primaryGoalId) || activeGoals[0]
+    }, [activeGoals, primaryGoalId])
+
+    const selectedPct = selectedGoal && selectedGoal.targetAmount > 0
+        ? Math.min(Math.round((selectedGoal.savedAmount / selectedGoal.targetAmount) * 100), 100)
+        : 0
+
+    const totalMonthlyEffort = activeGoals.reduce((acc: number, g: any) => {
+        const remaining = Math.max(0, g.targetAmount - g.savedAmount)
+        return acc + remaining / Math.max(1, g.monthsRemaining)
+    }, 0)
+
+    // ==========================================
+    // 2. OPERAÇÕES DE API (POST / PATCH / DELETE)
+    // ==========================================
+    async function handleCreateGoal(e: React.FormEvent) {
+        e.preventDefault()
+        const target = parseFloat(newTarget)
+        const months = parseInt(newMonths, 10) || 1
+
+        if (!newTitle.trim() || isNaN(target) || target <= 0) return
+        setIsSubmitting(true)
+
+        const calculatedDueDate = new Date()
+        calculatedDueDate.setMonth(calculatedDueDate.getMonth() + months)
+        const dueDateString = calculatedDueDate.toISOString().split("T")[0]
+
+        try {
+            const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: newTitle.trim(),
+                    description: `[GOAL] Meta a ${newHorizon === "short" ? "curto" : newHorizon === "medium" ? "médio" : "longo"} prazo`,
+                    total_amount: target.toFixed(2),
+                    total_installments: months,
+                    due_date: dueDateString,
+                    status: "pending"
+                })
+            })
+
+            const resData = await res.json().catch(() => ({}))
+
+            if (!res.ok) {
+                if (res.status === 409 || resData.code === "NAME_ALREADY_EXISTS") {
+                    throw new Error(`O nome "${newTitle.trim()}" já está a ser utilizado noutro plano ou meta.`)
+                }
+                throw new Error(resData.message || "Falha ao criar meta financeira.")
+            }
+
+            refresh()
+            toast.success("Novo objetivo financeiro criado com sucesso!")
+            setNewTitle("")
+            setNewTarget("")
+            setNewMonths("6")
+            setIsAdding(false)
+        } catch (error: any) {
+            toast.error(error.message || "Erro ao criar a meta.")
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
-    function handleDeleteDebt(id: string) {
-        setDebts((prev) => prev.filter((d) => d.id !== id))
+    function openEditModal(goal: any) {
+        setEditingGoal({ id: goal.id, name: goal.name, targetAmount: goal.targetAmount })
+        setEditName(goal.name)
+        setEditTarget(String(goal.targetAmount))
+    }
+
+    async function handleSaveEdit(e: React.FormEvent) {
+        e.preventDefault()
+        if (!editingGoal) return
+
+        const target = parseFloat(editTarget)
+        if (!editName.trim() || isNaN(target) || target <= 0) {
+            return toast.error("Preenche um nome válido e um valor maior que 0.")
+        }
+
+        setIsSavingEdit(true)
+        try {
+            const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${editingGoal.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: editName.trim(),
+                    total_amount: target.toFixed(2)
+                })
+            })
+
+            const resData = await res.json().catch(() => ({}))
+            if (!res.ok) {
+                if (res.status === 409 || resData.code === "NAME_ALREADY_EXISTS") {
+                    throw new Error(`Já existe outro registo com o nome "${editName.trim()}".`)
+                }
+                throw new Error(resData.message || "Erro ao atualizar dados da meta.")
+            }
+
+            refresh()
+            toast.success("Meta atualizada com sucesso!")
+            setEditingGoal(null)
+        } catch (error: any) {
+            toast.error(error.message || "Falha ao gravar alterações da meta.")
+        } finally {
+            setIsSavingEdit(false)
+        }
+    }
+
+    async function handleCompleteGoal(goalId: string) {
+        try {
+            const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${goalId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: "completed" })
+            })
+            if (!res.ok) throw new Error("Falha ao concluir")
+
+            refresh()
+            toast.success("Muitos parabéns! Meta alcançada com sucesso! 🎉")
+
+            if (primaryGoalId === goalId) {
+                localStorage.removeItem("primaryFinancialGoal")
+                setPrimaryGoalId(null)
+            }
+        } catch (error) {
+            toast.error("Erro ao concluir a meta.")
+        }
+    }
+
+    async function handleDeleteGoal(id: string) {
+        if (!confirm("Tens a certeza? Os registos associados não serão apagados, mas perderão a ligação a esta meta.")) return
+        try {
+            const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${id}`, {
+                method: "DELETE"
+            })
+            if (!res.ok) throw new Error("Falha ao eliminar")
+
+            if (primaryGoalId === id) {
+                localStorage.removeItem("primaryFinancialGoal")
+                setPrimaryGoalId(null)
+            }
+            refresh()
+            toast.success("Objetivo removido.")
+        } catch (error) {
+            toast.error("Erro ao remover o objetivo.")
+        }
+    }
+
+    function handleReinforceIntent() {
+        toast.info("Para reforçar, vai a 'Despesas', cria um registo e associa-o a esta Meta!", {
+            duration: 6000
+        })
     }
 
     return (
-        // h-full overflow-y-auto permite o scroll dentro do teu <main className="overflow-hidden">
-        <div className="h-full w-full overflow-y-auto p-4 md:p-6 space-y-6 font-poppins">
+        <div className="h-full w-full overflow-y-auto p-4 md:p-6 space-y-6 font-poppins relative">
 
-            {/* CABEÇALHO + SELETOR DE ESTRATÉGIA + BOTÃO ADICIONAR DÍVIDA */}
+            {/* CABEÇALHO */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">
-                        Gestão de Dívidas e Créditos
+                        Metas e Objetivos Financeiros
                     </h1>
                     <p className="text-xs sm:text-sm text-muted-foreground">
-                        Organiza prestações, reduz juros e acelera a tua liberdade financeira.
+                        Acompanha a tua meta ativa e planeia objetivos sem recorrer a dívidas.
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2 self-start sm:self-auto">
-                    {/* Seletor Educativo: Método Avalanche vs Bola de Neve */}
-                    <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200/60 dark:border-slate-700">
-                        <button
-                            type="button"
-                            onClick={() => setStrategy("avalanche")}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
-                                strategy === "avalanche"
-                                    ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs"
-                                    : "text-muted-foreground hover:text-slate-900"
-                            }`}
-                            title="Prioriza a dívida com maior taxa de juro"
-                        >
-                            Método Avalanche
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setStrategy("snowball")}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
-                                strategy === "snowball"
-                                    ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs"
-                                    : "text-muted-foreground hover:text-slate-900"
-                            }`}
-                            title="Prioriza a dívida mais pequena para ganhar motivação"
-                        >
-                            Bola de Neve
-                        </button>
-                    </div>
-
-                    {/* 1. Botão para Adicionar Dívida */}
-                    <button
-                        type="button"
-                        onClick={() => setIsAdding((prev) => !prev)}
-                        className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-medium px-3.5 py-2 rounded-lg shadow-xs transition-colors cursor-pointer"
-                    >
-                        <Plus className="w-4 h-4" />
-                        <span>Registar Dívida</span>
-                    </button>
-                </div>
+                <button
+                    type="button"
+                    onClick={() => setIsAdding((prev) => !prev)}
+                    className="flex items-center gap-1.5 self-start sm:self-auto bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium px-3.5 py-2 rounded-lg shadow-xs transition-colors cursor-pointer"
+                >
+                    <Plus className="w-4 h-4" />
+                    <span>Criar Nova Meta</span>
+                </button>
             </div>
 
-            {/* PAINEL EXPANSÍVEL PARA ADICIONAR NOVA DÍVIDA */}
+            {/* MODAL DE EDIÇÃO DE META */}
+            {editingGoal && (
+                <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+                    <Card className="w-full max-w-md shadow-lg border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 animate-in fade-in zoom-in-95">
+                        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle className="text-base font-semibold">Editar Meta Financeira</CardTitle>
+                                <CardDescription className="text-xs">Altera o nome ou ajusta o valor alvo.</CardDescription>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setEditingGoal(null)}
+                                className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </CardHeader>
+                        <CardContent>
+                            <form onSubmit={handleSaveEdit} className="space-y-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs font-medium text-muted-foreground">Nome da Meta</label>
+                                    <input
+                                        type="text"
+                                        value={editName}
+                                        onChange={(e) => setEditName(e.target.value)}
+                                        className="h-9 w-full rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-3 text-sm"
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-medium text-muted-foreground">Objetivo de Valor (€)</label>
+                                    <input
+                                        type="number"
+                                        step="1"
+                                        value={editTarget}
+                                        onChange={(e) => setEditTarget(e.target.value)}
+                                        className="h-9 w-full rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-3 text-sm"
+                                        required
+                                    />
+                                </div>
+                                <div className="flex gap-2 justify-end pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditingGoal(null)}
+                                        className="h-9 px-4 text-xs font-medium rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isSavingEdit}
+                                        className="h-9 px-4 text-xs font-medium rounded-md bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 disabled:opacity-50"
+                                    >
+                                        <Save className="w-3.5 h-3.5" />
+                                        {isSavingEdit ? "A guardar..." : "Guardar Alterações"}
+                                    </button>
+                                </div>
+                            </form>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
+            {/* FORMULÁRIO DE NOVA META */}
             {isAdding && (
-                <Card className="border-amber-200 dark:border-amber-800/60 bg-amber-50/30 dark:bg-amber-950/10 shadow-sm">
+                <Card className="border-blue-200 dark:border-blue-800/60 bg-blue-50/30 dark:bg-blue-950/10 shadow-sm animate-in fade-in slide-in-from-top-4">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm sm:text-base font-semibold">
-                            Adicionar Crédito ou Dívida
+                            Definir Novo Objetivo Financeiro
                         </CardTitle>
                         <CardDescription className="text-xs">
-                            Inclui a taxa de juro (TAEG) para a aplicação calcular qual deves abater primeiro.
+                            Define o nome da meta, o valor total a alcançar e o prazo previsto.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <form onSubmit={handleAddDebt} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
+                        <form onSubmit={handleCreateGoal} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
                             <div className="flex flex-col gap-1">
-                                <label className="text-xs font-medium text-muted-foreground">Tipo</label>
-                                <select
-                                    value={newCategory}
-                                    onChange={(e) => setNewCategory(e.target.value as DebtCategory)}
-                                    className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 text-xs sm:text-sm"
-                                >
-                                    <option value="credit_card">💳 Cartão de Crédito</option>
-                                    <option value="personal_auto">🚗 Pessoal / Automóvel</option>
-                                    <option value="housing_other">🏦 Habitação / Outro</option>
-                                </select>
-                            </div>
-
-                            <div className="flex flex-col gap-1">
-                                <label className="text-xs font-medium text-muted-foreground">Identificação</label>
+                                <label className="text-xs font-medium text-muted-foreground">Nome da Meta</label>
                                 <input
                                     type="text"
-                                    placeholder="Ex: Cartão Universo, Carro..."
+                                    placeholder="Ex: Férias, Computador..."
                                     value={newTitle}
                                     onChange={(e) => setNewTitle(e.target.value)}
                                     className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs sm:text-sm"
@@ -306,63 +364,50 @@ export default function FinancialDebtsPage() {
                             </div>
 
                             <div className="flex flex-col gap-1">
-                                <label className="text-xs font-medium text-muted-foreground">Valor Inicial (€)</label>
+                                <label className="text-xs font-medium text-muted-foreground">Valor Alvo (€)</label>
                                 <input
                                     type="number"
                                     step="1"
-                                    placeholder="2000"
-                                    value={newTotal}
-                                    onChange={(e) => setNewTotal(e.target.value)}
+                                    placeholder="1000"
+                                    value={newTarget}
+                                    onChange={(e) => setNewTarget(e.target.value)}
                                     className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs sm:text-sm"
                                     required
                                 />
                             </div>
 
                             <div className="flex flex-col gap-1">
-                                <label className="text-xs font-medium text-muted-foreground">Falta Pagar (€)</label>
-                                <input
-                                    type="number"
-                                    step="1"
-                                    placeholder="1200"
-                                    value={newRemaining}
-                                    onChange={(e) => setNewRemaining(e.target.value)}
-                                    className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs sm:text-sm"
-                                    required
-                                />
-                            </div>
-
-                            <div className="flex gap-2">
-                                <div className="flex flex-col gap-1 flex-1">
-                                    <label className="text-xs font-medium text-muted-foreground">Prestação (€)</label>
+                                <label className="text-xs font-medium text-muted-foreground">Prazo e Horizonte</label>
+                                <div className="flex gap-1.5">
                                     <input
                                         type="number"
-                                        step="1"
-                                        placeholder="80"
-                                        value={newMonthly}
-                                        onChange={(e) => setNewMonthly(e.target.value)}
-                                        className="h-9 w-full rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 text-xs sm:text-sm"
+                                        min="1"
+                                        max="120"
+                                        value={newMonths}
+                                        onChange={(e) => setNewMonths(e.target.value)}
+                                        className="h-9 w-16 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 text-xs sm:text-sm text-center"
+                                        title="Meses"
                                         required
                                     />
-                                </div>
-                                <div className="flex flex-col gap-1 w-20">
-                                    <label className="text-xs font-medium text-muted-foreground">Juro (%)</label>
-                                    <input
-                                        type="number"
-                                        step="0.1"
-                                        placeholder="15.0"
-                                        value={newInterest}
-                                        onChange={(e) => setNewInterest(e.target.value)}
-                                        className="h-9 w-full rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 text-xs sm:text-sm"
-                                    />
+                                    <select
+                                        value={newHorizon}
+                                        onChange={(e) => setNewHorizon(e.target.value as GoalHorizon)}
+                                        className="h-9 flex-1 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 text-xs"
+                                    >
+                                        <option value="short">Curto Prazo</option>
+                                        <option value="medium">Médio Prazo</option>
+                                        <option value="long">Longo Prazo</option>
+                                    </select>
                                 </div>
                             </div>
 
                             <div className="flex gap-2">
                                 <button
                                     type="submit"
-                                    className="flex-1 h-9 bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer"
+                                    disabled={isSubmitting}
+                                    className="flex-1 h-9 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer disabled:opacity-50"
                                 >
-                                    Guardar
+                                    {isSubmitting ? "..." : "Criar"}
                                 </button>
                                 <button
                                     type="button"
@@ -377,216 +422,219 @@ export default function FinancialDebtsPage() {
                 </Card>
             )}
 
-            {/* 2. VISÃO GERAL (3 CARTÕES DE TOPO COM ESTÉTICA UNIFORME) */}
+            {/* CARTÕES DE TOPO */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-                {/* Cartão 1: Saldo Devedor Total + Progresso de Abate */}
+                {/* Cartão 1: Meta Selecionada / Destaque */}
                 <Card className="@container flex flex-col justify-between py-3 shadow-sm">
                     <CardHeader className="pb-1 w-full">
                         <CardTitle className="text-sm sm:text-base font-medium text-muted-foreground flex items-center justify-center gap-2">
-                            <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-md">
-                                <TrendingDown className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                            <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-md">
+                                <Target className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                             </div>
-                            Dívida Total em Falta
+                            {selectedGoal ? `Meta Ativa: ${selectedGoal.name}` : "Nenhuma Meta Ativa"}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="px-4 pb-2 flex flex-col items-center justify-center text-center gap-2 my-auto">
-                        <div className="text-2xl font-bold @[220px]:text-2xl @[320px]:text-3xl text-slate-900 dark:text-slate-100">
-                            € {totalRemainingDebt.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
-                        </div>
-                        <div className="w-full max-w-[200px] h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                                style={{ width: `${payoffPercentage}%` }}
-                            />
-                        </div>
-                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                            {payoffPercentage}% do capital inicial já foi abatido
-                        </span>
-                    </CardContent>
-                </Card>
-
-                {/* Cartão 2: Encargo Mensal com Prestações */}
-                <Card className="@container flex flex-col justify-between py-3 shadow-sm">
-                    <CardHeader className="pb-1 w-full">
-                        <CardTitle className="text-sm sm:text-base font-medium text-muted-foreground flex items-center justify-center gap-2">
-                            <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-md">
-                                <Flame className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                            </div>
-                            Encargo Mensal Fixo
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-4 pb-2 flex flex-col items-center justify-center text-center gap-1 my-auto">
-                        <div className="text-2xl font-bold @[220px]:text-2xl @[320px]:text-3xl text-slate-900 dark:text-slate-100">
-                            € {totalMonthlyInstallments.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
-                            <span className="text-xs font-normal text-muted-foreground"> /mês</span>
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                            Soma de {debts.length} prestações ativas todos os meses
-                        </span>
-                    </CardContent>
-                </Card>
-
-                {/* Cartão 3: Alvo Prioritário Recomendado */}
-                <Card className="@container flex flex-col justify-between py-3 shadow-sm">
-                    <CardHeader className="pb-1 w-full">
-                        <CardTitle className="text-sm sm:text-base font-medium text-muted-foreground flex items-center justify-center gap-2">
-                            <div className="p-1.5 bg-rose-100 dark:bg-rose-900/30 rounded-md">
-                                <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-                            </div>
-                            Prioridade de Abate ({strategy === "avalanche" ? "Juro" : "Saldo"})
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-4 pb-2 flex flex-col items-center justify-center text-center gap-1 my-auto">
-                        {priorityDebt ? (
+                        {selectedGoal ? (
                             <>
-                                <div className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 line-clamp-1">
-                                    {priorityDebt.title}
+                                <div className="text-xl font-bold @[220px]:text-xl @[320px]:text-2xl text-slate-900 dark:text-slate-100">
+                                    € {selectedGoal.savedAmount.toLocaleString("pt-PT")}
+                                    <span className="text-xs font-normal text-muted-foreground">
+                                        {" "}/ € {selectedGoal.targetAmount.toLocaleString("pt-PT")} ({selectedPct}%)
+                                    </span>
                                 </div>
-                                <span className="text-xs text-rose-600 dark:text-rose-400 font-medium">
-                                    {strategy === "avalanche"
-                                        ? `Taxa mais cara (${priorityDebt.interestRate}% TAEG)`
-                                        : `Mais rápida de eliminar (€ ${priorityDebt.remainingAmount} restantes)`}
-                                </span>
+                                <div className="w-full max-w-[200px] h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-blue-600 dark:bg-blue-500 rounded-full transition-all duration-500"
+                                        style={{ width: `${selectedPct}%` }}
+                                    />
+                                </div>
                             </>
                         ) : (
-                            <span className="text-sm font-semibold text-emerald-600">
-                                Parabéns! Não tens dívidas ativas.
-                            </span>
+                            <p className="text-xs text-muted-foreground">Cria uma meta para ver o progresso.</p>
                         )}
                     </CardContent>
                 </Card>
 
+                {/* Cartão 2: Ritmo Mensal Necessário */}
+                <Card className="@container flex flex-col justify-between py-3 shadow-sm">
+                    <CardHeader className="pb-1 w-full">
+                        <CardTitle className="text-sm sm:text-base font-medium text-muted-foreground flex items-center justify-center gap-2">
+                            <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-md">
+                                <TrendingUp className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                            </div>
+                            Ritmo Mensal Recomendado
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-4 pb-2 flex flex-col items-center justify-center text-center gap-1 my-auto">
+                        <div className="text-2xl font-bold @[220px]:text-2xl @[320px]:text-3xl text-slate-900 dark:text-slate-100">
+                            € {Math.ceil(totalMonthlyEffort).toLocaleString("pt-PT")} <span className="text-xs font-normal text-muted-foreground">/mês</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                            Para cumprir as tuas {activeGoals.length} metas no prazo
+                        </span>
+                    </CardContent>
+                </Card>
+
+                {/* Cartão 3: Objetivos Conquistados */}
+                <Card className="@container flex flex-col justify-between py-3 shadow-sm">
+                    <CardHeader className="pb-1 w-full">
+                        <CardTitle className="text-sm sm:text-base font-medium text-muted-foreground flex items-center justify-center gap-2">
+                            <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-md">
+                                <Trophy className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                            </div>
+                            Objetivos Conquistados
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-4 pb-2 flex flex-col items-center justify-center text-center gap-1 my-auto">
+                        <div className="text-2xl font-bold @[220px]:text-2xl @[320px]:text-3xl text-slate-900 dark:text-slate-100">
+                            {completedGoals.length} Metas
+                        </div>
+                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                            € {completedGoals.reduce((acc: number, c: any) => acc + c.targetAmount, 0).toLocaleString("pt-PT")} poupados sem dívidas
+                        </span>
+                    </CardContent>
+                </Card>
             </div>
 
-            {/* LINHA 2: 1. GERIR DÍVIDAS (ESQUERDA) + 3. HISTÓRICO (DIREITA) */}
+            {/* LISTAGEM DE METAS & CONSELHOS */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                {/* 1. Gerir Dívidas Ativas (7 colunas) */}
+                {/* LISTA DE METAS */}
                 <Card className="lg:col-span-7 flex flex-col py-4 shadow-sm">
                     <CardHeader className="pb-3 flex flex-row items-center justify-between">
                         <div>
                             <CardTitle className="text-base font-semibold flex items-center gap-2">
-                                <Landmark className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                                Plano de Liquidação de Dívidas
+                                <Target className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                As Tuas Metas em Curso
                             </CardTitle>
                             <CardDescription className="text-xs">
-                                Ordenado pelo método <strong>{strategy === "avalanche" ? "Avalanche (poupas mais em juros)" : "Bola de Neve (eliminas parcelas mais rápido)"}</strong>.
+                                Clica em "Destacar" para definir qual aparece na Dashboard principal.
                             </CardDescription>
                         </div>
+                        <span className="text-xs font-medium text-muted-foreground bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full">
+                            {activeGoals.length} ativas
+                        </span>
                     </CardHeader>
 
                     <CardContent className="space-y-4">
-                        {sortedDebts.map((debt, index) => {
-                            const paidAmount = Math.max(0, debt.totalAmount - debt.remainingAmount)
-                            const paidPct = Math.min(Math.round((paidAmount / debt.totalAmount) * 100), 100)
-                            const monthsLeft = Math.ceil(debt.remainingAmount / Math.max(1, debt.monthlyPayment))
-                            const isPriority = index === 0
+                        {activeGoals.length === 0 && (
+                            <p className="text-sm text-center text-muted-foreground py-6">Não tens metas em curso.</p>
+                        )}
+                        {activeGoals.map((goal: any) => {
+                            const pct = Math.min(Math.round((goal.savedAmount / goal.targetAmount) * 100), 100)
+                            const remaining = Math.max(0, goal.targetAmount - goal.savedAmount)
+                            const monthlyNeeded = Math.ceil(remaining / Math.max(1, goal.monthsRemaining))
+                            const isReadyToComplete = pct >= 100
+                            const isPrimary = (selectedGoal?.id === goal.id)
 
                             return (
                                 <div
-                                    key={debt.id}
+                                    key={goal.id}
                                     className={`p-4 rounded-xl border space-y-3 transition-all ${
-                                        isPriority
-                                            ? "border-amber-300 dark:border-amber-700/70 bg-amber-50/30 dark:bg-amber-950/15"
+                                        isPrimary
+                                            ? "border-blue-400/80 dark:border-blue-500/60 bg-blue-50/20 dark:bg-blue-950/20 shadow-sm"
                                             : "border-slate-200/80 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/30"
                                     }`}
                                 >
                                     <div className="flex items-start justify-between gap-2">
-                                        <div className="flex items-start gap-3">
-                                            <div
-                                                className={`p-2 rounded-lg mt-0.5 ${
-                                                    debt.category === "credit_card"
-                                                        ? "bg-rose-100 dark:bg-rose-900/30 text-rose-600"
-                                                        : debt.category === "personal_auto"
-                                                            ? "bg-amber-100 dark:bg-amber-900/30 text-amber-600"
-                                                            : "bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+                                        <div>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <h3 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-slate-100">
+                                                    {goal.name}
+                                                </h3>
+                                                {isPrimary && (
+                                                    <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
+                                                        <Star className="w-3 h-3 fill-current" /> Meta Selecionada
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                                                <Clock className="w-3 h-3" />
+                                                {isReadyToComplete
+                                                    ? "Objetivo alcançado! Pronto para ser concluído."
+                                                    : `Faltam € ${remaining.toLocaleString("pt-PT")} • Esforço: € ${monthlyNeeded}/mês`}
+                                            </p>
+                                        </div>
+
+                                        <div className="flex items-center gap-1.5">
+                                            <span
+                                                className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                                                    isReadyToComplete
+                                                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                                                        : "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
                                                 }`}
                                             >
-                                                {debt.category === "credit_card" && <CreditCard className="w-4 h-4" />}
-                                                {debt.category === "personal_auto" && <Car className="w-4 h-4" />}
-                                                {debt.category === "housing_other" && <Landmark className="w-4 h-4" />}
-                                            </div>
-
-                                            <div>
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <h3 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-slate-100">
-                                                        {debt.title}
-                                                    </h3>
-                                                    {isPriority && (
-                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 flex items-center gap-1">
-                                                            <Sparkles className="w-2.5 h-2.5" />
-                                                            Foco #1
-                                                        </span>
-                                                    )}
-                                                    <span
-                                                        className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                                                            debt.interestRate >= 12
-                                                                ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
-                                                                : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
-                                                        }`}
-                                                    >
-                                                        {debt.interestRate > 0 ? `TAEG ${debt.interestRate}%` : "0% Juros"}
-                                                    </span>
-                                                </div>
-
-                                                <p className="text-xs text-muted-foreground mt-1">
-                                                    Prestação: <strong>€ {debt.monthlyPayment}/mês</strong> • Restam aprox. {monthsLeft} prestações
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="text-right">
-                                            <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
-                                                € {debt.remainingAmount.toLocaleString("pt-PT")}
+                                                {pct}%
                                             </span>
-                                            <span className="block text-[10px] text-muted-foreground">
-                                                de € {debt.totalAmount.toLocaleString("pt-PT")}
-                                            </span>
+                                            <button
+                                                type="button"
+                                                title="Editar nome ou valor"
+                                                onClick={() => openEditModal(goal)}
+                                                className="p-1 text-slate-400 hover:text-blue-600 rounded-md transition-colors cursor-pointer"
+                                            >
+                                                <Pencil className="w-3.5 h-3.5" />
+                                            </button>
                                         </div>
                                     </div>
 
-                                    {/* Barra de Progresso de Liquidação (Psicologia Positiva: Verde à medida que abate) */}
-                                    <div className="space-y-1">
-                                        <div className="w-full h-2 bg-slate-200/80 dark:bg-slate-800 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                                                style={{ width: `${paidPct}%` }}
-                                            />
-                                        </div>
-                                        <div className="flex justify-between text-[11px] text-muted-foreground">
-                                            <span>Já abatido: € {paidAmount.toLocaleString("pt-PT")} ({paidPct}%)</span>
-                                            <span>Em falta: € {debt.remainingAmount.toLocaleString("pt-PT")}</span>
-                                        </div>
+                                    <div className="w-full h-2.5 bg-slate-200/80 dark:bg-slate-800 rounded-full overflow-hidden">
+                                        <div
+                                            className={`h-full rounded-full transition-all duration-500 ${
+                                                isReadyToComplete ? "bg-emerald-500" : "bg-blue-600 dark:bg-blue-500"
+                                            }`}
+                                            style={{ width: `${pct}%` }}
+                                        />
                                     </div>
 
-                                    {/* Botões de Ação para Gerir a Dívida */}
-                                    <div className="flex items-center justify-between pt-1 border-t border-slate-200/50 dark:border-slate-800/60">
+                                    <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
+                                        <div className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                                            € {goal.savedAmount.toLocaleString("pt-PT")}{" "}
+                                            <span className="font-normal text-muted-foreground">
+                                                / € {goal.targetAmount.toLocaleString("pt-PT")}
+                                            </span>
+                                        </div>
+
                                         <div className="flex items-center gap-2">
+                                            {!isPrimary && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleSetPrimaryGoal(goal.id)}
+                                                    className="text-[11px] font-medium px-2.5 py-1 rounded-md text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors border border-blue-200 dark:border-blue-900/50 cursor-pointer"
+                                                >
+                                                    Destacar
+                                                </button>
+                                            )}
+
+                                            {!isReadyToComplete ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleReinforceIntent}
+                                                    className="text-xs font-medium px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                                                >
+                                                    Depositar
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCompleteGoal(goal.id)}
+                                                    className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer"
+                                                >
+                                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                                    Concluir Meta
+                                                </button>
+                                            )}
+
                                             <button
                                                 type="button"
-                                                onClick={() => handleMakePayment(debt, debt.monthlyPayment, false)}
-                                                className="text-xs font-medium px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer"
+                                                onClick={() => handleDeleteGoal(goal.id)}
+                                                aria-label="Eliminar meta"
+                                                className="p-1 text-slate-400 hover:text-red-500 rounded-md transition-colors cursor-pointer"
                                             >
-                                                Pagar Prestação (€ {debt.monthlyPayment})
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleMakePayment(debt, 50, true)}
-                                                className="text-xs font-medium px-2.5 py-1 rounded-md bg-amber-100 hover:bg-amber-200/80 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 transition-colors cursor-pointer"
-                                            >
-                                                Amortizar + € 50
+                                                <Trash2 className="w-4 h-4" />
                                             </button>
                                         </div>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => handleDeleteDebt(debt.id)}
-                                            aria-label="Remover dívida"
-                                            className="p-1 text-slate-400 hover:text-red-500 rounded-md transition-colors cursor-pointer"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
                                     </div>
                                 </div>
                             )
@@ -594,78 +642,77 @@ export default function FinancialDebtsPage() {
                     </CardContent>
                 </Card>
 
-                {/* 3. HISTÓRICO DE PAGAMENTOS E DÍVIDAS LIQUIDADAS (5 colunas) */}
-                <Card className="lg:col-span-5 flex flex-col py-4 shadow-sm">
-                    <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                        <div>
-                            <CardTitle className="text-base font-semibold flex items-center gap-2">
-                                <History className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                                Histórico de Abates
+                {/* HISTÓRICO DE METAS ALCANÇADAS */}
+                <div className="lg:col-span-5 space-y-6">
+                    <Card className="py-4 border-amber-200/70 dark:border-amber-800/40 bg-amber-50/20 dark:bg-amber-950/10 shadow-sm">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-base font-semibold flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                                <div className="p-1.5 bg-amber-100 dark:bg-amber-900/40 rounded-md">
+                                    <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                                </div>
+                                Aconselhamento Financeiro
                             </CardTitle>
-                            <CardDescription className="text-xs">
-                                Registo de prestações pagas, amortizações extra e créditos extintos.
-                            </CardDescription>
-                        </div>
-                        <span className="text-xs font-medium text-muted-foreground bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full">
-                            {historyLogs.length} registos
-                        </span>
-                    </CardHeader>
+                        </CardHeader>
+                        <CardContent className="space-y-3 text-xs sm:text-sm">
+                            <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-amber-200/50 dark:border-slate-800 space-y-1">
+                                <p className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                    <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                    1. Paga-te a ti próprio primeiro
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    Assim que receberes, regista <strong>€ {Math.ceil(totalMonthlyEffort)}</strong> como transferência para as tuas metas antes de gastares no dia a dia.
+                                </p>
+                            </div>
+                            <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-amber-200/50 dark:border-slate-800 space-y-1">
+                                <p className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                    <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                    2. Sem magia
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    Para "depositar" num objetivo, basta criares um registo em Despesas e associar a essa Meta.
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                    <CardContent className="space-y-2.5">
-                        {historyLogs.map((log) => (
-                            <div
-                                key={log.id}
-                                className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                                    log.type === "settled"
-                                        ? "border-emerald-200/70 dark:border-emerald-900/40 bg-emerald-50/40 dark:bg-emerald-950/15"
-                                        : "border-slate-100 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800/40"
-                                }`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div
-                                        className={`p-2 rounded-md ${
-                                            log.type === "settled"
-                                                ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600"
-                                                : log.type === "extra_payoff"
-                                                    ? "bg-amber-100 dark:bg-amber-900/40 text-amber-600"
-                                                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
-                                        }`}
-                                    >
-                                        {log.type === "settled" ? (
+                    <Card className="py-4 shadow-sm">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base font-semibold flex items-center gap-2">
+                                <Award className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                Histórico de Metas Alcançadas
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2.5">
+                            {completedGoals.length === 0 && (
+                                <p className="text-xs text-center text-muted-foreground py-4">Ainda não concluíste nenhuma meta.</p>
+                            )}
+                            {completedGoals.map((item: any) => (
+                                <div
+                                    key={item.id}
+                                    className="flex items-center justify-between p-3 rounded-lg border border-emerald-200/50 dark:border-emerald-900/40 bg-emerald-50/30 dark:bg-emerald-950/10"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
                                             <CheckCircle2 className="w-4 h-4" />
-                                        ) : (
-                                            <ArrowDownRight className="w-4 h-4" />
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                                            {log.debtTitle}
-                                        </p>
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                                                {log.type === "settled"
-                                                    ? "🎉 Dívida 100% Liquidada"
-                                                    : log.type === "extra_payoff"
-                                                        ? "⚡ Amortização Extra"
-                                                        : "Prestação Mensal"}
-                                            </span>
-                                            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                                {item.name}
+                                            </p>
+                                            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
                                                 <Calendar className="w-3 h-3" />
-                                                {new Date(log.date).toLocaleDateString("pt-PT")}
-                                            </span>
+                                                {new Date(item.createdAt).toLocaleDateString("pt-PT")}
+                                            </p>
                                         </div>
                                     </div>
+                                    <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                                        € {item.targetAmount.toLocaleString("pt-PT")}
+                                    </span>
                                 </div>
-
-                                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
-                                    - € {log.amountPaid.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
-                                </span>
-                            </div>
-                        ))}
-                    </CardContent>
-                </Card>
-
+                            ))}
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         </div>
     )

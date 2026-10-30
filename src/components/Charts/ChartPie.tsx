@@ -8,18 +8,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { useFinancial } from "@/contexts/FinancialContext";
 
-// Configuração das cores (Verde para Receitas, Vermelho/Laranja para Despesas)
+// Configuração com as cores invertidas
 const chartConfig = {
   value: {
     label: "Valor",
   },
   receitas: {
     label: "Receitas",
-    color: "#22c55e", // Verde (combina com o cartão de Receitas)
+    color: "var(--app-loses)",
   },
   despesas: {
     label: "Despesas",
-    color: "#ef4444", // Vermelho (combina com o cartão de Despesas)
+    color: "var(--app-gains)",
   },
 } satisfies ChartConfig;
 
@@ -44,7 +44,7 @@ export default function ChartPie() {
 
       const recordDate = new Date(dateString);
 
-      // Apenas somamos os dados do mês atual
+      // Apenas movimentos do mês corrente
       if (recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear) {
         let typeName = record.recordType?.name?.toLowerCase() || "";
         if (!typeName) {
@@ -64,8 +64,8 @@ export default function ChartPie() {
     });
 
     const data = [
-      { id: "receitas", label: "Receitas", value: incomeTotal, fill: "var(--color-receitas)" },
-      { id: "despesas", label: "Despesas", value: expenseTotal, fill: "var(--color-despesas)" }
+      { id: "receitas", label: "Receitas", value: incomeTotal, fill: "var(--app-loses)" },
+      { id: "despesas", label: "Despesas", value: expenseTotal, fill: "var(--app-gains)" }
     ];
 
     return {
@@ -77,11 +77,10 @@ export default function ChartPie() {
   return (
       <Card className="font-poppins w-full h-full flex flex-col justify-center items-center text-center shadow-sm py-3">
 
-        {/* Título e ícone estritamente iguais aos outros cartões */}
         <CardHeader className="pb-1 md:pb-2 w-full px-3">
           <CardTitle className="text-xs sm:text-sm md:text-base font-medium text-muted-foreground flex items-center justify-center gap-2">
             <PieChartIcon className="w-4 h-4 text-stone-400" />
-            Rácio do Mês
+            Receitas vs Despesas
           </CardTitle>
         </CardHeader>
 
@@ -97,19 +96,18 @@ export default function ChartPie() {
                       data={chartData}
                       dataKey="value"
                       nameKey="id"
-                      outerRadius="80%" //
+                      outerRadius="80%"
                       stroke="none"
                   />
                 </PieChart>
               </ChartContainer>
           ) : (
-              // Caso não haja despesas nem receitas no mês
               <div className="text-sm text-muted-foreground flex flex-col items-center justify-center h-full gap-2">
                 <PieChartIcon className="w-6 h-6 text-stone-200" />
-                <span>Sem movimentos</span>
+                <span>Sem movimentos este mês</span>
               </div>
           )}
         </CardContent>
       </Card>
-  )
+  );
 }

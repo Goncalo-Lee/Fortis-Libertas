@@ -28,7 +28,7 @@ const userMenus = {
     { title: "Despesas", url: "/dashboard/expenses", icon: <MinusCircleIcon /> },
     { title: "Metas Financeiras", url: "/dashboard/financial-goals", icon: <CalendarArrowDownIcon /> },
     { title: "Dívidas", url: "/dashboard/financial-debts", icon: <ClipboardMinusIcon /> },
-    { title: "Pé de meia", url: "/dashboard/money-pillow", icon: <PiggyBankIcon /> },
+    { title: "Poupanças", url: "/dashboard/money-pillow", icon: <PiggyBankIcon /> },
     { title: "Notificações", url: "/dashboard/notifications", icon: <BellIcon /> },
   ],
   documents: [

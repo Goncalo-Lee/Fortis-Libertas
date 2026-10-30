@@ -1,37 +1,34 @@
-import { cn } from "cn"
+"use client";
 
+import { cn } from "@/lib/utils" // Assuming standard shadcn utils path, adjust if needed
 import { Button } from "@/components/ui/button"
 import {
     Card,
     CardContent,
-    CardHeader,
-    CardTitle,
 } from "@/components/ui/card"
 import {
     Field,
-    FieldDescription,
     FieldGroup,
     FieldLabel,
-    FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import {authClient} from "@/lib/auth-client";
-import {useForm} from "react-hook-form";
+import { authClient } from "@/lib/auth-client";
+import { useForm } from "react-hook-form";
 import contactSchema from "@/utils/validation/password-contact-schema";
-import {zodResolver} from "@hookform/resolvers/zod";
-import {z} from "zod";
-import {Loader2} from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Loader2 } from "lucide-react";
 import React from "react";
-import {toast} from "sonner";
-import {useSearchParams} from "next/navigation";
-import {router} from "next/client";
-
+import { toast } from "sonner";
+import { useSearchParams, useRouter } from "next/navigation"; // Added useRouter here
 
 export function ResetPasswordForm({
                                       className,
                                       ...props
                                   }: React.ComponentProps<"div">) {
     const searchParams = useSearchParams();
+    const router = useRouter(); // Initialized the router hook here
+
     const token = searchParams.get("token") as string;
     const [isLoading, setIsLoading] = React.useState(false);
 
@@ -44,9 +41,8 @@ export function ResetPasswordForm({
     })
 
     const handleSubmit = async (data: z.infer<typeof contactSchema>) => {
-
         setIsLoading(true);
-        const{ error } = await authClient.resetPassword({
+        const { error } = await authClient.resetPassword({
             newPassword: data.password,
             token,
         })
@@ -56,7 +52,7 @@ export function ResetPasswordForm({
         }
         else {
             toast.success("Password modified successfully. You can now log in with your new password.");
-            await router.push("/sign-in");
+            router.push("/sign-in"); // router is now defined
         }
         setIsLoading(false);
     }
@@ -64,16 +60,10 @@ export function ResetPasswordForm({
     return (
         <div className={cn("flex flex-col gap-6", className)} {...props}>
             <Card>
-                <CardHeader className="text-center">
-                    <CardTitle className="text-xl">Welcome back</CardTitle>
-                </CardHeader>
                 <CardContent>
                     <form
-                    onSubmit={form.handleSubmit(handleSubmit, (errors) => console.log("Erros do Zod:", errors))}>
+                        onSubmit={form.handleSubmit(handleSubmit, (errors) => console.log("Erros do Zod:", errors))}>
                         <FieldGroup>
-                            <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
-                                Or continue with
-                            </FieldSeparator>
                             <Field>
                                 <FieldLabel htmlFor="password">Nova password</FieldLabel>
                                 <Input
@@ -85,11 +75,10 @@ export function ResetPasswordForm({
                                 />
                                 {form.formState.errors.password && (
                                     <p className="text-sm text-red-500">{form.formState.errors.password.message}</p>
-                                )
-                                }
+                                )}
                             </Field>
                             <Field>
-                                <FieldLabel htmlFor="confirmPassword">Cofrmia a nova password</FieldLabel>
+                                <FieldLabel htmlFor="confirmPassword">Confirma a nova password</FieldLabel>
                                 <Input
                                     id="confirmPassword"
                                     type="password"
@@ -97,10 +86,10 @@ export function ResetPasswordForm({
                                     required
                                     {...form.register("confirmPassword")}
                                 />
-                                {form.formState.errors.password && (
-                                    <p className="text-sm text-red-500">{form.formState.errors.password.message}</p>
-                                )
-                                }
+                                {/* Fixed this to check for confirmPassword errors instead of password */}
+                                {form.formState.errors.confirmPassword && (
+                                    <p className="text-sm text-red-500">{form.formState.errors.confirmPassword.message}</p>
+                                )}
                             </Field>
                             <Field>
                                 <Button type="submit" className="w-full" disabled={isLoading}>
@@ -110,9 +99,6 @@ export function ResetPasswordForm({
                                         "Enviar"
                                     )}
                                 </Button>
-                                <FieldDescription className="text-center">
-                                    Don&apos;t have an account? <a href="#">Sign up</a>
-                                </FieldDescription>
                             </Field>
                         </FieldGroup>
                     </form>
@@ -121,4 +107,3 @@ export function ResetPasswordForm({
         </div>
     )
 }
-
