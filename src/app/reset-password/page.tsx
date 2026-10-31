@@ -1,6 +1,6 @@
 "use client"
 import { GalleryVerticalEndIcon } from "lucide-react"
-import {ResetPasswordForm} from "@/components/reset-password-form";
+import {ResetPasswordForm} from "@/components/forms/reset-password-form";
 
 export default function ResetPasswordPage() {
     return (

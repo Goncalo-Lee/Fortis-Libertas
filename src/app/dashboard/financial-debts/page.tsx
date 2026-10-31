@@ -70,7 +70,6 @@ export default function FinancialGoalsPage() {
         if (!installmentPlans) return []
 
         return installmentPlans
-            // Exclui dívidas explicitamente marcadas com [DEBT]
             .filter((p: any) => !p.description || !p.description.startsWith("[DEBT]"))
             .map((plan: any) => {
                 const targetAmount = Number(
@@ -642,39 +641,7 @@ export default function FinancialGoalsPage() {
                     </CardContent>
                 </Card>
 
-                {/* HISTÓRICO DE METAS ALCANÇADAS */}
                 <div className="lg:col-span-5 space-y-6">
-                    <Card className="py-4 border-amber-200/70 dark:border-amber-800/40 bg-amber-50/20 dark:bg-amber-950/10 shadow-sm">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-base font-semibold flex items-center gap-2 text-slate-900 dark:text-slate-100">
-                                <div className="p-1.5 bg-amber-100 dark:bg-amber-900/40 rounded-md">
-                                    <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                                </div>
-                                Aconselhamento Financeiro
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3 text-xs sm:text-sm">
-                            <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-amber-200/50 dark:border-slate-800 space-y-1">
-                                <p className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                                    <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                                    1. Paga-te a ti próprio primeiro
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    Assim que receberes, regista <strong>€ {Math.ceil(totalMonthlyEffort)}</strong> como transferência para as tuas metas antes de gastares no dia a dia.
-                                </p>
-                            </div>
-                            <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-amber-200/50 dark:border-slate-800 space-y-1">
-                                <p className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                                    <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                                    2. Sem magia
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    Para "depositar" num objetivo, basta criares um registo em Despesas e associar a essa Meta.
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-
                     <Card className="py-4 shadow-sm">
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base font-semibold flex items-center gap-2">

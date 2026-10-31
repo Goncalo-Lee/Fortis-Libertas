@@ -20,6 +20,8 @@ import {
   CalendarArrowDownIcon, ClipboardMinusIcon, PiggyBankIcon,
   FileOutputIcon, BellIcon, ArrowLeftRightIcon, UsersIcon, ShieldAlertIcon
 } from "lucide-react"
+import ChatToggleDialog from "@/components/chat-toggle-dialog";
+import {SidebarSearchTrigger} from "@/components/SidebarSearchTrigger";
 
 // User role
 const userMenus = {
@@ -55,8 +57,6 @@ const adminMenus = {
 // Secondary menus
 const navSecondary = [
   { title: "Configurações", url: "/dashboard/configurations", icon: <Settings2Icon /> },
-  { title: "Ajuda/Chatbot", url: "#", icon: <CircleHelpIcon /> },
-  { title: "Pesquisar", url: "#", icon: <SearchIcon /> },
 ]
 
 // props
@@ -96,8 +96,17 @@ export function AppSidebar({ role = "user", user, ...props }: AppSidebarProps) {
         <SidebarContent>
           <NavMain items={activeMenu.navMain} />
           <NavDocuments items={activeMenu.documents} />
+
           {role !== "admin" && (
-              <NavSecondary items={navSecondary} className="mt-auto" />
+              <div className="mt-auto flex flex-col gap-1 p-2">
+                {/* Link normal de página */}
+                <NavSecondary items={navSecondary} />
+
+                {/* O Chatbot gerja o seu próprio botão e modal de forma isolada (A abordagem React pura) */}
+                <ChatToggleDialog />
+                <SidebarSearchTrigger />
+                
+              </div>
           )}
         </SidebarContent>
         <SidebarFooter>
