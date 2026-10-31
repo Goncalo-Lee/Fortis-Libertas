@@ -33,7 +33,6 @@ export default function RequestResetDialog({ email }: RequestResetDialogProps) {
         try {
             const { error } = await authClient.requestPasswordReset({
                 email,
-                // window.location.origin garante que funciona em localhost:3000 e no domínio real em produção
                 redirectTo: `${window.location.origin}/reset-password`,
             })
 
@@ -52,11 +51,13 @@ export default function RequestResetDialog({ email }: RequestResetDialogProps) {
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button variant="outline" className="w-full sm:w-auto gap-2">
-                    <span>Redefinir palavra-passe</span>
-                    <ArrowRight className="w-4 h-4" />
-                </Button>
+            <DialogTrigger
+                render={
+                    <Button variant="outline" className="w-full sm:w-auto gap-2" />
+                }
+            >
+                <span>Redefinir palavra-passe</span>
+                <ArrowRight className="w-4 h-4" />
             </DialogTrigger>
 
             <DialogContent className="sm:max-w-md font-poppins">

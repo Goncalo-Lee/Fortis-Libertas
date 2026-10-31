@@ -124,20 +124,25 @@ export default function Enable2FADialog({ session, onStatusChange }: Enable2FADi
 
     return (
         <Dialog open={open} onOpenChange={(val) => { setOpen(val); if (!val) resetModal(); }}>
-            <DialogTrigger asChild>
-                <Button variant={isEnabled ? "destructive" : "default"} className="gap-2">
-                    {isEnabled ? (
-                        <>
-                            <ShieldAlert className="w-4 h-4" />
-                            <span>Desativar 2FA</span>
-                        </>
-                    ) : (
-                        <>
-                            <ShieldCheck className="w-4 h-4" />
-                            <span>Ativar 2FA</span>
-                        </>
-                    )}
-                </Button>
+            <DialogTrigger
+                render={
+                    <Button
+                        variant={isEnabled ? "destructive" : "default"}
+                        className="gap-2"
+                    />
+                }
+            >
+                {isEnabled ? (
+                    <>
+                        <ShieldAlert className="w-4 h-4" />
+                        <span>Desativar 2FA</span>
+                    </>
+                ) : (
+                    <>
+                        <ShieldCheck className="w-4 h-4" />
+                        <span>Ativar 2FA</span>
+                    </>
+                )}
             </DialogTrigger>
 
             <DialogContent className="sm:max-w-md font-poppins">
@@ -155,7 +160,6 @@ export default function Enable2FADialog({ session, onStatusChange }: Enable2FADi
                     </DialogDescription>
                 </DialogHeader>
 
-                {/* CENÁRIO A: DESATIVAR 2FA */}
                 {isEnabled ? (
                     <form onSubmit={handleDisable2FA} className="space-y-4 pt-2">
                         <div className="space-y-2">

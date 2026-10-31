@@ -1,12 +1,11 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth} from "better-auth";
 import {admin, bearer, twoFactor} from "better-auth/plugins";
-import { db } from "../db";
+import { db } from "@/db";
 import * as schema from "../db/schema";
-import { generateId } from "../db/types";
+import { generateId } from "@/db/types";
 import {nextCookies} from "better-auth/next-js";
 import nodemailer from "nodemailer";
-import {error} from "better-auth/api";
 
 /**
  * Better Auth Configuration
@@ -54,17 +53,17 @@ export const auth = betterAuth({
         return;
       }
 
-      await transporter.sendMail({
-        from: '"Fortis Libertas" <no-reply@fortislibertas.com>',
-        to: user.email,
-        subject: "Verifica a tua conta",
-        html: `<p>Clica <a href="${url}">aqui</a> para verificar a tua conta.</p>`,
-      })
+      try {
+        await transporter.sendMail({
+          from: '"Fortis Libertas" <no-reply@fortislibertas.com>',
+          to: user.email,
+          subject: "Verificação de Email - Fortis Libertas", // Tornámos mais genérico
+          html: `<p>Olá ${user.name},</p><p>Clica <a href="${url}">aqui</a> para verificar e confirmar o teu endereço de email.</p>`,
+        });
 
-      if (error) {
-        console.error(error);
-      } else {
-        console.log("Email enviado com sucesso!");
+        console.log(`Email de verificação enviado com sucesso para ${user.email}!`);
+      } catch (err) {
+        console.error("Falha ao enviar o email de verificação:", err);
       }
     }
   },
@@ -88,6 +87,9 @@ export const auth = betterAuth({
       suspendedAt: { type: "date", required: false, input: false },
       deletedAt: { type: "date", required: false, input: false},
     },
+    changeEmail: {
+      enabled: true,
+    }
   },
   socialProviders: {
     google: {

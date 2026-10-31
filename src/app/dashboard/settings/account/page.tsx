@@ -1,17 +1,17 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { User, KeyRound, ShieldCheck, Loader2, Save, ArrowRight } from "lucide-react";
+import { User, KeyRound, ShieldCheck, Loader2, Save, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { useProfile } from "@/contexts/ProfileContext";
 import { authClient } from "@/lib/auth-client";
 import Enable2FADialog from "@/components/two-factor-dialog";
 import RequestResetDialog from "@/components/request-reset-dialog";
+import MailChangeDialog from "@/components/mail-change-dialog";
 
 export default function AccountSettingsPage() {
     const { data: session, refetch: refetchSession } = authClient.useSession();
@@ -94,7 +94,6 @@ export default function AccountSettingsPage() {
     }
 
     return (
-        // h-full overflow-y-auto garante que a página rola para baixo independentemente do tamanho do ecrã
         <div className="h-full w-full overflow-y-auto p-4 md:p-6 lg:p-8 font-poppins">
             <div className="mx-auto w-full max-w-6xl space-y-6 pb-20">
 
@@ -108,21 +107,48 @@ export default function AccountSettingsPage() {
                     </p>
                 </div>
 
-                {/* GRID RESPONSIVO:
-                    items-start: Impede os cartões de esticarem para baixo criando espaços em branco feios
-                    lg:grid-cols-12: Separa em duas colunas em portáteis (1024px+)
-                */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-                    {/* COLUNA ESQUERDA (7 colunas em portáteis): Perfil Público */}
-                    <div className="lg:col-span-7">
+                    {/* COLUNA ESQUERDA: Perfil e Email */}
+                    <div className="lg:col-span-7 flex flex-col gap-6">
+
+                        {/* NOVO CARTÃO SEPARADO: Gestão de Email (Fora do Form Principal) */}
+                        <Card className="shadow-sm border-slate-200/80 dark:border-slate-800">
+                            <CardHeader>
+                                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                                    <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-md text-indigo-600 dark:text-indigo-400">
+                                        <Mail className="w-4 h-4" />
+                                    </div>
+                                    Mail do utilizador
+                                </CardTitle>
+                                <CardDescription className="text-xs">
+                                    O endereço de email associado ao login da tua conta.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-2">
+                                    <Label htmlFor="email" className="text-xs font-medium">Email da Conta</Label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            id="email"
+                                            value={userData.email || ""}
+                                            disabled
+                                            className="bg-muted cursor-not-allowed opacity-80 flex-1"
+                                        />
+                                        <MailChangeDialog currentEmail={userData.email || ""} />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* CARTÃO: Perfil Público (O formulário original limpo) */}
                         <Card className="shadow-sm border-slate-200/80 dark:border-slate-800">
                             <CardHeader>
                                 <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                                     <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-md text-slate-700 dark:text-slate-300">
                                         <User className="w-4 h-4" />
                                     </div>
-                                    Perfil Público & Contactos
+                                    Perfil e Identificação
                                 </CardTitle>
                                 <CardDescription className="text-xs">
                                     Os dados de identificação visíveis na plataforma e relatórios.
@@ -148,15 +174,6 @@ export default function AccountSettingsPage() {
                                                 value={userName}
                                                 onChange={(e) => setUserName(e.target.value)}
                                                 placeholder="Ex: joaosilva"
-                                            />
-                                        </div>
-                                        <div className="space-y-2 md:col-span-2">
-                                            <Label htmlFor="email" className="text-xs font-medium">Email da Conta</Label>
-                                            <Input
-                                                id="email"
-                                                value={userData.email || ""}
-                                                disabled
-                                                className="bg-muted cursor-not-allowed opacity-80"
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -198,12 +215,12 @@ export default function AccountSettingsPage() {
                                 </form>
                             </CardContent>
                         </Card>
+
                     </div>
 
-                    {/* COLUNA DIREITA (5 colunas em portáteis): Segurança e Acesso */}
+                    {/* COLUNA DIREITA: Segurança e Acesso */}
                     <div className="lg:col-span-5 flex flex-col gap-6">
 
-                        {/* CARTÃO: Repor Password */}
                         <Card className="shadow-sm border-slate-200/80 dark:border-slate-800">
                             <CardHeader>
                                 <CardTitle className="text-base sm:text-lg flex items-center gap-2">
@@ -227,7 +244,6 @@ export default function AccountSettingsPage() {
                                         </p>
                                     </div>
 
-                                    {/* AQUI ESTÁ O NOVO COMPONENTE DIALOG */}
                                     <div className="pt-4 border-t border-slate-200/50 dark:border-slate-800 flex justify-end">
                                         <RequestResetDialog email={userData.email} />
                                     </div>
@@ -235,7 +251,6 @@ export default function AccountSettingsPage() {
                             </CardContent>
                         </Card>
 
-                        {/* CARTÃO: Autenticação 2FA */}
                         <Card className="shadow-sm border-slate-200/80 dark:border-slate-800">
                             <CardHeader>
                                 <CardTitle className="text-base sm:text-lg flex items-center gap-2">
@@ -272,7 +287,6 @@ export default function AccountSettingsPage() {
                                         </p>
                                     </div>
 
-                                    {/* DIALOG DO 2FA */}
                                     <div className="pt-4 border-t border-slate-200/50 dark:border-slate-800 flex justify-end">
                                         <Enable2FADialog
                                             session={session}

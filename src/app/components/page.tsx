@@ -6,7 +6,7 @@ import ChartPieTest from "@/components/Charts/ChartPieTest";
 import CurrentBalance from "@/components/Charts/CurrentBalance";
 import { IncomeExpenseChart } from "@/components/Charts/IncomeExpenseChart";
 import { LeftoverBalanceChart } from "@/components/Charts/LeftoverBalanaceChart";
-import {TestChart} from "@/components/Charts/AccountVault";
+import TestChart from "@/components/Charts/AccountVault";
 import CurrentIncome from "@/components/Charts/Incomes/CurrentIncome";
 import CurrentExpense from "@/components/Charts/Expenses/CurrentExpenses";
 

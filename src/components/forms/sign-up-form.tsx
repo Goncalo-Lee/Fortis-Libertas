@@ -16,7 +16,6 @@ import {z} from "zod";
 import {useRouter} from "next/navigation";
 import {authClient} from "@/lib/auth-client";
 import {toast} from "sonner";
-import {router} from "next/client";
 
 
 export default function SignUpForm({
@@ -28,7 +27,6 @@ export default function SignUpForm({
 
   const router = useRouter();
 
-  // Initialize form with resolver from zod
   const form = useForm<z.infer<typeof contactSchema>>({
     resolver: zodResolver(contactSchema),
     defaultValues: {
@@ -79,7 +77,6 @@ export default function SignUpForm({
     setIsLoading(false);
 
   }
-
 
   return (
       <form
