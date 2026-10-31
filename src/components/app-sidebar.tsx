@@ -20,6 +20,8 @@ import {
   CalendarArrowDownIcon, ClipboardMinusIcon, PiggyBankIcon,
   FileOutputIcon, BellIcon, ArrowLeftRightIcon, UsersIcon, ShieldAlertIcon
 } from "lucide-react"
+import ChatToggleDialog from "@/components/chat-toggle-dialog";
+import {SidebarSearchTrigger} from "@/components/SidebarSearchTrigger";
 
 // User role
 const userMenus = {
@@ -28,7 +30,7 @@ const userMenus = {
     { title: "Despesas", url: "/dashboard/expenses", icon: <MinusCircleIcon /> },
     { title: "Metas Financeiras", url: "/dashboard/financial-goals", icon: <CalendarArrowDownIcon /> },
     { title: "Dívidas", url: "/dashboard/financial-debts", icon: <ClipboardMinusIcon /> },
-    { title: "Pé de meia", url: "/dashboard/money-pillow", icon: <PiggyBankIcon /> },
+    { title: "Poupanças", url: "/dashboard/money-pillow", icon: <PiggyBankIcon /> },
     { title: "Notificações", url: "/dashboard/notifications", icon: <BellIcon /> },
   ],
   documents: [
@@ -55,8 +57,6 @@ const adminMenus = {
 // Secondary menus
 const navSecondary = [
   { title: "Configurações", url: "/dashboard/configurations", icon: <Settings2Icon /> },
-  { title: "Ajuda/Chatbot", url: "#", icon: <CircleHelpIcon /> },
-  { title: "Pesquisar", url: "#", icon: <SearchIcon /> },
 ]
 
 // props
@@ -96,8 +96,15 @@ export function AppSidebar({ role = "user", user, ...props }: AppSidebarProps) {
         <SidebarContent>
           <NavMain items={activeMenu.navMain} />
           <NavDocuments items={activeMenu.documents} />
+
           {role !== "admin" && (
-              <NavSecondary items={navSecondary} className="mt-auto" />
+              <div className="mt-auto flex flex-col gap-1 p-2">
+                <NavSecondary items={navSecondary} />
+
+                <ChatToggleDialog />
+                <SidebarSearchTrigger />
+                
+              </div>
           )}
         </SidebarContent>
         <SidebarFooter>

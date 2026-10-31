@@ -32,6 +32,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
         const { dashboard_id } = await context.params;
         const body = await request.json();
 
+        // 🚨 VALIDAÇÃO DE SEGURANÇA (Protege o UUID_TO_BIN contra undefined) 🚨
+        if (!body.record_type_id || !body.category_id || !body.payment_method_id) {
+            console.error("🔥 [API_VALIDATION_ERROR] Campos em falta no body:", body);
+            return NextResponse.json(
+                {
+                    code: "VALIDATION_ERROR",
+                    message: "Faltam campos obrigatórios ou estão indefinidos (record_type_id, category_id, payment_method_id)."
+                },
+                { status: 400 }
+            );
+        }
+
         const created = await createFinancialRecord(dashboard_id, session.user.id, {
             recordTypeId: body.record_type_id,
             categoryId: body.category_id,
@@ -51,6 +63,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
             { status: 201, headers: { Location: `/api/v1/dashboards/${dashboard_id}/financial-records/${created.id}` } }
         );
     } catch (error) {
+        console.error("🔥 [POST_FINANCIAL_RECORDS_ERROR]:", error);
         return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
     }
 }

@@ -9,7 +9,7 @@ async function seedAdmin() {
     try {
         const response = await auth.api.signUpEmail({
             body: {
-                email: "admin@yourdomain.com",
+                email: "admin@fortislibertas.com",
                 password: "SuperSecurePassword123!",
                 name: "Administrator",
             },
