@@ -99,10 +99,8 @@ export function AppSidebar({ role = "user", user, ...props }: AppSidebarProps) {
 
           {role !== "admin" && (
               <div className="mt-auto flex flex-col gap-1 p-2">
-                {/* Link normal de página */}
                 <NavSecondary items={navSecondary} />
 
-                {/* O Chatbot gerja o seu próprio botão e modal de forma isolada (A abordagem React pura) */}
                 <ChatToggleDialog />
                 <SidebarSearchTrigger />
                 

@@ -110,14 +110,16 @@ export default function ChatToggleDialog() {
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <button
-                    type="button"
-                    className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium rounded-lg text-slate-100 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-                >
-                    <MessageSquare className="w-4 h-4 text-blue-400 shrink-0" />
-                    <span className="truncate text-slate-100">Ajuda / Chatbot</span>
-                </button>
+            <DialogTrigger
+                render={
+                    <button
+                        type="button"
+                        className="flex items-center gap-2.5 w-full px-3 py-2 text-sm font-medium rounded-lg text-slate-100 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                    />
+                }
+            >
+                <MessageSquare className="w-4 h-4 text-blue-400 shrink-0" />
+                <span className="truncate text-slate-100">Ajuda / Chatbot</span>
             </DialogTrigger>
 
             <DialogContent className="sm:max-w-md font-poppins">

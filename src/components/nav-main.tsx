@@ -1,6 +1,8 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
+import * as React from "react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -8,9 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import {CirclePlusIcon, LayoutDashboardIcon, MailIcon} from "lucide-react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { LayoutDashboardIcon } from "lucide-react"
 
 export function NavMain({
                           items,
@@ -21,7 +21,8 @@ export function NavMain({
     icon?: React.ReactNode
   }[]
 }) {
-  const pathname = usePathname() // 2. Obtém o URL atual
+  const pathname = usePathname()
+  const isDashboardActive = pathname === "/dashboard"
 
   return (
       <SidebarGroup>
@@ -30,7 +31,12 @@ export function NavMain({
             <SidebarMenuItem className="flex items-center gap-2">
               <SidebarMenuButton
                   tooltip="Dashboard"
-                  isActive={pathname === "/dashboard"}
+                  isActive={isDashboardActive}
+                  className={
+                    isDashboardActive
+                        ? "border-l-2 border-blue-500 bg-sidebar-accent font-medium text-sidebar-accent-foreground rounded-l-none"
+                        : ""
+                  }
                   render={<Link href="/dashboard" />}
               >
                 <LayoutDashboardIcon />
@@ -41,15 +47,20 @@ export function NavMain({
 
           <SidebarMenu>
             {items.map((item) => {
-              // 3. Compara o URL do item com o URL onde o utilizador está
-              const isActive = pathname === item.url
+              const isActive =
+                  pathname === item.url || pathname.startsWith(`${item.url}/`)
 
               return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                         tooltip={item.title}
+                        isActive={isActive}
+                        className={
+                          isActive
+                              ? "border-l-2 border-blue-500 bg-sidebar-accent font-medium text-sidebar-accent-foreground rounded-l-none"
+                              : ""
+                        }
                         render={<Link href={item.url} />}
-                        isActive={isActive} // 4. Passa a prop para o shadcn!
                     >
                       {item.icon}
                       <span>{item.title}</span>
