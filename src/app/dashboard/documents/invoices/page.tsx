@@ -30,7 +30,7 @@ import {
     FileText,
     Link as LinkIcon,
     Loader2,
-    CheckCircle2
+    CheckCircle2, Plus
 } from "lucide-react"
 import { toast } from "sonner"
 import { useFinancial } from "@/contexts/FinancialContext"
@@ -144,11 +144,11 @@ export default function InvoicesPage() {
                     </div>
 
                     <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="gap-2 shrink-0">
-                                <FilePlus className="w-4 h-4" />
-                                Adicionar Documento
-                            </Button>
+                        <DialogTrigger
+                            render={<Button className="gap-2 shrink-0" />}
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span>Nova Fatura</span>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-md font-poppins">
                             <DialogHeader>
@@ -276,7 +276,6 @@ export default function InvoicesPage() {
                     </Card>
                 </div>
 
-                {/* TABELA DE FATURAS */}
                 <Card className="shadow-sm border-slate-200/80 dark:border-slate-800">
                     <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4">
                         <CardTitle className="text-base font-semibold text-slate-800 dark:text-slate-200">

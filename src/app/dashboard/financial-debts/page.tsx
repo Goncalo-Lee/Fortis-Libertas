@@ -9,17 +9,14 @@ import {
     CardTitle,
 } from "@/components/ui/card"
 import {
-    Target,
-    Trophy,
-    Lightbulb,
+    CreditCard,
+    AlertTriangle,
     Plus,
     Calendar,
     CheckCircle2,
-    Sparkles,
     Trash2,
     Clock,
-    Award,
-    TrendingUp,
+    TrendingDown,
     Star,
     Pencil,
     X,
@@ -29,9 +26,9 @@ import { toast } from "sonner"
 import { useDashboard } from "@/contexts/DashboardContext"
 import { useFinancial } from "@/contexts/FinancialContext"
 
-type GoalHorizon = "short" | "medium" | "long"
+type DebtHorizon = "short" | "medium" | "long"
 
-export default function FinancialGoalsPage() {
+export default function DebtsPage() {
     const { activeDashboard } = useDashboard()
     const { installmentPlans, financialRecords, refresh } = useFinancial()
 
@@ -40,79 +37,79 @@ export default function FinancialGoalsPage() {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [newTitle, setNewTitle] = useState("")
     const [newTarget, setNewTarget] = useState("")
-    const [newMonths, setNewMonths] = useState("6")
-    const [newHorizon, setNewHorizon] = useState<GoalHorizon>("short")
+    const [newMonths, setNewMonths] = useState("12")
+    const [newHorizon, setNewHorizon] = useState<DebtHorizon>("medium")
 
-    // Estado para Meta Destaque / Selecionada (Persistida no Browser)
-    const [primaryGoalId, setPrimaryGoalId] = useState<string | null>(null)
+    // Estado para Dívida Destaque / Selecionada (Persistida no Browser)
+    const [primaryDebtId, setPrimaryDebtId] = useState<string | null>(null)
 
-    // Estado para Modal de Edição de Meta
-    const [editingGoal, setEditingGoal] = useState<{ id: string; name: string; targetAmount: number } | null>(null)
+    // Estado para Modal de Edição
+    const [editingDebt, setEditingDebt] = useState<{ id: string; name: string; targetAmount: number } | null>(null)
     const [editName, setEditName] = useState("")
     const [editTarget, setEditTarget] = useState("")
     const [isSavingEdit, setIsSavingEdit] = useState(false)
 
     useEffect(() => {
-        const saved = localStorage.getItem("primaryFinancialGoal")
-        if (saved) setPrimaryGoalId(saved)
+        const saved = localStorage.getItem("primaryFinancialDebt")
+        if (saved) setPrimaryDebtId(saved)
     }, [])
 
-    function handleSetPrimaryGoal(id: string) {
-        localStorage.setItem("primaryFinancialGoal", id)
-        setPrimaryGoalId(id)
-        toast.success("Meta definida como principal para o Dashboard!")
+    function handleSetPrimaryDebt(id: string) {
+        localStorage.setItem("primaryFinancialDebt", id)
+        setPrimaryDebtId(id)
+        toast.success("Dívida definida como foco principal!")
     }
 
     // ==========================================
-    // 1. FILTRAR E PROCESSAR APENAS METAS ([GOAL])
+    // 1. FILTRAR E PROCESSAR APENAS DÍVIDAS ([DEBT])
     // ==========================================
     const enrichedPlans = useMemo(() => {
         if (!installmentPlans) return []
 
         return installmentPlans
-            .filter((p: any) => !p.description || !p.description.startsWith("[DEBT]"))
+            .filter((p: any) => p.description && p.description.startsWith("[DEBT]"))
             .map((plan: any) => {
                 const targetAmount = Number(
                     plan.totalAmount ?? plan.total_amount ?? plan.amount ?? plan.target_amount ?? plan.price ?? 0
                 )
 
-                const savedAmount = (financialRecords || [])
+                const paidAmount = (financialRecords || [])
                     .filter((r: any) => (r.installmentPlanId || r.installment_plan_id) === plan.id)
                     .reduce((acc: number, r: any) => acc + Number(r.price || 0), 0)
 
                 return {
                     ...plan,
                     targetAmount,
-                    savedAmount,
-                    monthsRemaining: Number(plan.totalInstallments ?? plan.total_installments ?? 6),
+                    paidAmount,
+                    monthsRemaining: Number(plan.totalInstallments ?? plan.total_installments ?? 12),
                     status: plan.status || "pending",
                     createdAt: plan.createdAt || plan.created_at || new Date().toISOString()
                 }
             })
     }, [installmentPlans, financialRecords])
 
-    const activeGoals = enrichedPlans.filter((p: any) => p.status !== "completed" && p.status !== "cancelled")
-    const completedGoals = enrichedPlans.filter((p: any) => p.status === "completed")
+    const activeDebts = enrichedPlans.filter((p: any) => p.status !== "completed" && p.status !== "cancelled")
+    const completedDebts = enrichedPlans.filter((p: any) => p.status === "completed")
 
-    // Meta selecionada / destaque
-    const selectedGoal = useMemo(() => {
-        if (activeGoals.length === 0) return null
-        return activeGoals.find((g: any) => g.id === primaryGoalId) || activeGoals[0]
-    }, [activeGoals, primaryGoalId])
+    // Dívida selecionada / destaque
+    const selectedDebt = useMemo(() => {
+        if (activeDebts.length === 0) return null
+        return activeDebts.find((g: any) => g.id === primaryDebtId) || activeDebts[0]
+    }, [activeDebts, primaryDebtId])
 
-    const selectedPct = selectedGoal && selectedGoal.targetAmount > 0
-        ? Math.min(Math.round((selectedGoal.savedAmount / selectedGoal.targetAmount) * 100), 100)
+    const selectedPct = selectedDebt && selectedDebt.targetAmount > 0
+        ? Math.min(Math.round((selectedDebt.paidAmount / selectedDebt.targetAmount) * 100), 100)
         : 0
 
-    const totalMonthlyEffort = activeGoals.reduce((acc: number, g: any) => {
-        const remaining = Math.max(0, g.targetAmount - g.savedAmount)
-        return acc + remaining / Math.max(1, g.monthsRemaining)
+    const totalMonthlyEffort = activeDebts.reduce((acc: number, d: any) => {
+        const remaining = Math.max(0, d.targetAmount - d.paidAmount)
+        return acc + remaining / Math.max(1, d.monthsRemaining)
     }, 0)
 
     // ==========================================
     // 2. OPERAÇÕES DE API (POST / PATCH / DELETE)
     // ==========================================
-    async function handleCreateGoal(e: React.FormEvent) {
+    async function handleCreateDebt(e: React.FormEvent) {
         e.preventDefault()
         const target = parseFloat(newTarget)
         const months = parseInt(newMonths, 10) || 1
@@ -130,7 +127,7 @@ export default function FinancialGoalsPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     name: newTitle.trim(),
-                    description: `[GOAL] Meta a ${newHorizon === "short" ? "curto" : newHorizon === "medium" ? "médio" : "longo"} prazo`,
+                    description: `[DEBT] Crédito a ${newHorizon === "short" ? "curto" : newHorizon === "medium" ? "médio" : "longo"} prazo`,
                     total_amount: target.toFixed(2),
                     total_installments: months,
                     due_date: dueDateString,
@@ -142,33 +139,33 @@ export default function FinancialGoalsPage() {
 
             if (!res.ok) {
                 if (res.status === 409 || resData.code === "NAME_ALREADY_EXISTS") {
-                    throw new Error(`O nome "${newTitle.trim()}" já está a ser utilizado noutro plano ou meta.`)
+                    throw new Error(`O nome "${newTitle.trim()}" já está a ser utilizado noutro registo.`)
                 }
-                throw new Error(resData.message || "Falha ao criar meta financeira.")
+                throw new Error(resData.message || "Falha ao registar dívida.")
             }
 
             refresh()
-            toast.success("Novo objetivo financeiro criado com sucesso!")
+            toast.success("Novo registo de dívida criado com sucesso!")
             setNewTitle("")
             setNewTarget("")
-            setNewMonths("6")
+            setNewMonths("12")
             setIsAdding(false)
         } catch (error: any) {
-            toast.error(error.message || "Erro ao criar a meta.")
+            toast.error(error.message || "Erro ao criar a dívida.")
         } finally {
             setIsSubmitting(false)
         }
     }
 
-    function openEditModal(goal: any) {
-        setEditingGoal({ id: goal.id, name: goal.name, targetAmount: goal.targetAmount })
-        setEditName(goal.name)
-        setEditTarget(String(goal.targetAmount))
+    function openEditModal(debt: any) {
+        setEditingDebt({ id: debt.id, name: debt.name, targetAmount: debt.targetAmount })
+        setEditName(debt.name)
+        setEditTarget(String(debt.targetAmount))
     }
 
     async function handleSaveEdit(e: React.FormEvent) {
         e.preventDefault()
-        if (!editingGoal) return
+        if (!editingDebt) return
 
         const target = parseFloat(editTarget)
         if (!editName.trim() || isNaN(target) || target <= 0) {
@@ -177,7 +174,7 @@ export default function FinancialGoalsPage() {
 
         setIsSavingEdit(true)
         try {
-            const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${editingGoal.id}`, {
+            const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${editingDebt.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -191,22 +188,22 @@ export default function FinancialGoalsPage() {
                 if (res.status === 409 || resData.code === "NAME_ALREADY_EXISTS") {
                     throw new Error(`Já existe outro registo com o nome "${editName.trim()}".`)
                 }
-                throw new Error(resData.message || "Erro ao atualizar dados da meta.")
+                throw new Error(resData.message || "Erro ao atualizar dados da dívida.")
             }
 
             refresh()
-            toast.success("Meta atualizada com sucesso!")
-            setEditingGoal(null)
+            toast.success("Dívida atualizada com sucesso!")
+            setEditingDebt(null)
         } catch (error: any) {
-            toast.error(error.message || "Falha ao gravar alterações da meta.")
+            toast.error(error.message || "Falha ao gravar alterações da dívida.")
         } finally {
             setIsSavingEdit(false)
         }
     }
 
-    async function handleCompleteGoal(goalId: string) {
+    async function handleCompleteDebt(debtId: string) {
         try {
-            const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${goalId}`, {
+            const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${debtId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ status: "completed" })
@@ -214,38 +211,38 @@ export default function FinancialGoalsPage() {
             if (!res.ok) throw new Error("Falha ao concluir")
 
             refresh()
-            toast.success("Muitos parabéns! Meta alcançada com sucesso! 🎉")
+            toast.success("Fantástico! Dívida totalmente liquidada! 🎉")
 
-            if (primaryGoalId === goalId) {
-                localStorage.removeItem("primaryFinancialGoal")
-                setPrimaryGoalId(null)
+            if (primaryDebtId === debtId) {
+                localStorage.removeItem("primaryFinancialDebt")
+                setPrimaryDebtId(null)
             }
         } catch (error) {
-            toast.error("Erro ao concluir a meta.")
+            toast.error("Erro ao liquidar a dívida.")
         }
     }
 
-    async function handleDeleteGoal(id: string) {
-        if (!confirm("Tens a certeza? Os registos associados não serão apagados, mas perderão a ligação a esta meta.")) return
+    async function handleDeleteDebt(id: string) {
+        if (!confirm("Tens a certeza? Os pagamentos associados não serão apagados, mas perderão a ligação a esta dívida.")) return
         try {
             const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${id}`, {
                 method: "DELETE"
             })
             if (!res.ok) throw new Error("Falha ao eliminar")
 
-            if (primaryGoalId === id) {
-                localStorage.removeItem("primaryFinancialGoal")
-                setPrimaryGoalId(null)
+            if (primaryDebtId === id) {
+                localStorage.removeItem("primaryFinancialDebt")
+                setPrimaryDebtId(null)
             }
             refresh()
-            toast.success("Objetivo removido.")
+            toast.success("Registo de dívida removido.")
         } catch (error) {
-            toast.error("Erro ao remover o objetivo.")
+            toast.error("Erro ao remover a dívida.")
         }
     }
 
     function handleReinforceIntent() {
-        toast.info("Para reforçar, vai a 'Despesas', cria um registo e associa-o a esta Meta!", {
+        toast.info("Para abater, vai a 'Despesas', cria um registo e associa-o a esta Dívida!", {
             duration: 6000
         })
     }
@@ -257,35 +254,35 @@ export default function FinancialGoalsPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">
-                        Metas e Objetivos Financeiros
+                        Gestão de Dívidas
                     </h1>
                     <p className="text-xs sm:text-sm text-muted-foreground">
-                        Acompanha a tua meta ativa e planeia objetivos sem recorrer a dívidas.
+                        Controla os teus créditos, empréstimos e prestações em aberto.
                     </p>
                 </div>
 
                 <button
                     type="button"
                     onClick={() => setIsAdding((prev) => !prev)}
-                    className="flex items-center gap-1.5 self-start sm:self-auto bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium px-3.5 py-2 rounded-lg shadow-xs transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 self-start sm:self-auto bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-medium px-3.5 py-2 rounded-lg shadow-xs transition-colors cursor-pointer"
                 >
                     <Plus className="w-4 h-4" />
-                    <span>Criar Nova Meta</span>
+                    <span>Registar Nova Dívida</span>
                 </button>
             </div>
 
-            {/* MODAL DE EDIÇÃO DE META */}
-            {editingGoal && (
+            {/* MODAL DE EDIÇÃO */}
+            {editingDebt && (
                 <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
                     <Card className="w-full max-w-md shadow-lg border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 animate-in fade-in zoom-in-95">
                         <CardHeader className="pb-3 flex flex-row items-center justify-between">
                             <div>
-                                <CardTitle className="text-base font-semibold">Editar Meta Financeira</CardTitle>
-                                <CardDescription className="text-xs">Altera o nome ou ajusta o valor alvo.</CardDescription>
+                                <CardTitle className="text-base font-semibold">Editar Dívida</CardTitle>
+                                <CardDescription className="text-xs">Altera o nome ou ajusta o valor total em dívida.</CardDescription>
                             </div>
                             <button
                                 type="button"
-                                onClick={() => setEditingGoal(null)}
+                                onClick={() => setEditingDebt(null)}
                                 className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                             >
                                 <X className="w-4 h-4" />
@@ -294,7 +291,7 @@ export default function FinancialGoalsPage() {
                         <CardContent>
                             <form onSubmit={handleSaveEdit} className="space-y-4">
                                 <div className="space-y-1">
-                                    <label className="text-xs font-medium text-muted-foreground">Nome da Meta</label>
+                                    <label className="text-xs font-medium text-muted-foreground">Nome da Dívida</label>
                                     <input
                                         type="text"
                                         value={editName}
@@ -304,7 +301,7 @@ export default function FinancialGoalsPage() {
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs font-medium text-muted-foreground">Objetivo de Valor (€)</label>
+                                    <label className="text-xs font-medium text-muted-foreground">Valor Total (€)</label>
                                     <input
                                         type="number"
                                         step="1"
@@ -317,7 +314,7 @@ export default function FinancialGoalsPage() {
                                 <div className="flex gap-2 justify-end pt-2">
                                     <button
                                         type="button"
-                                        onClick={() => setEditingGoal(null)}
+                                        onClick={() => setEditingDebt(null)}
                                         className="h-9 px-4 text-xs font-medium rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
                                     >
                                         Cancelar
@@ -325,7 +322,7 @@ export default function FinancialGoalsPage() {
                                     <button
                                         type="submit"
                                         disabled={isSavingEdit}
-                                        className="h-9 px-4 text-xs font-medium rounded-md bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 disabled:opacity-50"
+                                        className="h-9 px-4 text-xs font-medium rounded-md bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1.5 disabled:opacity-50"
                                     >
                                         <Save className="w-3.5 h-3.5" />
                                         {isSavingEdit ? "A guardar..." : "Guardar Alterações"}
@@ -337,24 +334,24 @@ export default function FinancialGoalsPage() {
                 </div>
             )}
 
-            {/* FORMULÁRIO DE NOVA META */}
+            {/* FORMULÁRIO DE NOVA DÍVIDA */}
             {isAdding && (
-                <Card className="border-blue-200 dark:border-blue-800/60 bg-blue-50/30 dark:bg-blue-950/10 shadow-sm animate-in fade-in slide-in-from-top-4">
+                <Card className="border-rose-200 dark:border-rose-800/60 bg-rose-50/30 dark:bg-rose-950/10 shadow-sm animate-in fade-in slide-in-from-top-4">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm sm:text-base font-semibold">
-                            Definir Novo Objetivo Financeiro
+                            Registar Novo Crédito / Dívida
                         </CardTitle>
                         <CardDescription className="text-xs">
-                            Define o nome da meta, o valor total a alcançar e o prazo previsto.
+                            Indica o nome do credor ou crédito, o valor total e o prazo de liquidação.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <form onSubmit={handleCreateGoal} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+                        <form onSubmit={handleCreateDebt} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
                             <div className="flex flex-col gap-1">
-                                <label className="text-xs font-medium text-muted-foreground">Nome da Meta</label>
+                                <label className="text-xs font-medium text-muted-foreground">Credor / Nome</label>
                                 <input
                                     type="text"
-                                    placeholder="Ex: Férias, Computador..."
+                                    placeholder="Ex: Crédito Automóvel..."
                                     value={newTitle}
                                     onChange={(e) => setNewTitle(e.target.value)}
                                     className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs sm:text-sm"
@@ -363,11 +360,11 @@ export default function FinancialGoalsPage() {
                             </div>
 
                             <div className="flex flex-col gap-1">
-                                <label className="text-xs font-medium text-muted-foreground">Valor Alvo (€)</label>
+                                <label className="text-xs font-medium text-muted-foreground">Valor Total (€)</label>
                                 <input
                                     type="number"
                                     step="1"
-                                    placeholder="1000"
+                                    placeholder="5000"
                                     value={newTarget}
                                     onChange={(e) => setNewTarget(e.target.value)}
                                     className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs sm:text-sm"
@@ -376,12 +373,12 @@ export default function FinancialGoalsPage() {
                             </div>
 
                             <div className="flex flex-col gap-1">
-                                <label className="text-xs font-medium text-muted-foreground">Prazo e Horizonte</label>
+                                <label className="text-xs font-medium text-muted-foreground">Prestações (Meses)</label>
                                 <div className="flex gap-1.5">
                                     <input
                                         type="number"
                                         min="1"
-                                        max="120"
+                                        max="360"
                                         value={newMonths}
                                         onChange={(e) => setNewMonths(e.target.value)}
                                         className="h-9 w-16 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 text-xs sm:text-sm text-center"
@@ -390,7 +387,7 @@ export default function FinancialGoalsPage() {
                                     />
                                     <select
                                         value={newHorizon}
-                                        onChange={(e) => setNewHorizon(e.target.value as GoalHorizon)}
+                                        onChange={(e) => setNewHorizon(e.target.value as DebtHorizon)}
                                         className="h-9 flex-1 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 text-xs"
                                     >
                                         <option value="short">Curto Prazo</option>
@@ -404,9 +401,9 @@ export default function FinancialGoalsPage() {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="flex-1 h-9 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer disabled:opacity-50"
+                                    className="flex-1 h-9 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer disabled:opacity-50"
                                 >
-                                    {isSubmitting ? "..." : "Criar"}
+                                    {isSubmitting ? "..." : "Registar"}
                                 </button>
                                 <button
                                     type="button"
@@ -424,46 +421,46 @@ export default function FinancialGoalsPage() {
             {/* CARTÕES DE TOPO */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-                {/* Cartão 1: Meta Selecionada / Destaque */}
+                {/* Cartão 1: Dívida Selecionada / Destaque */}
                 <Card className="@container flex flex-col justify-between py-3 shadow-sm">
                     <CardHeader className="pb-1 w-full">
                         <CardTitle className="text-sm sm:text-base font-medium text-muted-foreground flex items-center justify-center gap-2">
-                            <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-md">
-                                <Target className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                            <div className="p-1.5 bg-rose-100 dark:bg-rose-900/30 rounded-md">
+                                <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
                             </div>
-                            {selectedGoal ? `Meta Ativa: ${selectedGoal.name}` : "Nenhuma Meta Ativa"}
+                            {selectedDebt ? `Dívida em Foco: ${selectedDebt.name}` : "Nenhuma Dívida"}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="px-4 pb-2 flex flex-col items-center justify-center text-center gap-2 my-auto">
-                        {selectedGoal ? (
+                        {selectedDebt ? (
                             <>
                                 <div className="text-xl font-bold @[220px]:text-xl @[320px]:text-2xl text-slate-900 dark:text-slate-100">
-                                    € {selectedGoal.savedAmount.toLocaleString("pt-PT")}
+                                    € {selectedDebt.paidAmount.toLocaleString("pt-PT")}
                                     <span className="text-xs font-normal text-muted-foreground">
-                                        {" "}/ € {selectedGoal.targetAmount.toLocaleString("pt-PT")} ({selectedPct}%)
+                                        {" "}abertos / € {selectedDebt.targetAmount.toLocaleString("pt-PT")} ({selectedPct}%)
                                     </span>
                                 </div>
                                 <div className="w-full max-w-[200px] h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                     <div
-                                        className="h-full bg-blue-600 dark:bg-blue-500 rounded-full transition-all duration-500"
+                                        className="h-full bg-rose-600 dark:bg-rose-500 rounded-full transition-all duration-500"
                                         style={{ width: `${selectedPct}%` }}
                                     />
                                 </div>
                             </>
                         ) : (
-                            <p className="text-xs text-muted-foreground">Cria uma meta para ver o progresso.</p>
+                            <p className="text-xs text-muted-foreground">Não tens dívidas registadas em aberto.</p>
                         )}
                     </CardContent>
                 </Card>
 
-                {/* Cartão 2: Ritmo Mensal Necessário */}
+                {/* Cartão 2: Esforço Mensal */}
                 <Card className="@container flex flex-col justify-between py-3 shadow-sm">
                     <CardHeader className="pb-1 w-full">
                         <CardTitle className="text-sm sm:text-base font-medium text-muted-foreground flex items-center justify-center gap-2">
-                            <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-md">
-                                <TrendingUp className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                            <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-md">
+                                <TrendingDown className="w-4 h-4 text-orange-600 dark:text-orange-400" />
                             </div>
-                            Ritmo Mensal Recomendado
+                            Esforço Mensal Base
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="px-4 pb-2 flex flex-col items-center justify-center text-center gap-1 my-auto">
@@ -471,69 +468,69 @@ export default function FinancialGoalsPage() {
                             € {Math.ceil(totalMonthlyEffort).toLocaleString("pt-PT")} <span className="text-xs font-normal text-muted-foreground">/mês</span>
                         </div>
                         <span className="text-xs text-muted-foreground">
-                            Para cumprir as tuas {activeGoals.length} metas no prazo
+                            Encargo previsto para as tuas {activeDebts.length} dívidas ativas
                         </span>
                     </CardContent>
                 </Card>
 
-                {/* Cartão 3: Objetivos Conquistados */}
+                {/* Cartão 3: Créditos Liquidados */}
                 <Card className="@container flex flex-col justify-between py-3 shadow-sm">
                     <CardHeader className="pb-1 w-full">
                         <CardTitle className="text-sm sm:text-base font-medium text-muted-foreground flex items-center justify-center gap-2">
-                            <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-md">
-                                <Trophy className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                            <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-md">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                             </div>
-                            Objetivos Conquistados
+                            Créditos Liquidados
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="px-4 pb-2 flex flex-col items-center justify-center text-center gap-1 my-auto">
                         <div className="text-2xl font-bold @[220px]:text-2xl @[320px]:text-3xl text-slate-900 dark:text-slate-100">
-                            {completedGoals.length} Metas
+                            {completedDebts.length} Dívidas
                         </div>
                         <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                            € {completedGoals.reduce((acc: number, c: any) => acc + c.targetAmount, 0).toLocaleString("pt-PT")} poupados sem dívidas
+                            € {completedDebts.reduce((acc: number, c: any) => acc + c.targetAmount, 0).toLocaleString("pt-PT")} amortizados
                         </span>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* LISTAGEM DE METAS & CONSELHOS */}
+            {/* LISTAGEM */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                {/* LISTA DE METAS */}
+                {/* LISTA ATIVA */}
                 <Card className="lg:col-span-7 flex flex-col py-4 shadow-sm">
                     <CardHeader className="pb-3 flex flex-row items-center justify-between">
                         <div>
                             <CardTitle className="text-base font-semibold flex items-center gap-2">
-                                <Target className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                As Tuas Metas em Curso
+                                <CreditCard className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                                Prestações em Curso
                             </CardTitle>
                             <CardDescription className="text-xs">
-                                Clica em "Destacar" para definir qual aparece na Dashboard principal.
+                                Foca-te numa dívida de cada vez. Clica em "Focar" para destacar.
                             </CardDescription>
                         </div>
                         <span className="text-xs font-medium text-muted-foreground bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full">
-                            {activeGoals.length} ativas
+                            {activeDebts.length} ativas
                         </span>
                     </CardHeader>
 
                     <CardContent className="space-y-4">
-                        {activeGoals.length === 0 && (
-                            <p className="text-sm text-center text-muted-foreground py-6">Não tens metas em curso.</p>
+                        {activeDebts.length === 0 && (
+                            <p className="text-sm text-center text-muted-foreground py-6">Excelente, não tens dívidas registadas!</p>
                         )}
-                        {activeGoals.map((goal: any) => {
-                            const pct = Math.min(Math.round((goal.savedAmount / goal.targetAmount) * 100), 100)
-                            const remaining = Math.max(0, goal.targetAmount - goal.savedAmount)
-                            const monthlyNeeded = Math.ceil(remaining / Math.max(1, goal.monthsRemaining))
+                        {activeDebts.map((debt: any) => {
+                            const pct = Math.min(Math.round((debt.paidAmount / debt.targetAmount) * 100), 100)
+                            const remaining = Math.max(0, debt.targetAmount - debt.paidAmount)
+                            const monthlyNeeded = Math.ceil(remaining / Math.max(1, debt.monthsRemaining))
                             const isReadyToComplete = pct >= 100
-                            const isPrimary = (selectedGoal?.id === goal.id)
+                            const isPrimary = (selectedDebt?.id === debt.id)
 
                             return (
                                 <div
-                                    key={goal.id}
+                                    key={debt.id}
                                     className={`p-4 rounded-xl border space-y-3 transition-all ${
                                         isPrimary
-                                            ? "border-blue-400/80 dark:border-blue-500/60 bg-blue-50/20 dark:bg-blue-950/20 shadow-sm"
+                                            ? "border-rose-400/80 dark:border-rose-500/60 bg-rose-50/20 dark:bg-rose-950/20 shadow-sm"
                                             : "border-slate-200/80 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/30"
                                     }`}
                                 >
@@ -541,19 +538,19 @@ export default function FinancialGoalsPage() {
                                         <div>
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 <h3 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-slate-100">
-                                                    {goal.name}
+                                                    {debt.name}
                                                 </h3>
                                                 {isPrimary && (
-                                                    <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
-                                                        <Star className="w-3 h-3 fill-current" /> Meta Selecionada
+                                                    <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300">
+                                                        <Star className="w-3 h-3 fill-current" /> Foco Atual
                                                     </span>
                                                 )}
                                             </div>
                                             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                                                 <Clock className="w-3 h-3" />
                                                 {isReadyToComplete
-                                                    ? "Objetivo alcançado! Pronto para ser concluído."
-                                                    : `Faltam € ${remaining.toLocaleString("pt-PT")} • Esforço: € ${monthlyNeeded}/mês`}
+                                                    ? "Valor totalmente liquidado! Pronto para fechar."
+                                                    : `Faltam € ${remaining.toLocaleString("pt-PT")} • Pagamento ref: € ${monthlyNeeded}/mês`}
                                             </p>
                                         </div>
 
@@ -562,7 +559,7 @@ export default function FinancialGoalsPage() {
                                                 className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                                                     isReadyToComplete
                                                         ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                                                        : "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                                                        : "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
                                                 }`}
                                             >
                                                 {pct}%
@@ -570,8 +567,8 @@ export default function FinancialGoalsPage() {
                                             <button
                                                 type="button"
                                                 title="Editar nome ou valor"
-                                                onClick={() => openEditModal(goal)}
-                                                className="p-1 text-slate-400 hover:text-blue-600 rounded-md transition-colors cursor-pointer"
+                                                onClick={() => openEditModal(debt)}
+                                                className="p-1 text-slate-400 hover:text-rose-600 rounded-md transition-colors cursor-pointer"
                                             >
                                                 <Pencil className="w-3.5 h-3.5" />
                                             </button>
@@ -581,7 +578,7 @@ export default function FinancialGoalsPage() {
                                     <div className="w-full h-2.5 bg-slate-200/80 dark:bg-slate-800 rounded-full overflow-hidden">
                                         <div
                                             className={`h-full rounded-full transition-all duration-500 ${
-                                                isReadyToComplete ? "bg-emerald-500" : "bg-blue-600 dark:bg-blue-500"
+                                                isReadyToComplete ? "bg-emerald-500" : "bg-rose-600 dark:bg-rose-500"
                                             }`}
                                             style={{ width: `${pct}%` }}
                                         />
@@ -589,9 +586,9 @@ export default function FinancialGoalsPage() {
 
                                     <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
                                         <div className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
-                                            € {goal.savedAmount.toLocaleString("pt-PT")}{" "}
+                                            € {debt.paidAmount.toLocaleString("pt-PT")}{" "}
                                             <span className="font-normal text-muted-foreground">
-                                                / € {goal.targetAmount.toLocaleString("pt-PT")}
+                                                / € {debt.targetAmount.toLocaleString("pt-PT")}
                                             </span>
                                         </div>
 
@@ -599,10 +596,10 @@ export default function FinancialGoalsPage() {
                                             {!isPrimary && (
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleSetPrimaryGoal(goal.id)}
-                                                    className="text-[11px] font-medium px-2.5 py-1 rounded-md text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors border border-blue-200 dark:border-blue-900/50 cursor-pointer"
+                                                    onClick={() => handleSetPrimaryDebt(debt.id)}
+                                                    className="text-[11px] font-medium px-2.5 py-1 rounded-md text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors border border-rose-200 dark:border-rose-900/50 cursor-pointer"
                                                 >
-                                                    Destacar
+                                                    Focar
                                                 </button>
                                             )}
 
@@ -612,23 +609,22 @@ export default function FinancialGoalsPage() {
                                                     onClick={handleReinforceIntent}
                                                     className="text-xs font-medium px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                                                 >
-                                                    Depositar
+                                                    Abater
                                                 </button>
                                             ) : (
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleCompleteGoal(goal.id)}
+                                                    onClick={() => handleCompleteDebt(debt.id)}
                                                     className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer"
                                                 >
                                                     <CheckCircle2 className="w-3.5 h-3.5" />
-                                                    Concluir Meta
+                                                    Liquidar
                                                 </button>
                                             )}
 
                                             <button
                                                 type="button"
-                                                onClick={() => handleDeleteGoal(goal.id)}
-                                                aria-label="Eliminar meta"
+                                                onClick={() => handleDeleteDebt(debt.id)}
                                                 className="p-1 text-slate-400 hover:text-red-500 rounded-md transition-colors cursor-pointer"
                                             >
                                                 <Trash2 className="w-4 h-4" />
@@ -641,19 +637,20 @@ export default function FinancialGoalsPage() {
                     </CardContent>
                 </Card>
 
+                {/* HISTÓRICO LIQUIDADAS */}
                 <div className="lg:col-span-5 space-y-6">
                     <Card className="py-4 shadow-sm">
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base font-semibold flex items-center gap-2">
-                                <Award className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                                Histórico de Metas Alcançadas
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                Histórico de Liquidações
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-2.5">
-                            {completedGoals.length === 0 && (
-                                <p className="text-xs text-center text-muted-foreground py-4">Ainda não concluíste nenhuma meta.</p>
+                            {completedDebts.length === 0 && (
+                                <p className="text-xs text-center text-muted-foreground py-4">Ainda não liquidaste nenhuma dívida pelo sistema.</p>
                             )}
-                            {completedGoals.map((item: any) => (
+                            {completedDebts.map((item: any) => (
                                 <div
                                     key={item.id}
                                     className="flex items-center justify-between p-3 rounded-lg border border-emerald-200/50 dark:border-emerald-900/40 bg-emerald-50/30 dark:bg-emerald-950/10"
