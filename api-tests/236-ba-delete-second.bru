@@ -1,0 +1,19 @@
+meta {
+  name: Bank accounts - delete USD account
+  type: http
+  seq: 236
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{baId2}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 204
+}

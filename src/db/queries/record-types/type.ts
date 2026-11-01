@@ -8,6 +8,7 @@ export type CreateRecordTypeInput = {
   name: string;
   color_id: string;
   icon_id: string;
+  kind?: "income" | "expense" | "neutral";
   description?: string | null;
 };
 

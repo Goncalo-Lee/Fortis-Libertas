@@ -47,6 +47,7 @@ export async function createRecordType(dashboardId: string, input: CreateRecordT
       description: input.description ?? null,
       colorId: input.color_id,
       iconId: input.icon_id,
+      kind: input.kind ?? "neutral",
     });
   } catch (error) {
     if (await isColorTaken({ table: recordType, dashboardId, colorId: input.color_id, exceptId: id })) {

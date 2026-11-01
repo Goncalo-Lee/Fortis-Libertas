@@ -32,6 +32,7 @@ export function serializeRecordType(
     // Passthrough scalar fields
     name: row.name,
     description: row.description,
+    kind: row.kind,
 
     // Catalog references: ids plus the read-only nested objects
     color_id: row.colorId,

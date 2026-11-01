@@ -319,7 +319,9 @@ Bank accounts are independent of dashboards and shared between users through `Ba
 | :--- | :--- | :--- |
 | `bank_account_id` | uuid | |
 | `name` | string | ≤ 50 chars. |
-| `initial_balance` | decimal string | `decimal(10,2)`. |
+| `initial_balance` | decimal string | `decimal(10,2)`, in the account currency. |
+| `currency` | string | Currency code of the account (`EUR`, `USD`, `GBP`, `BRL`). |
+| `balance` | decimal string | Derived, in the account currency. See [5.5](#55-business-rules). |
 | `frozen_at` | datetime \| null | |
 | `role` | enum | Derived: the caller's role (`owner`, `editor`, `viewer`). |
 | `created_at` | datetime | |
@@ -331,6 +333,7 @@ Bank accounts are independent of dashboards and shared between users through `Ba
 | :--- | :--- | :-: | :--- | :--- |
 | `name` | string | `POST`: Yes | 1–50 chars | |
 | `initial_balance` | decimal string | `POST`: Yes | `^-?\d{1,8}(\.\d{1,2})?$` | Stored as `decimal(10,2)`. |
+| `currency` | string | No | Supported currency code | `POST` only; defaults to the caller's profile currency. It cannot be changed afterwards (`422` if sent on `PATCH`). |
 
 ### 5.4 Query Parameters (`GET /bank-accounts`)
 
@@ -344,7 +347,8 @@ Bank accounts are independent of dashboards and shared between users through `Ba
 ### 5.5 Business Rules
 
 - `POST` inserts `Bank_Account` and `Bank_Account__User (role = 'owner')` in one transaction.
-- `DELETE` returns `409 HAS_ACTIVE_CARDS` while any non-deleted `Card` references the account (mirrors `RESTRICT` on `Card.bank_id`). Membership rows are removed physically (mirrors `CASCADE`).
+- `DELETE` returns `409 HAS_ACTIVE_CARDS` while any non-deleted `Card` references the account (mirrors `RESTRICT` on `Card.bank_id`). Membership rows are kept (soft-deleted memberships stay as they are), but a deleted account is no longer found.
+- `balance` is `initial_balance` plus the effect of the non-deleted financial records with status `paid` or `settled` whose payment method points to a card of this account, from any dashboard. `Record_Type.kind` decides the sign (`income` adds, `expense` subtracts, `neutral` is ignored) and each amount is converted to the account currency (see 1.8). Records of a soft-deleted dashboard keep counting; records paid without a card affect no account.
 - `freeze` / `unfreeze` are idempotent and return the updated resource.
 
 ---
@@ -563,6 +567,7 @@ All paths are relative to `/dashboards/{dashboard_id}`.
 | `color` | object | `{ color_id, name, code_color }`. Read-only. |
 | `icon_id` | uuid | FK to `Icon`. |
 | `icon` | object | `{ icon_id, name, code_icon }`. Read-only. |
+| `kind` | enum | `income`, `expense` or `neutral`: what records of this type do to a balance. |
 | `created_at` | datetime | |
 | `updated_at` | datetime | |
 
@@ -574,6 +579,7 @@ All paths are relative to `/dashboards/{dashboard_id}`.
 | `description` | string \| null | No | | |
 | `color_id` | uuid | `POST`: Yes | Existing, non-reserved color | `409 COLOR_IN_USE` if another record type of the dashboard already uses it; `422` if the color is reserved. |
 | `icon_id` | uuid | `POST`: Yes | Existing icon | |
+| `kind` | enum | No | `income`, `expense`, `neutral` | `POST` only; defaults to `neutral`. It cannot be changed afterwards (`422` if sent on `PATCH`), so past balances stay valid. |
 
 ### 10.4 Business Rules
 
@@ -581,7 +587,7 @@ All paths are relative to `/dashboards/{dashboard_id}`.
 - The categories available for a record type are managed from the category side (see [Categories](#11-categories)). `GET /categories?record_type_id=` lists them.
 - A color is exclusive to one record type per dashboard (`UNIQUE (dashboard_id, color_id)`). Soft-deleted record types keep holding their color.
 - Two colors are reserved (`Color.is_reserved`) for the seeded `Income` and `Expenses` record types. They cannot be assigned to any other record type or to a category, and the colors of `Income` and `Expenses` can only be changed to one of the reserved colors.
-- Creating a dashboard seeds `Income` and `Expenses` with the reserved colors and `Investment` with a free non-reserved color, each with a default icon.
+- Creating a dashboard seeds `Income` (`income`) and `Expenses` (`expense`) with the reserved colors and `Investment` (`neutral`) with a free non-reserved color, each with a default icon.
 - List query: `q` (matches `name`), `sort` = `name` (default), `created_at`.
 
 ---

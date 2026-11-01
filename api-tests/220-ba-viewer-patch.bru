@@ -1,0 +1,23 @@
+meta {
+  name: Bank accounts - viewer cannot patch
+  type: http
+  seq: 220
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{baId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  { "name": "Nope" }
+}
+
+assert {
+  res.status: eq 403
+}

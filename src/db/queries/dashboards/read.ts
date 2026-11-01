@@ -1,5 +1,5 @@
-import { and, count, desc, asc, eq, sql, isNotNull, isNull, like, or } from "drizzle-orm";
-import { financialRecord, recordType, bankAccount, dashboard, userDashboard, user } from "@/db/schema";
+import { and, count, desc, asc, eq, inArray, sql, isNotNull, isNull, like, or } from "drizzle-orm";
+import { financialRecord, recordType, dashboard, userDashboard, user } from "@/db/schema";
 import { ListFiltersDashboards } from "./type";
 import { db } from "@/db"; // Ajusta o caminho
 
@@ -199,34 +199,30 @@ export async function listDashboards(userId: string, f: ListFiltersDashboards) {
 }
 
 export async function getDashboardCurrentBalance(dashId: string) {
-  // 1. Somar os saldos iniciais de todas as contas do dashboard
-  const [accountsResult] = await db
-      .select({
-        totalInitial: sql<number>`COALESCE(SUM(${bankAccount.initialBalance}), 0)`.as("total_initial")
-      })
-      .from(bankAccount)
-      .where(eq(bankAccount.dashboardId, dashId));
-
-  // 2. Somar e subtrair os registos financeiros do dashboard
+  // Balance of the dashboard = net of its own financial records (income minus expense).
+  // Bank accounts are independent of dashboards, so their initial balances do not belong here.
+  // Only money that really moved counts (paid, settled). TODO: convert records to one currency.
   const [transactionsResult] = await db
       .select({
         netTransactions: sql<number>`
                 COALESCE(SUM(
-                    CASE 
-                        WHEN ${recordType.name} = 'INCOME' THEN ${financialRecord.price}
-                        WHEN ${recordType.name} = 'EXPENSE' THEN -${financialRecord.price}
-                        ELSE 0 
+                    CASE ${recordType.kind}
+                        WHEN 'income' THEN ${financialRecord.price}
+                        WHEN 'expense' THEN -${financialRecord.price}
+                        ELSE 0
                     END
                 ), 0)
             `.as("net_transactions")
       })
       .from(financialRecord)
       .innerJoin(recordType, eq(financialRecord.recordTypeId, recordType.id))
-      .where(eq(financialRecord.dashboardId, dashId));
+      .where(
+        and(
+          eq(financialRecord.dashboardId, dashId),
+          isNull(financialRecord.deletedAt),
+          inArray(financialRecord.status, ["paid", "settled"]),
+        ),
+      );
 
-  // 3. O saldo final é a soma dos dois
-  const totalInitial = Number(accountsResult?.totalInitial || 0);
-  const netTransactions = Number(transactionsResult?.netTransactions || 0);
-
-  return totalInitial + netTransactions;
+  return Number(transactionsResult?.netTransactions || 0);
 }

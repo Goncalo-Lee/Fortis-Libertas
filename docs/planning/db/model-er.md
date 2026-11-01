@@ -59,6 +59,7 @@ erDiagram
     Language ||--o{ Profile : "preferred by (1:N)"
     Currency ||--o{ Financial_Record : "denominates (1:N)"
     Currency ||--o{ Installment_Plan : "denominates (1:N)"
+    Currency ||--o{ Bank_Account : "denominates (1:N)"
     Currency ||--o{ Transaction : "denominates (1:N)"
     Currency ||--o{ Exchange_Rate : "base of (1:N)"
     Currency ||--o{ Exchange_Rate : "quote of (1:N)"
@@ -129,6 +130,7 @@ erDiagram
     Language ||--o{ Profile : "preferred by (1:N)"
     Currency ||--o{ Financial_Record : "denominates (1:N)"
     Currency ||--o{ Installment_Plan : "denominates (1:N)"
+    Currency ||--o{ Bank_Account : "denominates (1:N)"
     Currency ||--o{ Transaction : "denominates (1:N)"
     Currency ||--o{ Exchange_Rate : "base of (1:N)"
     Currency ||--o{ Exchange_Rate : "quote of (1:N)"
@@ -236,6 +238,7 @@ erDiagram
         binary16 bank_account_id PK
         varchar50 name
         decimal10_2 initial_balance
+        binary16 currency_id FK
         datetime frozen_at
         datetime deleted_at
         datetime created_at
@@ -291,6 +294,7 @@ erDiagram
         text description
         binary16 color_id FK
         binary16 icon_id FK
+        enum kind "income, expense, neutral"
         datetime deleted_at
         datetime created_at
         datetime updated_at
@@ -614,6 +618,7 @@ Covers the global `Language` and `Currency` catalogs and the cache of exchange r
 | `Language` | 1:N (One-to-Many) | `Profile` | `Profile.language_id` | `Language.id` | RESTRICT | Preferred language of the user. |
 | `Currency` | 1:N (One-to-Many) | `Financial_Record` | `Financial_Record.currency_id` | `Currency.id` | RESTRICT | Original currency of the price. |
 | `Currency` | 1:N (One-to-Many) | `Installment_Plan` | `Installment_Plan.currency_id` | `Currency.id` | RESTRICT | Currency of the total amount. |
+| `Currency` | 1:N (One-to-Many) | `Bank_Account` | `Bank_Account.currency_id` | `Currency.id` | RESTRICT | Currency the account balance is expressed in. |
 | `Currency` | 1:N (One-to-Many) | `Transaction` | `Transaction.currency_id` | `Currency.id` | RESTRICT | Currency of the history entry. |
 | `Currency` | 1:N (One-to-Many) | `Exchange_Rate` | `Exchange_Rate.base_currency_id` | `Currency.id` | RESTRICT | Currency being converted. |
 | `Currency` | 1:N (One-to-Many) | `Exchange_Rate` | `Exchange_Rate.quote_currency_id` | `Currency.id` | RESTRICT | Currency converted to. |

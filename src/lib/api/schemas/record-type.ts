@@ -23,6 +23,8 @@ export const createRecordTypeSchema = z.strictObject({
   description: description.optional(),
   color_id: uuid,
   icon_id: uuid,
+  // Set at creation only: changing it later would rewrite the balance history.
+  kind: z.enum(["income", "expense", "neutral"]).optional(),
 });
 
 /**

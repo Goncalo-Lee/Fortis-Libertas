@@ -1,0 +1,23 @@
+meta {
+  name: Bank accounts - create empty name
+  type: http
+  seq: 204
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "", "initial_balance": "0" }
+}
+
+assert {
+  res.status: eq 422
+}

@@ -10,10 +10,10 @@ import { getColorIdsByName, getIconIdsByCode } from "@/db/queries/catalogs";
 
 /** Record types seeded automatically when a dashboard is created. */
 // Income and Expenses use the two reserved colors; Investment uses a free one.
-const DEFAULT_RECORD_TYPES = [
-  { name: "Expenses", color: "Expenses Red", icon: "trending_down" },
-  { name: "Income", color: "Income Green", icon: "payments" },
-  { name: "Investment", color: "Blue", icon: "trending_up" },
+const DEFAULT_RECORD_TYPES: { name: string; color: string; icon: string; kind: "income" | "expense" | "neutral" }[] = [
+  { name: "Expenses", color: "Expenses Red", icon: "trending_down", kind: "expense" },
+  { name: "Income", color: "Income Green", icon: "payments", kind: "income" },
+  { name: "Investment", color: "Blue", icon: "trending_up", kind: "neutral" },
 ];
 
 /**
@@ -58,6 +58,7 @@ export async function createDashboard(
         name: r.name,
         colorId: colors.get(r.color)!,
         iconId: icons.get(r.icon)!,
+        kind: r.kind,
       })),
     );
   });

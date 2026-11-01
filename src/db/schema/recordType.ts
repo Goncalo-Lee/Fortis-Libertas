@@ -11,6 +11,8 @@ export const recordType = mysqlTable("record_type", {
     description: t.text("description"),
     colorId: uuidBinary("color_id").notNull(),
     iconId: uuidBinary("icon_id").notNull(),
+    // What a record of this type does to a balance. Set at creation and never changed, so history stays valid.
+    kind: t.mysqlEnum("kind", ["income", "expense", "neutral"]).notNull().default("neutral"),
     ...softDelete,
     ...timestamps,
 }, (table) => [

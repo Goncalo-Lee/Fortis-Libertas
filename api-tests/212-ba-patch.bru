@@ -1,0 +1,27 @@
+meta {
+  name: Bank accounts - patch name
+  type: http
+  seq: 212
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{baId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Main renamed", "initial_balance": "1200.50" }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("updated", function () { expect(res.body.data.name).to.equal("Main renamed"); expect(res.body.data.initial_balance).to.equal("1200.50"); });
+}

@@ -122,21 +122,32 @@ Stores payment cards (credit and debit) associated with bank accounts and users,
 
 ## Table: Bank_Account
 
-Represents financial bank accounts, tracking account labels, opening balance, freeze status, and soft deletion.
+Represents financial bank accounts, tracking account labels, opening balance, currency, freeze status, and soft deletion. A bank account is independent of dashboards: it is shared between users through `Bank_Account__User`, and its balance comes from the financial records of any dashboard that were paid with one of its cards.
 
 | Field | Data Type | Constraints / Keys | Notes |
 | :--- | :--- | :--- | :--- |
 | **bank_account_id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the bank account. |
 | **name** | varchar(50) | NOT NULL | Name or label of the bank account. |
-| **initial_balance** | decimal(10,2) | NOT NULL | The starting balance of the account. |
+| **initial_balance** | decimal(10,2) | NOT NULL | The starting balance of the account, in the account currency. |
+| **currency_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `Currency` table. The balance is expressed in this currency. Set at creation and never changed. |
 | **frozen_at** | datetime | NULL | Timestamp recording when the account was temporarily frozen. |
 | **deleted_at** | datetime | NULL | Timestamp for soft deletion (if applicable). |
 | **created_at** | datetime | NOT NULL | Timestamp when the record was created. |
 | **updated_at** | datetime | NOT NULL | Timestamp when the record was last updated. |
 
+**Referential Rules:**
+
+- `currency_id` → `Currency`: `ON DELETE RESTRICT`.
+
+**Balance (derived, not stored):**
+
+- `initial_balance` plus the effect of every non-deleted `Financial_Record` with status `paid` or `settled` whose payment method points to a card of this account (`Financial_Record` → `Payment_Method.card_id` → `Card.bank_id`). The effect follows the `kind` of the record type (`income` adds, `expense` subtracts, `neutral` is ignored) and the amount is converted to the account currency.
+- Records of a soft-deleted dashboard keep counting, because the money really moved. Records paid without a card affect no account.
+
 **Indexes:**
 
 - `PRIMARY KEY (id)`
+- `INDEX idx_bank_account_currency_id (currency_id)`
 
 ---
 
@@ -335,6 +346,7 @@ Classifies financial transactions into broad movement types (Expenses, Income, I
 | **description** | text | NULL | Optional description of the record type. |
 | **color_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `Color` table. Exclusive to this record type within the dashboard. |
 | **icon_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `Icon` table. |
+| **kind** | enum | NOT NULL, DEFAULT 'neutral' | What a record of this type does to a balance ('income', 'expense', 'neutral'). Set at creation and never changed, so the balance history stays valid. |
 | **deleted_at** | datetime | NULL | Timestamp for soft deletion (if applicable). |
 | **created_at** | datetime | NOT NULL | Timestamp when the record was created. |
 | **updated_at** | datetime | NOT NULL | Timestamp when the record was last updated. |
@@ -357,6 +369,12 @@ Classifies financial transactions into broad movement types (Expenses, Income, I
 - `UNIQUE INDEX idx_record_type_dashboard_color (dashboard_id, color_id)`
 - `INDEX idx_record_type_dashboard_id (dashboard_id)`
 - `INDEX idx_record_type_icon_id (icon_id)`
+
+**Enum Values for `kind`:**
+
+- `'income'`: adds to a balance (the seeded `Income`).
+- `'expense'`: subtracts from a balance (the seeded `Expenses`).
+- `'neutral'`: does not change a balance (the seeded `Investment`, and the default).
 
 ---
 

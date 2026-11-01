@@ -1,109 +1,94 @@
+import { and, asc, count, desc, eq, isNotNull, isNull, like } from "drizzle-orm";
 import { db } from "@/db";
-import { bankAccount, bankAccountUser } from "@/db/schema";
-import { eq, and, isNull, sql, like } from "drizzle-orm";
+import { bankAccount, bankAccountUser, currency } from "@/db/schema";
+import { escapeLike } from "@/db/utils";
+import type { ListFiltersBankAccount } from "./type";
 
 /* ======
   READ
 ======= */
 
-/**
- * Retrieves a single bank account if the user has access through Bank_Account__User.
- *
- * @param bankAccountId The unique identifier of the bank account
- * @param userId The unique identifier of the calling user
- * @returns The bank account with the caller's role, or null
- */
-export async function getBankAccountById(bankAccountId: string, userId: string) {
-    const [row] = await db
-        .select({
-            id: bankAccount.id,
-            name: bankAccount.name,
-            initialBalance: bankAccount.initialBalance,
-            frozenAt: bankAccount.frozenAt,
-            role: bankAccountUser.role,
-            createdAt: bankAccount.createdAt,
-            updatedAt: bankAccount.updatedAt,
-        })
-        .from(bankAccount)
-        .innerJoin(
-            bankAccountUser,
-            eq(bankAccount.id, bankAccountUser.bankId)
-        )
-        .where(
-            and(
-                eq(bankAccount.id, sql`UUID_TO_BIN(${bankAccountId})`),
-                eq(bankAccountUser.userId, sql`UUID_TO_BIN(${userId})`),
-                isNull(bankAccount.deletedAt)
-            )
-        )
-        .limit(1);
+const accountColumns = {
+  id: bankAccount.id,
+  name: bankAccount.name,
+  initialBalance: bankAccount.initialBalance,
+  currency: currency.code,
+  frozenAt: bankAccount.frozenAt,
+  role: bankAccountUser.role,
+  createdAt: bankAccount.createdAt,
+  updatedAt: bankAccount.updatedAt,
+};
 
-    return row ?? null;
-}
-
-/**
- * Lists all active bank accounts the user belongs to.
- *
- * @param userId The unique identifier of the calling user
- * @param filter Optional filters for frozen state and search query
- */
-export async function getBankAccountsByUserId(userId: string, filter?: { frozen?: boolean; q?: string }) {
-    const conditions = [
-        eq(bankAccountUser.userId, sql`UUID_TO_BIN(${userId})`),
+/** One bank account of the caller with their role, or `null` if missing, deleted or not a member. */
+export async function getBankAccount(bankAccountId: string, userId: string) {
+  const [row] = await db
+    .select(accountColumns)
+    .from(bankAccount)
+    .innerJoin(bankAccountUser, eq(bankAccountUser.bankId, bankAccount.id))
+    .innerJoin(currency, eq(currency.id, bankAccount.currencyId))
+    .where(
+      and(
+        eq(bankAccount.id, bankAccountId),
         isNull(bankAccount.deletedAt),
-    ];
-
-    if (filter?.frozen !== undefined) {
-        conditions.push(filter.frozen ? sql`${bankAccount.frozenAt} IS NOT NULL` : isNull(bankAccount.frozenAt));
-    }
-
-    if (filter?.q) {
-        conditions.push(like(bankAccount.name, `%${filter.q}%`));
-    }
-
-    return db
-        .select({
-            id: bankAccount.id,
-            name: bankAccount.name,
-            initialBalance: bankAccount.initialBalance,
-            frozenAt: bankAccount.frozenAt,
-            role: bankAccountUser.role,
-            createdAt: bankAccount.createdAt,
-            updatedAt: bankAccount.updatedAt,
-        })
-        .from(bankAccount)
-        .innerJoin(
-            bankAccountUser,
-            eq(bankAccount.id, bankAccountUser.bankId)
-        )
-        .where(and(...conditions));
+        eq(bankAccountUser.userId, userId),
+        isNull(bankAccountUser.deletedAt),
+      ),
+    )
+    .limit(1);
+  return row ?? null;
 }
 
-/**
- * Finds the membership record and role of a user for a given bank account.
- *
- * @param bankAccountId The unique identifier of the bank account
- * @param userId The unique identifier of the user
- * @returns The membership record containing the role, or null if not a member
- */
-export async function findBankAccountMembership(bankAccountId: string, userId: string) {
-    const [row] = await db
-        .select({
-            bankId: bankAccountUser.bankId,
-            userId: bankAccountUser.userId,
-            role: bankAccountUser.role,
-            createdAt: bankAccountUser.createdAt,
-            updatedAt: bankAccountUser.updatedAt,
-        })
-        .from(bankAccountUser)
-        .where(
-            and(
-                eq(bankAccountUser.bankId, sql`UUID_TO_BIN(${bankAccountId})`),
-                eq(bankAccountUser.userId, sql`UUID_TO_BIN(${userId})`),
-                isNull(bankAccountUser.deletedAt)
-            )
-        )
-        .limit(1);
+/** Page of the caller's bank accounts and the total. `id` breaks sort ties. */
+export async function listBankAccounts(userId: string, f: ListFiltersBankAccount) {
+  const where = and(
+    eq(bankAccountUser.userId, userId),
+    isNull(bankAccountUser.deletedAt),
+    isNull(bankAccount.deletedAt),
+    f.q ? like(bankAccount.name, `%${escapeLike(f.q)}%`) : undefined,
+    f.frozen === undefined ? undefined : f.frozen ? isNotNull(bankAccount.frozenAt) : isNull(bankAccount.frozenAt),
+    f.role ? eq(bankAccountUser.role, f.role) : undefined,
+  );
 
-    return row ?? null;
+  const order = {
+    name: asc(bankAccount.name),
+    "-name": desc(bankAccount.name),
+    created_at: asc(bankAccount.createdAt),
+    "-created_at": desc(bankAccount.createdAt),
+  }[f.sort as string] ?? asc(bankAccount.name);
+
+  const rows = await db
+    .select(accountColumns)
+    .from(bankAccount)
+    .innerJoin(bankAccountUser, eq(bankAccountUser.bankId, bankAccount.id))
+    .innerJoin(currency, eq(currency.id, bankAccount.currencyId))
+    .where(where)
+    .orderBy(order, asc(bankAccount.id))
+    .limit(f.limit)
+    .offset(f.offset);
+
+  const [totalRow] = await db
+    .select({ total: count() })
+    .from(bankAccount)
+    .innerJoin(bankAccountUser, eq(bankAccountUser.bankId, bankAccount.id))
+    .where(where);
+
+  return { rows, total: totalRow?.total ?? 0 };
+}
+
+/** Active membership plus the (non-deleted) account, for `requireBankAccountRole`. */
+export async function findBankAccountMembership(bankAccountId: string, userId: string) {
+  const [row] = await db
+    .select({ role: bankAccountUser.role, bankAccount })
+    .from(bankAccountUser)
+    .innerJoin(bankAccount, eq(bankAccount.id, bankAccountUser.bankId))
+    .where(
+      and(
+        eq(bankAccountUser.bankId, bankAccountId),
+        eq(bankAccountUser.userId, userId),
+        isNull(bankAccountUser.deletedAt),
+        isNull(bankAccount.deletedAt),
+      ),
+    )
+    .limit(1);
+  return row ?? null;
 }
