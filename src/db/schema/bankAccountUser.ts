@@ -2,12 +2,13 @@ import { mysqlTable } from "drizzle-orm/mysql-core";
 import * as t from "drizzle-orm/mysql-core";
 import * as s from "./index";
 import { uuidBinary } from "../types";
-import { timestamps } from "../columns";
+import { softDelete, timestamps } from "../columns";
 
 export const bankAccountUser = mysqlTable("bank_account__user", {
     bankId: uuidBinary("bank_id").notNull(),
     userId: uuidBinary("user_id").notNull(),
     role: t.mysqlEnum("role", ["owner", "editor", "viewer"]).notNull(),
+    ...softDelete,
     ...timestamps,
 }, (table) => [
     t.primaryKey({ columns: [table.bankId, table.userId] }),

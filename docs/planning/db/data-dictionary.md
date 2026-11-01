@@ -273,6 +273,7 @@ Junction table managing multi-user access permissions and roles ('owner', 'edito
 | **bank_id** | binary(16) | PK KEY (Primary Key), FK KEY (Foreign Key), NOT NULL | Part of the composite primary key, linking to the bank account. |
 | **user_id** | binary(16) | PK KEY (Primary Key), FK KEY (Foreign Key), NOT NULL | Part of the composite primary key, linking to the user. |
 | **role** | enum | NOT NULL | User's role/access level. Accepted values: `'owner'`, `'editor'`, `'viewer'`. |
+| **deleted_at** | datetime | NULL | Timestamp for soft deletion. A removed member keeps the row; adding the member again clears it. |
 | **created_at** | datetime | NOT NULL | Timestamp when the association was created. |
 | **updated_at** | datetime | NOT NULL | Timestamp when the association was last updated. |
 
@@ -285,6 +286,10 @@ Junction table managing multi-user access permissions and roles ('owner', 'edito
 **Composite Primary Key:**
 
 - The combination of `(bank_id, user_id)` forms the primary key, ensuring each user-bank account pair is unique.
+
+**Soft delete:**
+
+- Memberships are soft-deleted in both junction tables (`User__Dashboard` and `Bank_Account__User`) so that (1) restoring a parent keeps its members, and (2) re-adding a removed member reactivates the row, which gives dashboards and bank accounts the same rule. Only dashboards can be restored in v1.
 
 **Indexes:**
 
@@ -504,7 +509,7 @@ Junction table associating users with dashboards and specifying their role and p
 | **dashboard_id** | binary(16) | PK KEY (Primary Key), FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `Dashboard` table. |
 | **user_id** | binary(16) | PK KEY (Primary Key), FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `User` table. |
 | **role** | enum | NOT NULL | User's role in the dashboard ('owner', 'editor', 'viewer'). |
-| **deleted_at** | datetime | NULL | Timestamp for soft deletion (if applicable). |
+| **deleted_at** | datetime | NULL | Timestamp for soft deletion. A removed member keeps the row; adding the member again clears it. |
 | **created_at** | datetime | NOT NULL | Timestamp when the association was created. |
 | **updated_at** | datetime | NOT NULL | Timestamp when the association was last updated. |
 
@@ -517,6 +522,10 @@ Junction table associating users with dashboards and specifying their role and p
 **Composite Primary Key:**
 
 - The combination of `(dashboard_id, user_id)` forms the primary key, ensuring each user-dashboard pair is unique.
+
+**Soft delete:**
+
+- Memberships are soft-deleted in both junction tables (`User__Dashboard` and `Bank_Account__User`) so that (1) restoring a parent keeps its members, and (2) re-adding a removed member reactivates the row, which gives dashboards and bank accounts the same rule. Only dashboards can be restored in v1.
 
 **Indexes:**
 

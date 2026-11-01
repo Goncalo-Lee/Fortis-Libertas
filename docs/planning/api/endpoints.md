@@ -387,6 +387,7 @@ Manages `Bank_Account__User`. Scope: **bank account**.
 
 - The account must always keep at least one `owner`. Demoting or removing the last owner returns `409 LAST_OWNER`.
 - Adding an existing member returns `409 ALREADY_MEMBER`.
+- Removing a member is a soft delete (`deleted_at`). Membership checks ignore removed rows, and `POST` for a user whose membership was removed **reactivates** that row (clears `deleted_at`, applies the new `role`) because `(bank_id, user_id)` is the primary key.
 - Removing a member who still owns non-deleted cards on this account returns `409 MEMBER_HAS_CARDS` (mirrors `RESTRICT` on `Card.user_id`).
 - Any member may remove themselves (subject to the rules above).
 

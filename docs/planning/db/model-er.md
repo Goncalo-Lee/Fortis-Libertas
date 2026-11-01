@@ -246,6 +246,7 @@ erDiagram
         binary16 bank_id PK, FK
         binary16 user_id PK, FK
         enum role "owner, editor, viewer"
+        datetime deleted_at
         datetime created_at
         datetime updated_at
     }
