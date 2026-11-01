@@ -2,6 +2,7 @@
 import { findMembership } from "@/db/queries/dashboards";
 import type { Role } from "@/db/queries/type";
 import { findBankAccountMembership } from "@/db/queries/bank-accounts";
+import { getCard } from "@/db/queries/cards";
 import { requireSession } from "./auth";
 import { ApiError } from "./errors";
 
@@ -117,4 +118,26 @@ export async function requireBankAccountRole(
     bankAccount: membership.bankAccount,
     role: membership.role
   };
+}
+
+/**
+ * Authorizes a request against a card.
+ *
+ * - Not an active member of the card's bank account (or card deleted) -> 404
+ * - `manage: true` (PATCH, DELETE, freeze, unfreeze) additionally requires being the card owner
+ *   or an `owner` of the bank account -> 403
+ *
+ * @returns { session, card } where `card.role` is the caller's role on the bank account
+ */
+export async function requireCardAccess(request: Request, cardId: string, options: { manage?: boolean } = {}) {
+  const session = await requireSession(request);
+
+  const found = await getCard(cardId, session.user.id);
+  if (!found) throw new ApiError("NOT_FOUND");
+
+  if (options.manage && found.userId !== session.user.id.toLowerCase() && found.role !== "owner") {
+    throw new ApiError("FORBIDDEN");
+  }
+
+  return { session, card: found };
 }

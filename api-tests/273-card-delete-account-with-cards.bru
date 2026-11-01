@@ -1,0 +1,19 @@
+meta {
+  name: Cards - account with cards cannot be deleted
+  type: http
+  seq: 273
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{cardBaId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 409
+}

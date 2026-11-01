@@ -1,0 +1,19 @@
+meta {
+  name: Cards - freeze idempotent
+  type: http
+  seq: 269
+}
+
+post {
+  url: {{baseUrl}}/api/v1/cards/{{cardId}}/freeze
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}

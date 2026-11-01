@@ -1,51 +1,54 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { getCardsByBankAccountId } from "@/db/queries/cards/read";
-import { createCard } from "@/db/queries/cards/write";
+import type { NextRequest } from "next/server";
+import { createCard, listCards } from "@/db/queries/cards";
+import { requireBankAccountRole } from "@/lib/api/access";
+import { parseJson } from "@/lib/api/body";
+import { ApiError, withErrors } from "@/lib/api/errors";
+import { parseUuid } from "@/lib/api/ids";
+import { parsePagination } from "@/lib/api/pagination";
+import { created, paginated } from "@/lib/api/responses";
+import { createCardSchema, listBankAccountCardsQuery } from "@/lib/api/schemas/card";
+import { serializeCard } from "@/lib/api/serializers/card";
 
-interface RouteContext {
-    params: Promise<{ bank_account_id: string }>;
-}
+export const runtime = "nodejs";
 
-export async function GET(request: NextRequest, context: RouteContext) {
-    try {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
+type Ctx = { params: Promise<{ bank_account_id: string }> };
 
-        const { bank_account_id } = await context.params;
-        const cards = await getCardsByBankAccountId(bank_account_id, session.user.id);
+/** GET /bank-accounts/{id}/cards: any member sees the cards of the account. */
+export const GET = withErrors(async (request: NextRequest, { params }: Ctx) => {
+  const id = parseUuid((await params).bank_account_id);
+  const { session } = await requireBankAccountRole(request, id, "viewer");
 
-        return NextResponse.json({
-            data: cards,
-            meta: { page: 1, per_page: cards.length, total: cards.length, total_pages: 1 }
-        }, { status: 200 });
-    } catch (error) {
-        return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
-    }
-}
+  const { searchParams } = request.nextUrl;
+  const { page, perPage, offset } = parsePagination(searchParams);
+  const { type_card, frozen, sort } = listBankAccountCardsQuery.parse(Object.fromEntries(searchParams));
 
-export async function POST(request: NextRequest, context: RouteContext) {
-    try {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
+  const { rows, total } = await listCards(session.user.id, {
+    bankAccountId: id,
+    typeCard: type_card,
+    frozen,
+    sort,
+    limit: perPage,
+    offset,
+  });
 
-        const { bank_account_id } = await context.params;
-        const body = await request.json();
+  return paginated(rows.map(serializeCard), { page, perPage, total });
+});
 
-        const created = await createCard(bank_account_id, session.user.id, {
-            cardholderName: body.cardholder_name,
-            typeCard: body.type_card,
-            cardNumber: body.card_number,
-            expiryDate: body.expiry_date,
-            cvv: body.cvv,
-            userId: body.user_id ?? session.user.id,
-        });
+/** POST /bank-accounts/{id}/cards: editor+; the owner (`user_id`) defaults to the caller. */
+export const POST = withErrors(async (request: NextRequest, { params }: Ctx) => {
+  const id = parseUuid((await params).bank_account_id);
+  const { session } = await requireBankAccountRole(request, id, "editor");
+  const input = await parseJson(request, createCardSchema);
 
-        return NextResponse.json(
-            { data: created },
-            { status: 201, headers: { Location: `/api/v1/cards/${created.id}` } }
-        );
-    } catch (error) {
-        return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
-    }
-}
+  const row = await createCard(id, session.user.id, {
+    cardholderName: input.cardholder_name,
+    typeCard: input.type_card,
+    cardNumber: input.card_number,
+    expiryDate: input.expiry_date,
+    cvv: input.cvv,
+    userId: input.user_id,
+  });
+  if (!row) throw new ApiError("INTERNAL_ERROR");
+
+  return created(serializeCard(row), `/api/v1/cards/${row.id}`);
+});

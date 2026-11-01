@@ -1,0 +1,19 @@
+meta {
+  name: Cards - get unknown
+  type: http
+  seq: 261
+}
+
+get {
+  url: {{baseUrl}}/api/v1/cards/00000000-0000-7000-8000-000000000000
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 404
+}

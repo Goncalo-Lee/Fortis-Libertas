@@ -1,0 +1,23 @@
+meta {
+  name: Cards - viewer cannot create
+  type: http
+  seq: 250
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{cardBaId}}/cards
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  { "cardholder_name": "X", "type_card": "debit" }
+}
+
+assert {
+  res.status: eq 403
+}
