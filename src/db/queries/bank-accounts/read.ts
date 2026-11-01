@@ -99,7 +99,8 @@ export async function findBankAccountMembership(bankAccountId: string, userId: s
         .where(
             and(
                 eq(bankAccountUser.bankId, sql`UUID_TO_BIN(${bankAccountId})`),
-                eq(bankAccountUser.userId, sql`UUID_TO_BIN(${userId})`)
+                eq(bankAccountUser.userId, sql`UUID_TO_BIN(${userId})`),
+                isNull(bankAccountUser.deletedAt)
             )
         )
         .limit(1);

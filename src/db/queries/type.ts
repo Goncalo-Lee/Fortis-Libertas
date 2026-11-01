@@ -16,3 +16,12 @@ export type ListFilters = {
   limit: number;
   offset: number;
 };
+
+/**
+ * Role a user can have within a dashboard.
+ *
+ * @property `owner`: full control, including managing members and deleting the dashboard
+ * @property `editor`: can modify the dashboard's content
+ * @property `viewer`: read-only access
+ */
+export type Role = "owner" | "editor" | "viewer";

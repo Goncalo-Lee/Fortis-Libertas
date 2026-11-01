@@ -1,5 +1,6 @@
 // src/lib/api/access.ts
-import { findMembership, type Role } from "@/db/queries/dashboards";
+import { findMembership } from "@/db/queries/dashboards";
+import type { Role } from "@/db/queries/type";
 import { findBankAccountMembership } from "@/db/queries/bank-accounts";
 import { requireSession } from "./auth";
 import { ApiError } from "./errors";

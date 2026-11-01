@@ -3,7 +3,7 @@ import {
   addMember,
   getMember,
   listMembers,
-} from "@/db/queries/members";
+} from "@/db/queries/dashboard-members";
 import { requireDashboardRole } from "@/lib/api/access";
 import { parseJson } from "@/lib/api/body";
 import { ApiError, withErrors } from "@/lib/api/errors";

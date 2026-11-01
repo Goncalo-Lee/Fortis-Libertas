@@ -1,5 +1,5 @@
 import { customType } from "drizzle-orm/mysql-core";
-import { parse as uuidParse, stringify as uuidStringify, validate as uuidValidate } from "uuid";
+import { parse as uuidParse, validate as uuidValidate } from "uuid";
 import { v7 as uuid7 } from "uuid";
 
 

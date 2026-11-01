@@ -1,4 +1,4 @@
-import type { MemberRow } from "../../../db/queries/members";
+import type { MemberRow } from "../../../db/queries/dashboard-members";
 import { toIso } from "./common";
 
 /**
