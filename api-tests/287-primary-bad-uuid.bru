@@ -1,0 +1,23 @@
+meta {
+  name: Primary account - bad uuid
+  type: http
+  seq: 287
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/me/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "primary_bank_account_id": "nope" }
+}
+
+assert {
+  res.status: eq 422
+}

@@ -196,6 +196,7 @@ Operations on the authenticated user's own data: `User`, `Profile`, `Session`, a
 | `phone_verified_at` | datetime \| null | Read-only. |
 | `currency` | string | Code from the `Currency` catalog (`EUR`, `USD`, `GBP`, `BRL`). |
 | `language` | string | Code from the `Language` catalog (`en`, `pt-PT`). |
+| `primary_bank_account_id` | uuid \| null | Bank account shown first on the home screen. `null` when unset, when the account was deleted or when the user left it. |
 | `created_at` | datetime | |
 | `updated_at` | datetime | |
 
@@ -215,6 +216,7 @@ Operations on the authenticated user's own data: `User`, `Profile`, `Session`, a
 | `phone` | string \| null | No | ≤ 20 chars, E.164 recommended | Changing it resets `phone_verified_at` to `null`. |
 | `currency` | string | No | Code in the `Currency` catalog | Default `EUR`. `422` if unknown. |
 | `language` | string | No | Code in the `Language` catalog | Default `pt-PT`. `422` if unknown. |
+| `primary_bank_account_id` | uuid \| null | No | Bank account the caller belongs to | `422` (`/primary_bank_account_id`) if not a member or deleted. `null` clears it. Per user: other members keep their own choice. |
 
 ### 3.6 Session Representation
 
@@ -407,7 +409,7 @@ Cards belong to a bank account (`bank_id`) and a user (`user_id`). Scope: **bank
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `GET` | `/cards` | List cards owned by the caller (across bank accounts) | `session` | `200` | `401`, `422` |
 | `GET` | `/bank-accounts/{bank_account_id}/cards` | List cards of a bank account | `viewer` | `200` | `401`, `404` |
-| `POST` | `/bank-accounts/{bank_account_id}/cards` | Create a card | `editor` | `201` | `401`, `404`, `409`, `422` |
+| `POST` | `/bank-accounts/{bank_account_id}/cards` | Create a card | `editor` | `201` | `401`, `403`, `404`, `422` |
 | `GET` | `/cards/{card_id}` | Get a card | `viewer` on its bank account | `200` | `401`, `404` |
 | `PATCH` | `/cards/{card_id}` | Update a card | card owner or bank account `owner` | `200` | `401`, `404`, `422` |
 | `DELETE` | `/cards/{card_id}` | Soft-delete a card | card owner or bank account `owner` | `204` | `401`, `404` |
@@ -454,7 +456,8 @@ Cards belong to a bank account (`bank_id`) and a user (`user_id`). Scope: **bank
 ### 7.5 Business Rules
 
 - `DELETE` also sets `card_id = NULL` on every `Payment_Method` that references the card, in the same transaction (mirrors `SET NULL`).
-- `PATCH` cannot change `bank_id`. To move a card, delete and recreate it.
+- `PATCH` cannot change `bank_id` or `user_id`. To move a card, delete and recreate it.
+- `POST` has no `409`: a frozen bank account still accepts cards (`frozen_at` is informational, see [1.6](#16-inactive--frozen-states)). `user_id` must be an active member of the bank account (`422` on `/user_id`).
 
 ---
 

@@ -1,0 +1,27 @@
+meta {
+  name: Primary account - non-member cannot set it
+  type: http
+  seq: 286
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/me/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  { "primary_bank_account_id": "{{primBaId}}" }
+}
+
+assert {
+  res.status: eq 422
+}
+
+tests {
+  test("points at field", function () { expect(res.body.errors.map((e) => e.pointer)).to.include("/primary_bank_account_id"); });
+}

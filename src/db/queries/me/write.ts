@@ -1,11 +1,10 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { profile } from "@/db/schema";
+import { bankAccount, bankAccountUser, profile, user } from "@/db/schema";
+import { ApiError } from "@/lib/api/errors";
 import { getOrCreateProfile } from "./read";
 import { requireCurrencyId, requireLanguageId } from "../catalogs";
 import type { ProfileChanges } from "./type";
-import { user } from "@/db/schema";
-
 
 /* =======
   WRITE
@@ -43,6 +42,32 @@ export async function updateProfile(userId: string, changes: ProfileChanges) {
   // The API receives codes; the table stores ids. Unknown codes answer 422.
   if (changes.currency !== undefined) set.currencyId = await requireCurrencyId(changes.currency);
   if (changes.language !== undefined) set.languageId = await requireLanguageId(changes.language);
+
+  // The primary account must be one the user belongs to; `null` clears it.
+  if (changes.primary_bank_account_id !== undefined) {
+    if (changes.primary_bank_account_id !== null) {
+      const [member] = await db
+        .select({ userId: bankAccountUser.userId })
+        .from(bankAccountUser)
+        .innerJoin(bankAccount, eq(bankAccount.id, bankAccountUser.bankId))
+        .where(
+          and(
+            eq(bankAccountUser.bankId, changes.primary_bank_account_id),
+            eq(bankAccountUser.userId, userId),
+            isNull(bankAccountUser.deletedAt),
+            isNull(bankAccount.deletedAt),
+          ),
+        )
+        .limit(1);
+
+      if (!member) {
+        throw new ApiError("VALIDATION_ERROR", "Bank account not found.", [
+          { pointer: "/primary_bank_account_id", message: "You are not a member of this bank account." },
+        ]);
+      }
+    }
+    set.primaryBankAccountId = changes.primary_bank_account_id;
+  }
 
   // A new phone number is unverified until confirmed again.
   if (changes.phone !== undefined && changes.phone !== current.phone) {

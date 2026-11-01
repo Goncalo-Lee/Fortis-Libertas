@@ -43,6 +43,9 @@ export function serializeProfile(row: ProfileRow) {
     currency: row.currency,
     language: row.language,
 
+    // Null when unset, deleted, or the user left the account
+    primary_bank_account_id: row.primaryBankAccountId,
+
     // Standard audit timestamps converted to ISO strings
     created_at: toIso(row.createdAt),
     updated_at: toIso(row.updatedAt),

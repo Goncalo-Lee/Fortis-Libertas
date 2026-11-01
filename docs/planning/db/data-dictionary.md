@@ -90,7 +90,7 @@ Manages active authentication sessions, linking authenticated tokens to specific
 
 ## Table: Card
 
-Stores payment cards (credit and debit) associated with bank accounts and users, supporting freeze status, expiration date, CVV, and soft deletion.
+Stores payment cards (credit and debit) associated with bank accounts and users, supporting freeze status, expiration date, CVV, and soft deletion. A card always belongs to one bank account and one user, and the user must be a member of that account when the card is created. `card_number` and `cvv` are write-only: the API only exposes the last four digits.
 
 | Field | Data Type | Constraints / Keys | Notes |
 | :--- | :--- | :--- | :--- |
@@ -99,8 +99,8 @@ Stores payment cards (credit and debit) associated with bank accounts and users,
 | **user_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key linking to the user. |
 | **cardholder_name** | varchar(50) | NOT NULL | Name of the cardholder. |
 | **type_card** | enum | NOT NULL | Type of card ('credit' or 'debit'). |
-| **card_number** | char(16) | NULL | Card number. |
-| **expiry_date** | date | NULL | Expiry date of the card. |
+| **card_number** | char(16) | NULL | Card number (digits only, Luhn-valid). Never returned in full. |
+| **expiry_date** | date | NULL | Expiry date of the card (`YYYY-MM-DD`). |
 | **cvv** | char(3) | NULL | 3-digit security code. |
 | **frozen_at** | datetime | NULL | Timestamp when the card was frozen/blocked. |
 | **deleted_at** | datetime | NULL | Timestamp for soft deletion (if applicable). |
@@ -475,6 +475,7 @@ Stores extended user profile attributes including birth date, phone number, and 
 | **phone_verified_at** | datetime | NULL | Timestamp when the phone number was verified. |
 | **currency_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `Currency` table (preferred currency, default: EUR). |
 | **language_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `Language` table (preferred language, default: pt-PT). |
+| **primary_bank_account_id** | binary(16) | FK KEY (Foreign Key), NULL | Bank account shown first on the home screen. A personal choice: accounts are shared, so each member has their own. |
 | **created_at** | datetime | NOT NULL | Timestamp when the profile was created. |
 | **updated_at** | datetime | NOT NULL | Timestamp when the profile was last updated. |
 
@@ -486,12 +487,14 @@ Stores extended user profile attributes including birth date, phone number, and 
 **Cascade Delete:**
 
 - `ON DELETE CASCADE` is configured for `user_id`, meaning if a user is deleted, their associated profile will also be automatically deleted.
+- `primary_bank_account_id` uses `ON DELETE SET NULL`. Bank accounts are only soft-deleted, so the API also treats the value as `null` when the account is deleted or the user is no longer an active member; no cleanup is needed.
 
 **Indexes:**
 
 - `PRIMARY KEY (user_id)`
 - `INDEX idx_profile_currency_id (currency_id)`
 - `INDEX idx_profile_language_id (language_id)`
+- `INDEX idx_profile_primary_bank_account_id (primary_bank_account_id)`
 
 ---
 

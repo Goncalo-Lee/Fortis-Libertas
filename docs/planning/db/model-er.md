@@ -57,6 +57,7 @@ erDiagram
     User ||--o{ Transaction : "registers (1:N)"
     Currency ||--o{ Profile : "preferred by (1:N)"
     Language ||--o{ Profile : "preferred by (1:N)"
+    Bank_Account |o--o{ Profile : "primary of (0..1:N)"
     Currency ||--o{ Financial_Record : "denominates (1:N)"
     Currency ||--o{ Installment_Plan : "denominates (1:N)"
     Currency ||--o{ Bank_Account : "denominates (1:N)"
@@ -128,6 +129,7 @@ erDiagram
     User ||--o{ Transaction : "registers (1:N)"
     Currency ||--o{ Profile : "preferred by (1:N)"
     Language ||--o{ Profile : "preferred by (1:N)"
+    Bank_Account |o--o{ Profile : "primary of (0..1:N)"
     Currency ||--o{ Financial_Record : "denominates (1:N)"
     Currency ||--o{ Installment_Plan : "denominates (1:N)"
     Currency ||--o{ Bank_Account : "denominates (1:N)"
@@ -173,6 +175,7 @@ erDiagram
         datetime phone_verified_at
         binary16 currency_id FK "default EUR"
         binary16 language_id FK "default pt-PT"
+        binary16 primary_bank_account_id FK "nullable"
         datetime created_at
         datetime updated_at
     }
@@ -616,6 +619,7 @@ Covers the global `Language` and `Currency` catalogs and the cache of exchange r
 |:---|:---|:---|:---|:---|:---|:---|
 | `Currency` | 1:N (One-to-Many) | `Profile` | `Profile.currency_id` | `Currency.id` | RESTRICT | Preferred currency of the user. |
 | `Language` | 1:N (One-to-Many) | `Profile` | `Profile.language_id` | `Language.id` | RESTRICT | Preferred language of the user. |
+| `Bank_Account` | 0..1:N (Optional One-to-Many) | `Profile` | `Profile.primary_bank_account_id` | `Bank_Account.id` | SET NULL | The user's primary bank account, shown first on the home screen. Each user chooses their own. |
 | `Currency` | 1:N (One-to-Many) | `Financial_Record` | `Financial_Record.currency_id` | `Currency.id` | RESTRICT | Original currency of the price. |
 | `Currency` | 1:N (One-to-Many) | `Installment_Plan` | `Installment_Plan.currency_id` | `Currency.id` | RESTRICT | Currency of the total amount. |
 | `Currency` | 1:N (One-to-Many) | `Bank_Account` | `Bank_Account.currency_id` | `Currency.id` | RESTRICT | Currency the account balance is expressed in. |

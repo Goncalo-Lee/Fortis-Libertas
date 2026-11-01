@@ -1,6 +1,6 @@
-import { eq, getTableColumns, sql } from "drizzle-orm";
+import { and, eq, getTableColumns, isNull, sql } from "drizzle-orm";
 import { db } from "../..";
-import { currency, language, profile, user } from "../../schema";
+import { bankAccount, bankAccountUser, currency, language, profile, user } from "../../schema";
 import { getDefaultProfileCatalogIds } from "../catalogs";
 
 /* ======
@@ -25,13 +25,32 @@ export async function getOrCreateProfile(userId: string) {
   const find = async () => {
     // The API exposes currency and language as codes ("EUR", "pt-PT"), the table stores their ids.
     const [row] = await db
-      .select({ ...getTableColumns(profile), currency: currency.code, language: language.code })
+      .select({
+        ...getTableColumns(profile),
+        currency: currency.code,
+        language: language.code,
+        // Set only when the user still belongs to a non-deleted primary account.
+        primaryMember: bankAccountUser.userId,
+      })
       .from(profile)
       .innerJoin(currency, eq(currency.id, profile.currencyId))
       .innerJoin(language, eq(language.id, profile.languageId))
+      .leftJoin(bankAccount, and(eq(bankAccount.id, profile.primaryBankAccountId), isNull(bankAccount.deletedAt)))
+      .leftJoin(
+        bankAccountUser,
+        and(
+          eq(bankAccountUser.bankId, bankAccount.id),
+          eq(bankAccountUser.userId, profile.userId),
+          isNull(bankAccountUser.deletedAt),
+        ),
+      )
       .where(eq(profile.userId, userId))
       .limit(1);
-    return row;
+
+    // A primary account that was deleted, or that the user left, reads as "none".
+    if (!row) return row;
+    const { primaryMember, ...rest } = row;
+    return { ...rest, primaryBankAccountId: primaryMember ? rest.primaryBankAccountId : null };
   };
 
   let row = await find();

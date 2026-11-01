@@ -9,4 +9,6 @@ export type ProfileChanges = {
   phone?: string | null;
   currency?: string;
   language?: string;
+  /** Must be a bank account the user belongs to; `null` clears it */
+  primary_bank_account_id?: string | null;
 };
