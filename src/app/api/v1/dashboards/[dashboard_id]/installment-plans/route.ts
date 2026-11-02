@@ -1,51 +1,72 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { getInstallmentPlansByDashboardId } from "@/db/queries/installment-plans/read";
-import { createInstallmentPlan } from "@/db/queries/installment-plans/write";
+import type { NextRequest } from "next/server";
+import { createInstallmentPlan, getTagsByPlan, listInstallmentPlans } from "@/db/queries/installment-plans";
+import { requireDashboardRole } from "@/lib/api/access";
+import { parseJson } from "@/lib/api/body";
+import { ApiError, withErrors } from "@/lib/api/errors";
+import { parseUuid } from "@/lib/api/ids";
+import { parsePagination } from "@/lib/api/pagination";
+import { created, paginated } from "@/lib/api/responses";
+import {
+  createInstallmentPlanSchema,
+  listInstallmentPlansQuery,
+  statusListSchema,
+} from "@/lib/api/schemas/installment-plan";
+import { serializeInstallmentPlan } from "@/lib/api/serializers/installment-plan";
 
-interface RouteContext {
-    params: Promise<{ dashboard_id: string }>;
-}
+export const runtime = "nodejs";
 
-export async function GET(request: NextRequest, context: RouteContext) {
-    try {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
+type Ctx = { params: Promise<{ dashboard_id: string }> };
 
-        const { dashboard_id } = await context.params;
-        const plans = await getInstallmentPlansByDashboardId(dashboard_id);
+export const GET = withErrors(async (request: NextRequest, { params }: Ctx) => {
+  const dashboardId = parseUuid((await params).dashboard_id);
+  await requireDashboardRole(request, dashboardId, "viewer");
 
-        return NextResponse.json({
-            data: plans,
-            meta: { page: 1, per_page: plans.length, total: plans.length, total_pages: 1 }
-        }, { status: 200 });
-    } catch (error) {
-        return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
-    }
-}
+  const { searchParams } = request.nextUrl;
+  const { page, perPage, offset } = parsePagination(searchParams);
+  const { q, due_from, due_to, sort } = listInstallmentPlansQuery.parse(Object.fromEntries(searchParams));
 
-export async function POST(request: NextRequest, context: RouteContext) {
-    try {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
+  // `status` is multi-value: ?status=pending&status=late or ?status=pending,late
+  const rawStatus = searchParams.getAll("status").flatMap((v) => v.split(",")).filter(Boolean);
+  const status = statusListSchema.parse(rawStatus);
 
-        const { dashboard_id } = await context.params;
-        const body = await request.json();
+  const { rows, total } = await listInstallmentPlans(dashboardId, {
+    q,
+    status,
+    dueFrom: due_from,
+    dueTo: due_to,
+    sort,
+    limit: perPage,
+    offset,
+  });
 
-        const created = await createInstallmentPlan(dashboard_id, session.user.id, {
-            name: body.name,
-            description: body.description ?? null,
-            totalAmount: String(body.total_amount),
-            totalInstallments: Number(body.total_installments),
-            dueDate: body.due_date,
-            status: body.status ?? "pending",
-        });
+  const tags = await getTagsByPlan(rows.map((r) => r.id));
+  return paginated(
+    rows.map((r) => serializeInstallmentPlan(r, tags.get(r.id.toLowerCase()) ?? [])),
+    { page, perPage, total },
+  );
+});
 
-        return NextResponse.json(
-            { data: created },
-            { status: 201, headers: { Location: `/api/v1/dashboards/${dashboard_id}/installment-plans/${created.id}` } }
-        );
-    } catch (error) {
-        return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
-    }
-}
+export const POST = withErrors(async (request: NextRequest, { params }: Ctx) => {
+  const dashboardId = parseUuid((await params).dashboard_id);
+  const { session } = await requireDashboardRole(request, dashboardId, "editor");
+  const input = await parseJson(request, createInstallmentPlanSchema);
+
+  const row = await createInstallmentPlan(dashboardId, session.user.id, {
+    name: input.name,
+    description: input.description,
+    categoryId: input.category_id,
+    currency: input.currency,
+    tagIds: input.tag_ids,
+    totalAmount: input.total_amount,
+    totalInstallments: input.total_installments,
+    dueDate: input.due_date,
+    status: input.status,
+  });
+  if (!row) throw new ApiError("INTERNAL_ERROR");
+
+  const tags = await getTagsByPlan([row.id]);
+  return created(
+    serializeInstallmentPlan(row, tags.get(row.id.toLowerCase()) ?? []),
+    `/api/v1/dashboards/${dashboardId}/installment-plans/${row.id}`,
+  );
+});

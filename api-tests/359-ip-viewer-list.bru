@@ -1,0 +1,19 @@
+meta {
+  name: Installment plans - viewer lists
+  type: http
+  seq: 359
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 200
+}

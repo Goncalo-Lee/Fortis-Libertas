@@ -1,181 +1,198 @@
-// src/db/queries/installment-plans/write.ts
+import { and, count, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { installmentPlan, financialRecord } from "@/db/schema";
+import { category, financialRecord, installmentPlan, recordTypeCategory, tagInstallmentPlan } from "@/db/schema";
 import { generateId } from "@/db/types";
 import { ApiError } from "@/lib/api/errors";
-import { inDashboard, nameTaken } from "../utils";
-import { getInstallmentPlan } from "./read";
-import { and, eq, isNull, sql, count } from "drizzle-orm";
-
-export interface CreateInstallmentPlanInput {
-    name: string;
-    description?: string | null;
-    totalAmount: string; // decimal string: "1200.00"
-    totalInstallments: number;
-    dueDate: string; // YYYY-MM-DD
-    status?: "pending" | "paid" | "cancelled" | "late";
-}
-
-export interface UpdateInstallmentPlanInput {
-    name?: string;
-    description?: string | null;
-    totalAmount?: string;
-    totalInstallments?: number;
-    dueDate?: string;
-    status?: "pending" | "paid" | "cancelled" | "late";
-}
+import { DEFAULT_CURRENCY, requireCurrencyId } from "../catalogs";
+import { assertTagsInDashboard } from "../categories/relations";
+import { getOrCreateProfile } from "../me/read";
+import { inDashboard } from "../utils";
+import { getExpensesRecordTypeId, getInstallmentPlan } from "./read";
+import type { CreateInstallmentPlanInput, UpdateInstallmentPlanInput } from "./type";
 
 /* ======
   WRITE
 ======= */
 
-/**
- * Creates a new installment plan in a dashboard.
- *
- * @param dashboardId The unique identifier of the dashboard owning the plan
- * @param userId The ID of the authenticated user creating the plan
- * @param input The installment plan details
- * @returns The newly created installment plan
- * @throws {ApiError} `NAME_ALREADY_EXISTS` if a plan with the same name already exists in the dashboard
- */
-export async function createInstallmentPlan(
-    dashboardId: string,
-    userId: string,
-    input: CreateInstallmentPlanInput
-) {
-    if (await nameTaken({ table: installmentPlan, dashboardId, name: input.name })) {
-        throw new ApiError("NAME_ALREADY_EXISTS");
-    }
+/** The category must exist in the dashboard and be linked to the `Expenses` record type. */
+async function assertExpenseCategory(dashboardId: string, categoryId: string, expensesTypeId: string) {
+  const [row] = await db
+    .select({ id: category.id })
+    .from(category)
+    .innerJoin(recordTypeCategory, eq(recordTypeCategory.categoryId, category.id))
+    .where(
+      and(
+        eq(category.id, categoryId),
+        eq(category.dashboardId, dashboardId),
+        isNull(category.deletedAt),
+        eq(recordTypeCategory.recordTypeId, expensesTypeId),
+      ),
+    )
+    .limit(1);
 
-    const id = generateId();
+  if (!row) {
+    throw new ApiError("VALIDATION_ERROR", "Category not allowed.", [
+      { pointer: "/category_id", message: "Must be a category of this dashboard linked to the Expenses record type." },
+    ]);
+  }
+}
 
-    try {
-        await db.insert(installmentPlan).values({
-            id,
-            dashboardId: sql`UUID_TO_BIN(${dashboardId})`,
-            registerById: sql`UUID_TO_BIN(${userId})`,
-            name: input.name,
-            description: input.description ?? null,
-            totalAmount: input.totalAmount,
-            totalInstallments: input.totalInstallments,
-            dueDate: input.dueDate,
-            status: input.status ?? "pending",
-        });
-    } catch (error) {
-        if (await nameTaken({ table: installmentPlan, dashboardId, name: input.name, exceptId: id })) {
-            throw new ApiError("NAME_ALREADY_EXISTS");
-        }
-        throw error;
-    }
+async function requireExpensesTypeId(dashboardId: string) {
+  const id = await getExpensesRecordTypeId(dashboardId);
+  if (!id) {
+    throw new ApiError("VALIDATION_ERROR", "This dashboard has no Expenses record type.", [
+      { pointer: "/category_id", message: "The dashboard has no Expenses record type." },
+    ]);
+  }
+  return id;
+}
 
-    return getInstallmentPlan(dashboardId, id);
+/** Number of non-deleted records linked to a plan. */
+async function countLinkedRecords(planId: string) {
+  const [row] = await db
+    .select({ total: count() })
+    .from(financialRecord)
+    .where(and(eq(financialRecord.installmentPlanId, planId), isNull(financialRecord.deletedAt)));
+  return Number(row?.total ?? 0);
 }
 
 /**
- * Updates an existing installment plan.
- * Validates that total_installments is not lower than the number of linked non-deleted records.
+ * Creates a plan. The record type is always the dashboard's `Expenses`; the currency defaults to the
+ * caller's profile currency.
  *
- * @param dashboardId The dashboard identifier
- * @param id The installment plan identifier
- * @param changes The fields to modify
- * @returns The updated installment plan, or null if not found
- * @throws {ApiError} `NAME_ALREADY_EXISTS` or `VALIDATION_ERROR`
+ * @throws {ApiError} `VALIDATION_ERROR` for an unknown currency, tag or category (`/category_id` unless
+ *   linked to Expenses)
  */
-export async function updateInstallmentPlan(
-    dashboardId: string,
-    id: string,
-    changes: UpdateInstallmentPlanInput
-) {
-    const current = await getInstallmentPlan(dashboardId, id);
-    if (!current) return null;
+export async function createInstallmentPlan(dashboardId: string, userId: string, input: CreateInstallmentPlanInput) {
+  const recordTypeId = await requireExpensesTypeId(dashboardId);
+  await assertExpenseCategory(dashboardId, input.categoryId, recordTypeId);
 
-    // Validation per Section 14.4: total_installments cannot be lower than linked non-deleted records
-    if (changes.totalInstallments !== undefined) {
-        const [linkedCount] = await db
-            .select({ count: count() })
-            .from(financialRecord)
-            .where(
-                and(
-                    eq(financialRecord.installmentPlanId, sql`UUID_TO_BIN(${id})`),
-                    isNull(financialRecord.deletedAt)
-                )
-            );
+  const code = input.currency ?? (await getOrCreateProfile(userId)).currency ?? DEFAULT_CURRENCY;
+  const currencyId = await requireCurrencyId(code);
 
-        if (changes.totalInstallments < Number(linkedCount?.count ?? 0)) {
-            throw new ApiError("VALIDATION_ERROR");
-        }
-    }
+  const tagIds = input.tagIds ?? [];
+  await assertTagsInDashboard(dashboardId, tagIds);
 
-    const set: Partial<typeof installmentPlan.$inferInsert> = {};
-    if (changes.name !== undefined && changes.name !== current.name) set.name = changes.name;
-    if (changes.description !== undefined) set.description = changes.description;
-    if (changes.totalAmount !== undefined) set.totalAmount = changes.totalAmount;
-    if (changes.totalInstallments !== undefined) set.totalInstallments = changes.totalInstallments;
-    if (changes.dueDate !== undefined) set.dueDate = changes.dueDate;
-    if (changes.status !== undefined) set.status = changes.status;
-
-    if (set.name !== undefined && (await nameTaken({ table: installmentPlan, dashboardId, name: set.name, exceptId: id }))) {
-        throw new ApiError("NAME_ALREADY_EXISTS");
-    }
-
-    if (Object.keys(set).length > 0) {
-        try {
-            await db
-                .update(installmentPlan)
-                .set({ ...set, updatedAt: new Date() })
-                .where(inDashboard(installmentPlan, dashboardId, id));
-        } catch (error) {
-            if (set.name !== undefined && (await nameTaken({ table: installmentPlan, dashboardId, name: set.name, exceptId: id }))) {
-                throw new ApiError("NAME_ALREADY_EXISTS");
-            }
-            throw error;
-        }
-    }
-
-    return getInstallmentPlan(dashboardId, id);
-}
-
-/**
- * Soft-deletes an installment plan.
- * If detachRecords is true, it sets installment_plan_id = NULL on linked records.
- * Otherwise, it blocks the deletion with IN_USE if records are still linked.
- *
- * @param dashboardId The dashboard identifier
- * @param id The installment plan identifier
- * @param detachRecords Optional boolean from query param ?detach_records=true
- * @throws {ApiError} `IN_USE` if records are linked and detachRecords is not true
- */
-export async function softDeleteInstallmentPlan(
-    dashboardId: string,
-    id: string,
-    detachRecords = false
-) {
-    const [linked] = await db
-        .select({ id: financialRecord.id })
-        .from(financialRecord)
-        .where(
-            and(
-                eq(financialRecord.installmentPlanId, sql`UUID_TO_BIN(${id})`),
-                isNull(financialRecord.deletedAt)
-            )
-        )
-        .limit(1);
-
-    if (linked && !detachRecords) {
-        throw new ApiError("IN_USE");
-    }
-
-    await db.transaction(async (tx) => {
-        if (detachRecords) {
-            await tx
-                .update(financialRecord)
-                .set({ installmentPlanId: null, updatedAt: new Date() })
-                .where(eq(financialRecord.installmentPlanId, sql`UUID_TO_BIN(${id})`));
-        }
-
-        await tx
-            .update(installmentPlan)
-            .set({ deletedAt: new Date(), updatedAt: new Date() })
-            .where(inDashboard(installmentPlan, dashboardId, id));
+  const id = generateId();
+  await db.transaction(async (tx) => {
+    await tx.insert(installmentPlan).values({
+      id,
+      dashboardId,
+      registerById: userId,
+      name: input.name,
+      description: input.description ?? null,
+      categoryId: input.categoryId,
+      recordTypeId,
+      currencyId,
+      totalAmount: input.totalAmount,
+      totalInstallments: input.totalInstallments,
+      dueDate: input.dueDate,
+      status: input.status ?? "pending",
     });
+
+    if (tagIds.length > 0) {
+      await tx.insert(tagInstallmentPlan).values(tagIds.map((tagId) => ({ tagId, installmentPlanId: id })));
+    }
+  });
+
+  return getInstallmentPlan(dashboardId, id);
+}
+
+/**
+ * Updates a plan. Tags are changed with `setInstallmentPlanTags`.
+ *
+ * @returns The updated plan, or `null` if it does not exist
+ * @throws {ApiError} `VALIDATION_ERROR` when `total_installments` is lower than the linked records, or for an
+ *   unknown currency or category
+ */
+export async function updateInstallmentPlan(dashboardId: string, id: string, changes: UpdateInstallmentPlanInput) {
+  const current = await getInstallmentPlan(dashboardId, id);
+  if (!current) return null;
+
+  if (changes.totalInstallments !== undefined && changes.totalInstallments < (await countLinkedRecords(id))) {
+    throw new ApiError("VALIDATION_ERROR", "Fewer installments than linked records.", [
+      { pointer: "/total_installments", message: "Cannot be lower than the number of linked records." },
+    ]);
+  }
+
+  const set: Partial<typeof installmentPlan.$inferInsert> = {};
+  if (changes.name !== undefined) set.name = changes.name;
+  if (changes.description !== undefined) set.description = changes.description;
+  if (changes.totalAmount !== undefined) set.totalAmount = changes.totalAmount;
+  if (changes.totalInstallments !== undefined) set.totalInstallments = changes.totalInstallments;
+  if (changes.dueDate !== undefined) set.dueDate = changes.dueDate;
+  if (changes.status !== undefined) set.status = changes.status;
+  if (changes.currency !== undefined) set.currencyId = await requireCurrencyId(changes.currency);
+  if (changes.categoryId !== undefined) {
+    await assertExpenseCategory(dashboardId, changes.categoryId, current.recordTypeId);
+    set.categoryId = changes.categoryId;
+  }
+
+  if (Object.keys(set).length > 0) {
+    await db
+      .update(installmentPlan)
+      .set({ ...set, updatedAt: new Date() })
+      .where(inDashboard(installmentPlan, dashboardId, id));
+  }
+
+  return getInstallmentPlan(dashboardId, id);
+}
+
+/**
+ * Replaces the full set of tags of a plan.
+ *
+ * @returns `false` if the plan does not exist
+ * @throws {ApiError} `VALIDATION_ERROR` (`/tag_ids`) if a tag is not in the dashboard
+ */
+export async function setInstallmentPlanTags(dashboardId: string, id: string, tagIds: string[]) {
+  if (!(await getInstallmentPlan(dashboardId, id))) return false;
+  await assertTagsInDashboard(dashboardId, tagIds);
+
+  await db.transaction(async (tx) => {
+    const existing = await tx
+      .select({ tagId: tagInstallmentPlan.tagId })
+      .from(tagInstallmentPlan)
+      .where(eq(tagInstallmentPlan.installmentPlanId, id));
+
+    const current = new Set(existing.map((r) => r.tagId.toLowerCase()));
+    const wanted = new Set(tagIds);
+
+    const toRemove = [...current].filter((t) => !wanted.has(t));
+    const toAdd = tagIds.filter((t) => !current.has(t));
+
+    if (toRemove.length > 0) {
+      await tx
+        .delete(tagInstallmentPlan)
+        .where(and(eq(tagInstallmentPlan.installmentPlanId, id), inArray(tagInstallmentPlan.tagId, toRemove)));
+    }
+    if (toAdd.length > 0) {
+      await tx.insert(tagInstallmentPlan).values(toAdd.map((tagId) => ({ tagId, installmentPlanId: id })));
+    }
+  });
+
+  return true;
+}
+
+/**
+ * Soft-deletes a plan. With `detachRecords`, the linked records lose their `installment_plan_id` in the same
+ * transaction (mirrors `SET NULL`).
+ *
+ * @throws {ApiError} `IN_USE` while records are linked and `detachRecords` is false
+ */
+export async function softDeleteInstallmentPlan(dashboardId: string, id: string, detachRecords = false) {
+  if (!detachRecords && (await countLinkedRecords(id)) > 0) throw new ApiError("IN_USE");
+
+  await db.transaction(async (tx) => {
+    if (detachRecords) {
+      await tx
+        .update(financialRecord)
+        .set({ installmentPlanId: null, updatedAt: new Date() })
+        .where(eq(financialRecord.installmentPlanId, id));
+    }
+
+    await tx
+      .update(installmentPlan)
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(inDashboard(installmentPlan, dashboardId, id));
+  });
 }

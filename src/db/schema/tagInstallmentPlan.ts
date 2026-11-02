@@ -6,7 +6,7 @@ import { uuidBinary } from "../types";
 /** Tags of an installment plan (M:N). Inherited by the records generated for the plan. */
 export const tagInstallmentPlan = mysqlTable("tag__installment_plan", {
     tagId: uuidBinary("tag_id").notNull(),
-    installmentPlanId: uuidBinary("installment_plan_id", { length: 36 }).notNull(),
+    installmentPlanId: uuidBinary("installment_plan_id").notNull(),
     createdAt: t.timestamp("created_at", { fsp: 3 }).defaultNow().notNull(),
 }, (table) => [
     t.primaryKey({ columns: [table.tagId, table.installmentPlanId] }),

@@ -821,6 +821,10 @@ All paths are relative to `/dashboards/{dashboard_id}`.
 - List query: `status` (multi-value), `due_from`, `due_to` (dates), `sort` = `due_date` (default), `total_amount`, `created_at`. (Consider adding `q` to match `name` and `description` here as well).
 - `PATCH` rejects `total_installments` lower than the number of linked non-deleted records (`422 VALIDATION_ERROR`).
 - `record_type_id` is not accepted in the body (unknown key, `422`): the server sets it to the dashboard's `Expenses` type. The records created for the plan inherit its record type, category and tags.
+- The `Expenses` record type is the dashboard's non-deleted `expense` type that uses a reserved color, so renaming it does not matter. `422` on `/category_id` if the category is not linked to it.
+- Names are not unique: two plans can share a name (`POST` has no `409`).
+- `GET` filters: `status` accepts repeated (`?status=pending&status=late`) or comma-separated values.
+- Changing `category_id` or `currency` on a plan does not rewrite the records already linked to it.
 - `DELETE` returns `409 IN_USE` while records are linked. Use `DELETE ...?detach_records=true` to set `installment_plan_id = NULL` on those records (mirrors `SET NULL`) and soft-delete the plan in one transaction. Detaching is explicit because it changes financial history.
 
 ---

@@ -1,76 +1,134 @@
+import { and, asc, count, desc, eq, gte, inArray, isNull, like, lte, or, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { installmentPlan } from "@/db/schema";
-import { eq, and, isNull, desc, sql } from "drizzle-orm";
+import { color, currency, financialRecord, installmentPlan, recordType, tag, tagInstallmentPlan } from "@/db/schema";
+import { escapeLike } from "@/db/utils";
 import { inDashboard } from "../utils";
+import type { ListFiltersInstallmentPlan } from "./type";
 
 /* ======
   READ
 ======= */
 
-/**
- * Retrieves a single active installment plan by its ID within a dashboard.
- *
- * @param dashboardId The unique identifier of the dashboard owning the plan
- * @param id The unique identifier of the installment plan
- * @returns The installment plan details, or null
- */
-export async function getInstallmentPlan(dashboardId: string, id: string) {
-    const [row] = await db
-        .select({
-            id: installmentPlan.id,
-            dashboardId: installmentPlan.dashboardId,
-            registerById: installmentPlan.registerById,
-            name: installmentPlan.name,
-            description: installmentPlan.description,
-            totalAmount: installmentPlan.totalAmount,
-            totalInstallments: installmentPlan.totalInstallments,
-            dueDate: installmentPlan.dueDate,
-            status: installmentPlan.status,
-            createdAt: installmentPlan.createdAt,
-            updatedAt: installmentPlan.updatedAt,
-        })
-        .from(installmentPlan)
-        .where(
-            and(
-                inDashboard(installmentPlan, dashboardId, id),
-                isNull(installmentPlan.deletedAt)
-            )
-        )
-        .limit(1);
+// The API shows the currency as a code; the table stores its id.
+const planColumns = {
+  id: installmentPlan.id,
+  dashboardId: installmentPlan.dashboardId,
+  registerById: installmentPlan.registerById,
+  name: installmentPlan.name,
+  description: installmentPlan.description,
+  categoryId: installmentPlan.categoryId,
+  recordTypeId: installmentPlan.recordTypeId,
+  totalAmount: installmentPlan.totalAmount,
+  totalInstallments: installmentPlan.totalInstallments,
+  dueDate: installmentPlan.dueDate,
+  status: installmentPlan.status,
+  currency: currency.code,
+  createdAt: installmentPlan.createdAt,
+  updatedAt: installmentPlan.updatedAt,
+};
 
-    return row ?? null;
+/** One non-deleted plan of the dashboard (with currency code), or `null`. */
+export async function getInstallmentPlan(dashboardId: string, id: string) {
+  const [row] = await db
+    .select(planColumns)
+    .from(installmentPlan)
+    .innerJoin(currency, eq(currency.id, installmentPlan.currencyId))
+    .where(inDashboard(installmentPlan, dashboardId, id))
+    .limit(1);
+  return row ?? null;
+}
+
+/** Page of the dashboard's plans and the total. `id` breaks sort ties. */
+export async function listInstallmentPlans(dashboardId: string, f: ListFiltersInstallmentPlan) {
+  const where = and(
+    eq(installmentPlan.dashboardId, dashboardId),
+    isNull(installmentPlan.deletedAt),
+    f.q
+      ? or(
+          like(installmentPlan.name, `%${escapeLike(f.q)}%`),
+          like(installmentPlan.description, `%${escapeLike(f.q)}%`),
+        )
+      : undefined,
+    f.status?.length ? inArray(installmentPlan.status, f.status) : undefined,
+    f.dueFrom ? gte(installmentPlan.dueDate, f.dueFrom) : undefined,
+    f.dueTo ? lte(installmentPlan.dueDate, f.dueTo) : undefined,
+  );
+
+  const order = {
+    due_date: asc(installmentPlan.dueDate),
+    "-due_date": desc(installmentPlan.dueDate),
+    total_amount: asc(installmentPlan.totalAmount),
+    "-total_amount": desc(installmentPlan.totalAmount),
+    created_at: asc(installmentPlan.createdAt),
+    "-created_at": desc(installmentPlan.createdAt),
+  }[f.sort];
+
+  const rows = await db
+    .select(planColumns)
+    .from(installmentPlan)
+    .innerJoin(currency, eq(currency.id, installmentPlan.currencyId))
+    .where(where)
+    .orderBy(order, asc(installmentPlan.id))
+    .limit(f.limit)
+    .offset(f.offset);
+
+  const [totalRow] = await db.select({ total: count() }).from(installmentPlan).where(where);
+
+  return { rows, total: totalRow?.total ?? 0 };
+}
+
+/** Tags of each given plan (non-deleted tags, ordered by name), keyed by lowercase plan id. */
+export async function getTagsByPlan(planIds: string[]) {
+  const map = new Map<string, { id: string; name: string }[]>();
+  if (planIds.length === 0) return map;
+
+  const rows = await db
+    .select({ planId: tagInstallmentPlan.installmentPlanId, id: tag.id, name: tag.name })
+    .from(tagInstallmentPlan)
+    .innerJoin(tag, eq(tag.id, tagInstallmentPlan.tagId))
+    .where(and(inArray(tagInstallmentPlan.installmentPlanId, planIds), isNull(tag.deletedAt)))
+    .orderBy(asc(tag.name));
+
+  for (const r of rows) {
+    const key = r.planId.toLowerCase();
+    map.set(key, [...(map.get(key) ?? []), { id: r.id, name: r.name }]);
+  }
+  return map;
+}
+
+/** Number and summed `price` of the non-deleted records linked to a plan (detail endpoint). */
+export async function getPlanProgress(planId: string) {
+  const [row] = await db
+    .select({
+      recordsCount: count(),
+      recordsTotal: sql<string>`COALESCE(SUM(${financialRecord.price}), 0)`,
+    })
+    .from(financialRecord)
+    .where(and(eq(financialRecord.installmentPlanId, planId), isNull(financialRecord.deletedAt)));
+
+  return {
+    recordsCount: Number(row?.recordsCount ?? 0),
+    recordsTotal: Number(row?.recordsTotal ?? 0).toFixed(2),
+  };
 }
 
 /**
- * Retrieves all active installment plans belonging to a specific dashboard.
- *
- * @param dashboardId The unique identifier of the dashboard
- * @returns An array of active installment plans ordered by creation date
+ * The dashboard's `Expenses` record type: the non-deleted `expense` type that uses a reserved color.
+ * Identified this way so that renaming it does not break plans.
  */
-export async function getInstallmentPlansByDashboardId(dashboardId: string) {
-    return db
-        .select({
-            id: installmentPlan.id,
-            dashboardId: installmentPlan.dashboardId,
-            registerById: installmentPlan.registerById,
-            name: installmentPlan.name,
-            description: installmentPlan.description,
-            totalAmount: installmentPlan.totalAmount,
-            totalInstallments: installmentPlan.totalInstallments,
-            dueDate: installmentPlan.dueDate,
-            status: installmentPlan.status,
-            createdAt: installmentPlan.createdAt,
-            updatedAt: installmentPlan.updatedAt,
-        })
-        .from(installmentPlan)
-        .where(
-            and(
-                eq(installmentPlan.dashboardId, sql`UUID_TO_BIN
-                (
-                ${dashboardId}
-                )`),
-                isNull(installmentPlan.deletedAt)
-            )
-        )
-        .orderBy(desc(installmentPlan.createdAt));
+export async function getExpensesRecordTypeId(dashboardId: string) {
+  const [row] = await db
+    .select({ id: recordType.id })
+    .from(recordType)
+    .innerJoin(color, eq(color.id, recordType.colorId))
+    .where(
+      and(
+        eq(recordType.dashboardId, dashboardId),
+        isNull(recordType.deletedAt),
+        eq(recordType.kind, "expense"),
+        eq(color.isReserved, true),
+      ),
+    )
+    .limit(1);
+  return row?.id ?? null;
 }
