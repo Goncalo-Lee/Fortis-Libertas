@@ -1,0 +1,23 @@
+meta {
+  name: Payment methods - list sort -name
+  type: http
+  seq: 309
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods?sort=-name
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Visa first", function () { expect(res.body.data[0].name).to.equal("Visa"); });
+}

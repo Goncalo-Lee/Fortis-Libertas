@@ -157,6 +157,7 @@ export const paymentMethodRelations = relations(paymentMethod, ({ one, many }) =
   // Links payment method to dashboard, specific card, and records
   dashboard: one(dashboard, { fields: [paymentMethod.dashboardId], references: [dashboard.id] }),
   card: one(card, { fields: [paymentMethod.cardId], references: [card.id] }),
+  user: one(user, { fields: [paymentMethod.userId], references: [user.id] }),
   financialRecords: many(financialRecord),
 }));
 

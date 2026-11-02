@@ -1,0 +1,23 @@
+meta {
+  name: Payment methods - list card_id
+  type: http
+  seq: 307
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods?card_id={{pmCardId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("one", function () { expect(res.body.data.length).to.equal(1); });
+}

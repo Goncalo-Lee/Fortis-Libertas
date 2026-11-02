@@ -1,0 +1,23 @@
+meta {
+  name: Payment methods - payment method lost its card
+  type: http
+  seq: 327
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods/{{pmId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("null", function () { expect(res.body.data.card_id).to.equal(null); });
+}

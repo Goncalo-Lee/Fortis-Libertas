@@ -749,11 +749,12 @@ All paths are relative to `/dashboards/{dashboard_id}`.
 | :--- | :--- | :-: | :--- | :--- |
 | `name` | string | `POST`: Yes | 1–50 chars | `409 NAME_ALREADY_EXISTS` on the unique constraint (README, Open Item 3). |
 | `description` | string | No | | Defaults to `""`. |
-| `card_id` | uuid \| null | No | Non-deleted card owned by the caller | `null` for non-card methods (e.g. cash). |
+| `card_id` | uuid \| null | No | Non-deleted card owned by the payment method's creator | `null` for non-card methods (e.g. cash). `422` on `/card_id` otherwise. When an owner edits another member's method, the card must belong to that creator. |
 
 ### 13.4 Business Rules
 
-- `user_id` is set from the session on `POST` and cannot be changed.
+- `user_id` is set from the session on `POST` and cannot be changed (unknown keys are rejected).
+- Names are unique per dashboard (`idx_payment_method_dashboard_name`), including soft-deleted rows.
 - `403 FORBIDDEN` is returned to an `editor` who tries to modify a payment method created by someone else.
 - `DELETE` returns `409 IN_USE` while any non-deleted `Financial_Record` references it (mirrors `RESTRICT`).
 - List query: `q` (matches `name`), `mine` (boolean, `user_id` = caller), `card_id`, `sort` = `name` (default), `created_at`.

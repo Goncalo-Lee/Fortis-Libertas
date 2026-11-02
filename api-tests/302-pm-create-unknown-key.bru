@@ -1,0 +1,23 @@
+meta {
+  name: Payment methods - create unknown key
+  type: http
+  seq: 302
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "X", "user_id": "{{userId2}}" }
+}
+
+assert {
+  res.status: eq 422
+}

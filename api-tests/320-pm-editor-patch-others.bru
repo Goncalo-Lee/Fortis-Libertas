@@ -1,0 +1,23 @@
+meta {
+  name: Payment methods - editor cannot patch others
+  type: http
+  seq: 320
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods/{{pmId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  { "name": "Nope" }
+}
+
+assert {
+  res.status: eq 403
+}

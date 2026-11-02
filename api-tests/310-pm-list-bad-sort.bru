@@ -1,0 +1,19 @@
+meta {
+  name: Payment methods - list bad sort
+  type: http
+  seq: 310
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods?sort=foo
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 422
+}

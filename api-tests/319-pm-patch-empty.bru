@@ -1,0 +1,23 @@
+meta {
+  name: Payment methods - patch empty
+  type: http
+  seq: 319
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods/{{pmId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {}
+}
+
+assert {
+  res.status: eq 422
+}

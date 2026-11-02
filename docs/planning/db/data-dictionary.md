@@ -253,7 +253,7 @@ Defines payment methods available within a dashboard (e.g., cash, bank transfer,
 | Field | Data Type | Constraints / Keys | Notes |
 | :--- | :--- | :--- | :--- |
 | **payment_method_id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the payment method. |
-| **user_id** | binary(16) | FK KEY (Foreign Key), NOT NULL| Foreign key referencing the `User` table. |
+| **user_id** | binary(16) | FK KEY (Foreign Key), NOT NULL| Creator of the payment method (`ON DELETE RESTRICT`). Only the creator or a dashboard owner can change it. |
 | **card_id** | binary(16) | FK KEY (Foreign Key), NULL | Foreign key referencing a card in the `Card` table (optional). |
 | **dashboard_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key referencing the `Dashboard` table. |
 | **name** | varchar(50) | NOT NULL | Payment method name. |
@@ -264,7 +264,7 @@ Defines payment methods available within a dashboard (e.g., cash, bank transfer,
 
 **Unique Constraint:**
 
-- A composite unique constraint exists on the combination of `(dashboard_id, user_id ,name)`, meaning payment method names must be unique within each dashboard and user.
+- `idx_payment_method_dashboard_name (dashboard_id, name)` makes payment method names unique within each dashboard. `user_id` is the creator and does not take part in the constraint.
 
 **Indexes:**
 
@@ -272,6 +272,7 @@ Defines payment methods available within a dashboard (e.g., cash, bank transfer,
 - `UNIQUE INDEX idx_payment_method_dashboard_name (dashboard_id, name)`
 - `INDEX idx_payment_method_dashboard_id (dashboard_id)`
 - `INDEX idx_payment_method_card_id (card_id)`
+- `INDEX idx_payment_method_user_id (user_id)`
 
 ---
 

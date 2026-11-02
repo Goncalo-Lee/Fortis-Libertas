@@ -1,0 +1,27 @@
+meta {
+  name: Payment methods - setup card
+  type: http
+  seq: 296
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{pmBaId}}/cards
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "cardholder_name": "PM Card", "type_card": "debit", "card_number": "4539578763621486" }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("pmCardId", res.body.data.card_id);
+}
+
+assert {
+  res.status: eq 201
+}

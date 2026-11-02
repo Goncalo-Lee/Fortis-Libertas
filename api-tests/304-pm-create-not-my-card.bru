@@ -1,0 +1,23 @@
+meta {
+  name: Payment methods - editor cannot use someone else card
+  type: http
+  seq: 304
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  { "name": "Stolen", "card_id": "{{pmCardId}}" }
+}
+
+assert {
+  res.status: eq 422
+}

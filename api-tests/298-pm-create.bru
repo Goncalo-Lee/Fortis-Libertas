@@ -1,0 +1,36 @@
+meta {
+  name: Payment methods - create with card
+  type: http
+  seq: 298
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Visa", "description": "Main card", "card_id": "{{pmCardId}}" }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("pmId", res.body.data.payment_method_id);
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("shape", function () {
+    const d = res.body.data;
+    expect(d.user_id).to.equal(bru.getVar("userId"));
+    expect(d.card_id).to.equal(bru.getVar("pmCardId"));
+    expect(d.description).to.equal("Main card");
+  });
+}

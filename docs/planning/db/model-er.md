@@ -326,8 +326,9 @@ erDiagram
     }
 
     Payment_Method {
-        char26 payment_method_id PK
+        binary16 payment_method_id PK
         binary16 dashboard_id FK
+        binary16 user_id FK "creator"
         binary16 card_id FK
         varchar50 name
         text description
