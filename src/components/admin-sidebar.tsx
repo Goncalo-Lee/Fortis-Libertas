@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/sidebar"
 import {
     FileTextIcon, FileChartColumnIcon, CommandIcon,
-    UsersIcon, ShieldAlertIcon, MonitorIcon
+    UsersIcon, ShieldAlertIcon, MonitorIcon, Settings2Icon
 } from "lucide-react"
 import {NavAdminMain} from "@/components/nav/nav-admin-main";
 import {NavAdminDocuments} from "@/components/nav/nav-admin-documents";
@@ -23,6 +23,7 @@ const navMain = [
     { title: "Visão Geral", url: "/admin/dashboard", icon: <MonitorIcon /> },
     { title: "Gestão de Utilizadores", url: "/admin/dashboard/users", icon: <UsersIcon /> },
     { title: "Denúncias/Alertas", url: "/admin/dashboard/alerts", icon: <ShieldAlertIcon /> },
+    { title: "Configurações", url: "/admin/dashboard/configurations", icon: <Settings2Icon />},
 ]
 
 const documents = [
