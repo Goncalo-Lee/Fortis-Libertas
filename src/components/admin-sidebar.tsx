@@ -20,13 +20,13 @@ import {NavUser} from "@/components/nav/nav-user";
 
 
 const navMain = [
-    { title: "Visão Geral", url: "/admin/dashboard/overview", icon: <MonitorIcon /> },
-    { title: "Gerir Utilizadores", url: "/admin/dashboard/users", icon: <UsersIcon /> },
+    { title: "Visão Geral", url: "/admin/dashboard", icon: <MonitorIcon /> },
+    { title: "Gestão de Utilizadores", url: "/admin/dashboard/users", icon: <UsersIcon /> },
     { title: "Denúncias/Alertas", url: "/admin/dashboard/alerts", icon: <ShieldAlertIcon /> },
 ]
 
 const documents = [
-    { name: "Relatórios Globais", url: "/admin/dashboard/reports", icon: <FileChartColumnIcon /> },
+    { name: "Métricas Globais", url: "/admin/dashboard/metrics", icon: <FileChartColumnIcon /> },
     { name: "Logs de Sistema", url: "/admin/dashboard/logs", icon: <FileTextIcon /> },
 ]
 

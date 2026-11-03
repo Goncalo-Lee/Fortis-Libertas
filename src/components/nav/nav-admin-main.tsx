@@ -26,18 +26,6 @@ export function NavAdminMain({
         <SidebarGroup>
             <SidebarGroupContent className="flex flex-col gap-2">
                 <SidebarMenu>
-                    <SidebarMenuItem className="flex items-center gap-2">
-                        <SidebarMenuButton
-                            tooltip="Dashboard"
-                            isActive={pathname === "/admin/dashboard"}
-                            render={<Link href="/admin/dashboard" />}
-                        >
-                            <LayoutDashboardIcon />
-                            <span>Dashboard</span>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-                <SidebarMenu>
                     {items.map((item) => {
                         const isActive = pathname === item.url
 
