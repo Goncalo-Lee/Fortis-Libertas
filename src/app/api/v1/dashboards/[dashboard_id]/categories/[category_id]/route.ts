@@ -1,54 +1,52 @@
-import type { NextRequest } from "next/server";
-import {
-  getCategory,
-  listCategoryTags,
-  softDeleteCategory,
-  updateCategory,
-} from "@/db/queries/categories";
-import { requireDashboardRole } from "@/lib/api/access";
-import { parseJson } from "@/lib/api/body";
-import { ApiError, withErrors } from "@/lib/api/errors";
-import { parseUuid } from "@/lib/api/ids";
-import { noContent, ok } from "@/lib/api/responses";
-import { getCategoryQuery, updateCategorySchema } from "@/lib/api/schemas/category";
-import { serializeCategory } from "@/lib/api/serializers/category";
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { getCategory } from "@/db/queries/categories/read";
+import { updateCategory, softDeleteCategory } from "@/db/queries/categories/write";
+import { ApiError } from "@/lib/api/errors";
 
-export const runtime = "nodejs";
-
-type Ctx = { params: Promise<{ dashboard_id: string; category_id: string }> };
-
-async function ids({ params }: Ctx) {
-  const p = await params;
-  return { dashboardId: parseUuid(p.dashboard_id), id: parseUuid(p.category_id) };
+interface RouteContext {
+  params: Promise<{ dashboard_id: string; category_id: string }>;
 }
 
-export const GET = withErrors(async (request: NextRequest, ctx: Ctx) => {
-  const { dashboardId, id } = await ids(ctx);
-  await requireDashboardRole(request, dashboardId, "viewer");
-  const { include } = getCategoryQuery.parse(Object.fromEntries(request.nextUrl.searchParams));
+export async function GET(request: NextRequest, context: RouteContext) {
+  const { dashboard_id, category_id } = await context.params;
+  const item = await getCategory(dashboard_id, category_id);
+  if (!item) return NextResponse.json({ code: "NOT_FOUND", status: 404 }, { status: 404 });
+  return NextResponse.json({ data: item }, { status: 200 });
+}
 
-  const row = await getCategory(dashboardId, id);
-  if (!row) throw new ApiError("NOT_FOUND");
+export async function PATCH(request: NextRequest, context: RouteContext) {
+  try {
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
 
-  const tags = include === "tags" ? await listCategoryTags(id) : undefined;
-  return ok(serializeCategory(row, tags));
-});
+    const { dashboard_id, category_id } = await context.params;
+    const body = await request.json();
 
-export const PATCH = withErrors(async (request: NextRequest, ctx: Ctx) => {
-  const { dashboardId, id } = await ids(ctx);
-  await requireDashboardRole(request, dashboardId, "editor");
+    const updated = await updateCategory(dashboard_id, category_id, {
+      name: body.name,
+      description: body.description,
+    });
 
-  const changes = await parseJson(request, updateCategorySchema);
-  const row = await updateCategory(dashboardId, id, changes);
-  if (!row) throw new ApiError("NOT_FOUND");
-  return ok(serializeCategory(row));
-});
+    return NextResponse.json({ data: updated }, { status: 200 });
+  } catch (error) {
+    return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
+  }
+}
 
-export const DELETE = withErrors(async (request: NextRequest, ctx: Ctx) => {
-  const { dashboardId, id } = await ids(ctx);
-  await requireDashboardRole(request, dashboardId, "editor");
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  try {
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
 
-  if (!(await getCategory(dashboardId, id))) throw new ApiError("NOT_FOUND");
-  await softDeleteCategory(dashboardId, id);
-  return noContent();
-});
+    const { dashboard_id, category_id } = await context.params;
+    await softDeleteCategory(dashboard_id, category_id);
+
+    return new NextResponse(null, { status: 204 });
+  } catch (error) {
+    if (error instanceof ApiError && error.code === "IN_USE") {
+      return NextResponse.json({ code: "IN_USE", status: 409, detail: "Category referenced by records." }, { status: 409 });
+    }
+    return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
+  }
+}

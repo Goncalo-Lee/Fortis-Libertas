@@ -7,6 +7,8 @@ import { softDelete, timestamps } from "../columns";
 export const installmentPlan = mysqlTable("installment_plan", {
     id: uuidBinary("installment_plan_id", { length: 36 }).primaryKey(),
     dashboardId: uuidBinary("dashboard_id", { length: 36 }).notNull(),
+    name: t.varchar("name", { length: 50 }).notNull(),
+    description: t.text("description"),
     registerById: uuidBinary("register_by_id", { length: 36 }).notNull(),
     totalAmount: t.decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
     totalInstallments: t.int("total_installments").notNull(),

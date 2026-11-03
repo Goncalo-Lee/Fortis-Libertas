@@ -1,9 +1,11 @@
-import type { NextRequest } from "next/server";
-import { getMe } from "@/db/queries/me";
+import {NextRequest, NextResponse} from "next/server";
+import {getMe, updateUser} from "@/db/queries/me";
 import { requireSession } from "@/lib/api/auth";
 import { ApiError, withErrors } from "@/lib/api/errors";
 import { ok } from "@/lib/api/responses";
 import { serializeUser } from "@/lib/api/serializers/user";
+import {headers} from "next/headers";
+import {auth} from "@/lib/auth";
 
 // Force Node.js runtime instead of Edge Runtime.
 // Required because Drizzle/MySQL drivers depend on Node APIs (net, tls)
@@ -48,3 +50,37 @@ export const GET = withErrors(async (request: NextRequest) => {
   // serializeUser maps DB fields to API contract (snake_case, ISO dates, nested profile).
   return ok(serializeUser(me.user, me.profile));
 });
+
+export async function PATCH(request: NextRequest) {
+  try {
+    // 1. Vai buscar a sessão real do utilizador que fez o pedido
+    const session = await auth.api.getSession({
+      headers: await headers() // Lê os cookies do browser
+    });
+
+    // 2. Se não houver sessão, bloqueia logo (Erro 401)
+    if (!session) {
+      return NextResponse.json({ code: "UNAUTHENTICATED" }, { status: 401 });
+    }
+
+    // 3. AQUI ESTÁ A MAGIA: Usamos o ID verdadeiro da Maria!
+    const userId = session.user.id;
+
+    // 4. Lê os dados enviados pelo botão
+    const body = await request.json();
+
+    console.log("BACKEND RECEBEU NO PATCH /me:", body);
+
+    // 5. Envia para a base de dados
+    await updateUser(userId, {
+      full_name: body.full_name,
+      user_name: body.user_name,
+    });
+
+    return NextResponse.json({ success: true }, { status: 200 });
+
+  } catch (error: any) {
+    console.error("Erro no PATCH /me:", error);
+    return NextResponse.json({ code: "INTERNAL_ERROR" }, { status: 500 });
+  }
+}

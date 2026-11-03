@@ -5,6 +5,7 @@ import { uuidBinary } from "../types";
 
 export const bankAccount = mysqlTable("bank_account", {
     id: uuidBinary("bank_account_id").primaryKey(),
+    dashboardId: uuidBinary("dashboard_id").notNull(),
     name: t.varchar("name", { length: 50 }).notNull(),
     initialBalance: t.decimal("initial_balance", { precision: 10, scale: 2 }).notNull(),
     frozenAt: t.timestamp("frozen_at", {fsp: 3}),

@@ -1,8 +1,8 @@
 import { and, asc, count, desc, eq, isNull, like, inArray } from "drizzle-orm";
-import { db } from "../..";
-import { tag, tagCategory } from "../../schema";
+import { db } from "@/db";
+import { tag, tagCategory } from "@/db/schema";
 import { inDashboard } from "./../utils";
-import { escapeLike } from "../../utils";
+import { escapeLike } from "@/db/utils";
 import { ListFiltersTag } from "./type";
 
 

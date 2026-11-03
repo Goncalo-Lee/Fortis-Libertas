@@ -71,7 +71,7 @@ export function serializeUser(row: UserRow, profileRow: ProfileRow) {
   return {
     // Rename 'id' to 'user_id' to avoid ambiguity when nested
     user_id: row.id,
-    user_name: row.userName,
+    user_name: row.username,
     full_name: row.name,
     email: row.email,
 

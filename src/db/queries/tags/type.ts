@@ -18,3 +18,13 @@ export type ListFiltersTag =
   & {
     categoryId?: string;
   };
+
+export interface CreateTagInput {
+    name: string;
+    description?: string | null;
+}
+
+export interface UpdateTagInput {
+    name?: string;
+    description?: string | null;
+}

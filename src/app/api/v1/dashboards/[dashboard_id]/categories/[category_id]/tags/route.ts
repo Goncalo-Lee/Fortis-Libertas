@@ -1,36 +1,29 @@
-import type { NextRequest } from "next/server";
-import { getCategory, listCategoryTags, setCategoryTags } from "@/db/queries/categories";
-import { requireDashboardRole } from "@/lib/api/access";
-import { parseJson } from "@/lib/api/body";
-import { ApiError, withErrors } from "@/lib/api/errors";
-import { parseUuid } from "@/lib/api/ids";
-import { ok } from "@/lib/api/responses";
-import { setCategoryTagsSchema } from "@/lib/api/schemas/category";
-import { serializeTag } from "@/lib/api/serializers/tag";
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { listCategoryTags } from "@/db/queries/categories/read";
+import { replaceCategoryTags } from "@/db/queries/categories/write";
 
-export const runtime = "nodejs";
-
-type Ctx = { params: Promise<{ dashboard_id: string; category_id: string }> };
-
-async function ids({ params }: Ctx) {
-  const p = await params;
-  return { dashboardId: parseUuid(p.dashboard_id), id: parseUuid(p.category_id) };
+interface RouteContext {
+  params: Promise<{ dashboard_id: string; category_id: string }>;
 }
 
-export const GET = withErrors(async (request: NextRequest, ctx: Ctx) => {
-  const { dashboardId, id } = await ids(ctx);
-  await requireDashboardRole(request, dashboardId, "viewer");
-  if (!(await getCategory(dashboardId, id))) throw new ApiError("NOT_FOUND");
+export async function GET(request: NextRequest, context: RouteContext) {
+  const { dashboard_id, category_id } = await context.params;
+  const tags = await listCategoryTags(dashboard_id, category_id);
+  return NextResponse.json({ data: tags }, { status: 200 });
+}
 
-  return ok((await listCategoryTags(id)).map((t) => serializeTag(t)));
-});
+export async function PUT(request: NextRequest, context: RouteContext) {
+  try {
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
 
-export const PUT = withErrors(async (request: NextRequest, ctx: Ctx) => {
-  const { dashboardId, id } = await ids(ctx);
-  await requireDashboardRole(request, dashboardId, "editor");
-  if (!(await getCategory(dashboardId, id))) throw new ApiError("NOT_FOUND");
+    const { dashboard_id, category_id } = await context.params;
+    const body = await request.json();
 
-  const { tag_ids } = await parseJson(request, setCategoryTagsSchema);
-  await setCategoryTags(dashboardId, id, tag_ids);
-  return ok((await listCategoryTags(id)).map((t) => serializeTag(t)));
-});
+    await replaceCategoryTags(dashboard_id, category_id, body.tag_ids ?? []);
+    return NextResponse.json({ data: { updated: true } }, { status: 200 });
+  } catch (error) {
+    return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
+  }
+}

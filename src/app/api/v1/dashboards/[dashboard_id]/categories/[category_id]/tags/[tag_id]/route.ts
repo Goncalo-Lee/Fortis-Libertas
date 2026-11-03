@@ -1,37 +1,27 @@
-import type { NextRequest } from "next/server";
-import { getCategory, linkTag, unlinkTag } from "@/db/queries/categories";
-import { requireDashboardRole } from "@/lib/api/access";
-import { ApiError, withErrors } from "@/lib/api/errors";
-import { parseUuid } from "@/lib/api/ids";
-import { noContent } from "@/lib/api/responses";
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { linkTagToCategory, unlinkTagFromCategory } from "@/db/queries/categories/write";
 
-export const runtime = "nodejs";
-
-type Ctx = { params: Promise<{ dashboard_id: string; category_id: string; tag_id: string }> };
-
-async function ids({ params }: Ctx) {
-  const p = await params;
-  return {
-    dashboardId: parseUuid(p.dashboard_id),
-    categoryId: parseUuid(p.category_id),
-    tagId: parseUuid(p.tag_id),
-  };
+interface RouteContext {
+  params: Promise<{ dashboard_id: string; category_id: string; tag_id: string }>;
 }
 
-export const POST = withErrors(async (request: NextRequest, ctx: Ctx) => {
-  const { dashboardId, categoryId, tagId } = await ids(ctx);
-  await requireDashboardRole(request, dashboardId, "editor");
-  if (!(await getCategory(dashboardId, categoryId))) throw new ApiError("NOT_FOUND");
+export async function POST(request: NextRequest, context: RouteContext) {
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
 
-  await linkTag(dashboardId, categoryId, tagId);
-  return noContent();
-});
+  const { dashboard_id, category_id, tag_id } = await context.params;
+  await linkTagToCategory(dashboard_id, category_id, tag_id);
 
-export const DELETE = withErrors(async (request: NextRequest, ctx: Ctx) => {
-  const { dashboardId, categoryId, tagId } = await ids(ctx);
-  await requireDashboardRole(request, dashboardId, "editor");
-  if (!(await getCategory(dashboardId, categoryId))) throw new ApiError("NOT_FOUND");
+  return new NextResponse(null, { status: 204 });
+}
 
-  await unlinkTag(categoryId, tagId);
-  return noContent();
-});
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
+
+  const { dashboard_id, category_id, tag_id } = await context.params;
+  await unlinkTagFromCategory(dashboard_id, category_id, tag_id);
+
+  return new NextResponse(null, { status: 204 });
+}

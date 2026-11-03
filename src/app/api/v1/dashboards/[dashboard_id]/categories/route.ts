@@ -1,54 +1,72 @@
-import type { NextRequest } from "next/server";
-import { createCategory, getTagsByCategory, listCategories } from "@/db/queries/categories";
-import { requireDashboardRole } from "@/lib/api/access";
-import { parseJson } from "@/lib/api/body";
-import { ApiError, withErrors } from "@/lib/api/errors";
-import { parseUuid } from "@/lib/api/ids";
-import { parsePagination } from "@/lib/api/pagination";
-import { created, paginated } from "@/lib/api/responses";
-import { createCategorySchema, listCategoriesQuery } from "@/lib/api/schemas/category";
-import { serializeCategory } from "@/lib/api/serializers/category";
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { listCategories } from "@/db/queries/categories/read";
+import { createCategory } from "@/db/queries/categories/write";
+import { ApiError } from "@/lib/api/errors";
 
-export const runtime = "nodejs";
+interface RouteContext {
+  params: Promise<{ dashboard_id: string }>;
+}
 
-type Ctx = { params: Promise<{ dashboard_id: string }> };
+export async function GET(request: NextRequest, context: RouteContext) {
+  try {
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
 
-export const GET = withErrors(async (request: NextRequest, { params }: Ctx) => {
-  const dashboardId = parseUuid((await params).dashboard_id);
-  await requireDashboardRole(request, dashboardId, "viewer");
+    // 2. O AWAIT AQUI É OBRIGATÓRIO!
+    const { dashboard_id } = await context.params;
 
-  const { searchParams } = request.nextUrl;
-  const { page, perPage, offset } = parsePagination(searchParams);
-  const { include, tag_id, ...filters } = listCategoriesQuery.parse(
-    Object.fromEntries(searchParams),
-  );
+    const { searchParams } = request.nextUrl;
+    const page = parseInt(searchParams.get("page") ?? "1", 10);
+    const perPage = parseInt(searchParams.get("per_page") ?? "15", 10);
+    const offset = (page - 1) * perPage;
 
-  const { rows, total } = await listCategories(dashboardId, {
-    ...filters,
-    tagId: tag_id?.toLowerCase(),
-    limit: perPage,
-    offset,
-  });
+    const { rows, total } = await listCategories(dashboard_id, {
+      q: searchParams.get("q") ?? undefined,
+      tagId: searchParams.get("tag_id") ?? undefined,
+      sort: (searchParams.get("sort") as any) ?? "name",
+      limit: perPage,
+      offset,
+      includeTags: searchParams.get("include") === "tags",
+    });
 
-  const tags =
-    include === "tags" ? await getTagsByCategory(rows.map((r) => r.id)) : undefined;
+    return NextResponse.json({
+      data: rows,
+      meta: {
+        page,
+        per_page: perPage,
+        total,
+        total_pages: Math.ceil(total / perPage),
+      },
+    }, { status: 200 });
+  } catch (error) {
+    console.error("Erro no GET /categories:", error);
+    return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
+  }
+}
 
-  return paginated(
-    rows.map((r) => serializeCategory(r, tags ? (tags.get(r.id.toLowerCase()) ?? []) : undefined)),
-    { page, perPage, total },
-  );
-});
+export async function POST(request: NextRequest, context: RouteContext) {
+  try {
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
 
-export const POST = withErrors(async (request: NextRequest, { params }: Ctx) => {
-  const dashboardId = parseUuid((await params).dashboard_id);
-  await requireDashboardRole(request, dashboardId, "editor");
+    const { dashboard_id } = await context.params;
+    const body = await request.json();
 
-  const input = await parseJson(request, createCategorySchema);
-  const row = await createCategory(dashboardId, input);
-  if (!row) throw new ApiError("INTERNAL_ERROR");
+    const created = await createCategory(dashboard_id, {
+      name: body.name,
+      description: body.description ?? null,
+      tagIds: body.tag_ids ?? [],
+    });
 
-  return created(
-    serializeCategory(row),
-    `/api/v1/dashboards/${dashboardId}/categories/${row.id}`,
-  );
-});
+    return NextResponse.json(
+        { data: created },
+        { status: 201, headers: { Location: `/api/v1/dashboards/${dashboard_id}/categories/${created.id}` } }
+    );
+  } catch (error) {
+    if (error instanceof ApiError && error.code === "NAME_ALREADY_EXISTS") {
+      return NextResponse.json({ code: "NAME_ALREADY_EXISTS", status: 409 }, { status: 409 });
+    }
+    return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
+  }
+}

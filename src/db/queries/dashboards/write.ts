@@ -1,7 +1,7 @@
 import { and, eq, isNotNull, isNull } from "drizzle-orm";
-import { db } from "../..";
-import { dashboard, recordType, userDashboard } from "../../schema";
-import { generateId } from "../../types";
+import { db } from "@/db";
+import { dashboard, recordType, userDashboard } from "@/db/schema";
+import { generateId } from "@/db/types";
 
 /* =======
   WRITE
