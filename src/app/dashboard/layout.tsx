@@ -1,4 +1,3 @@
-import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { auth } from "@/lib/auth";
@@ -7,6 +6,7 @@ import { headers } from "next/headers";
 import { ProfileProvider } from "@/contexts/ProfileContext";
 import { DashboardProvider } from "@/contexts/DashboardContext";
 import { FinancialProvider } from "@/contexts/FinancialContext";
+import { UserSidebar } from "@/components/user-sidebar";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
 
@@ -19,14 +19,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
     }
 
     return (
-        // 1º Nível: Sabe quem é a pessoa
         <ProfileProvider>
-
             <DashboardProvider>
-
-
                 <FinancialProvider>
-
                     <SidebarProvider
                         className="h-svh"
                         style={
@@ -36,7 +31,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                             } as React.CSSProperties
                         }
                     >
-                        <AppSidebar
+                        <UserSidebar
                             variant="inset"
                             className="font-poppins"
                             role={session.user.role}
@@ -53,7 +48,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
                             </main>
                         </SidebarInset>
                     </SidebarProvider>
-
                 </FinancialProvider>
             </DashboardProvider>
         </ProfileProvider>
