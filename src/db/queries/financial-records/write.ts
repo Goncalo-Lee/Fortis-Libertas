@@ -9,6 +9,7 @@ import {
   recordTypeCategory,
   tag,
   tagFinancialRecord,
+  tagInstallmentPlan,
 } from "@/db/schema";
 import { generateId } from "@/db/types";
 import { ApiError } from "@/lib/api/errors";
@@ -99,17 +100,60 @@ async function assertCategoryLinked(recordTypeId: string, categoryId: string) {
 }
 
 /**
+ * Record type, category and tags of a plan: the records of a plan inherit them.
+ * Call after `assertRefsInDashboard`, which already checked that the plan exists.
+ */
+async function loadPlanInheritance(planId: string) {
+  const [plan] = await db
+    .select({ recordTypeId: installmentPlan.recordTypeId, categoryId: installmentPlan.categoryId })
+    .from(installmentPlan)
+    .where(eq(installmentPlan.id, planId))
+    .limit(1);
+  if (!plan) return invalid("/installment_plan_id", "Installment plan not found in this dashboard.");
+
+  const tags = await db
+    .select({ tagId: tagInstallmentPlan.tagId })
+    .from(tagInstallmentPlan)
+    .where(eq(tagInstallmentPlan.installmentPlanId, planId));
+
+  return {
+    recordTypeId: plan.recordTypeId.toLowerCase(),
+    categoryId: plan.categoryId.toLowerCase(),
+    tagIds: tags.map((r) => r.tagId.toLowerCase()),
+  };
+}
+
+/** A record of a plan cannot have a record type or category different from the plan's. */
+function assertMatchesPlan(plan: { recordTypeId: string; categoryId: string }, recordTypeId?: string, categoryId?: string) {
+  if (recordTypeId !== undefined && recordTypeId.toLowerCase() !== plan.recordTypeId)
+    invalid("/record_type_id", "Must match the record type of the installment plan.");
+  if (categoryId !== undefined && categoryId.toLowerCase() !== plan.categoryId)
+    invalid("/category_id", "Must match the category of the installment plan.");
+}
+
+/**
  * Creates a record (and its tags) in one transaction. `register_by_id` is the caller; the currency defaults to
  * the caller's profile currency.
  *
- * @throws {ApiError} `VALIDATION_ERROR` for an unknown reference, tag or currency, or a category not linked to
- *   the record type; `PLAN_CANCELLED` for a cancelled plan
+ * A record of a plan inherits the plan's record type, category and tags: `recordTypeId`/`categoryId` are optional
+ * then (and must match the plan if sent); the plan's tags are added to `tagIds`.
+ *
+ * @throws {ApiError} `VALIDATION_ERROR` for an unknown reference, tag or currency, a category not linked to the
+ *   record type, or a record type/category that differs from the plan's; `PLAN_CANCELLED` for a cancelled plan
  */
 export async function createFinancialRecord(dashboardId: string, userId: string, input: CreateFinancialRecordInput) {
   await assertRefsInDashboard(dashboardId, input);
-  await assertCategoryLinked(input.recordTypeId, input.categoryId);
 
-  const tagIds = input.tagIds ?? [];
+  const plan = input.installmentPlanId ? await loadPlanInheritance(input.installmentPlanId) : null;
+  if (plan) assertMatchesPlan(plan, input.recordTypeId, input.categoryId);
+
+  const recordTypeId = plan?.recordTypeId ?? input.recordTypeId;
+  const categoryId = plan?.categoryId ?? input.categoryId;
+  if (!recordTypeId) invalid("/record_type_id", "Required when the record has no installment plan.");
+  if (!categoryId) invalid("/category_id", "Required when the record has no installment plan.");
+  if (!plan) await assertCategoryLinked(recordTypeId, categoryId);
+
+  const tagIds = [...new Set([...(input.tagIds ?? []), ...(plan?.tagIds ?? [])])];
   await assertTagsInDashboard(dashboardId, tagIds);
 
   const code = input.currency ?? (await getOrCreateProfile(userId)).currency ?? DEFAULT_CURRENCY;
@@ -121,8 +165,8 @@ export async function createFinancialRecord(dashboardId: string, userId: string,
       id,
       dashboardId,
       registerById: userId,
-      recordTypeId: input.recordTypeId,
-      categoryId: input.categoryId,
+      recordTypeId,
+      categoryId,
       paymentMethodId: input.paymentMethodId,
       installmentPlanId: input.installmentPlanId ?? null,
       name: input.name,
@@ -142,8 +186,9 @@ export async function createFinancialRecord(dashboardId: string, userId: string,
 }
 
 /**
- * Updates a record. The resulting record type and category must still be linked. Tags are changed with the
- * tag functions below.
+ * Updates a record. The resulting record type and category must still be linked. While the record is in a plan,
+ * they must match the plan's; attaching a record to a plan sets them from the plan and adds the plan's tags.
+ * Tags are otherwise changed with the tag functions below.
  *
  * @returns The updated record, or `null` if it does not exist
  */
@@ -158,7 +203,13 @@ export async function updateFinancialRecord(dashboardId: string, id: string, cha
     installmentPlanId: changes.installmentPlanId,
   });
 
-  if (changes.recordTypeId !== undefined || changes.categoryId !== undefined) {
+  const planId = changes.installmentPlanId === undefined ? current.installmentPlanId : changes.installmentPlanId;
+  const plan = planId ? await loadPlanInheritance(planId) : null;
+  const attaching = !!plan && planId?.toLowerCase() !== current.installmentPlanId?.toLowerCase();
+
+  if (plan) {
+    assertMatchesPlan(plan, changes.recordTypeId, changes.categoryId);
+  } else if (changes.recordTypeId !== undefined || changes.categoryId !== undefined) {
     await assertCategoryLinked(changes.recordTypeId ?? current.recordTypeId, changes.categoryId ?? current.categoryId);
   }
 
@@ -167,6 +218,10 @@ export async function updateFinancialRecord(dashboardId: string, id: string, cha
   if (changes.categoryId !== undefined) set.categoryId = changes.categoryId;
   if (changes.paymentMethodId !== undefined) set.paymentMethodId = changes.paymentMethodId;
   if (changes.installmentPlanId !== undefined) set.installmentPlanId = changes.installmentPlanId;
+  if (attaching) {
+    set.recordTypeId = plan.recordTypeId;
+    set.categoryId = plan.categoryId;
+  }
   if (changes.name !== undefined) set.name = changes.name;
   if (changes.description !== undefined) set.description = changes.description;
   if (changes.price !== undefined) set.price = changes.price;
@@ -179,6 +234,13 @@ export async function updateFinancialRecord(dashboardId: string, id: string, cha
       .update(financialRecord)
       .set({ ...set, updatedAt: new Date() })
       .where(inDashboard(financialRecord, dashboardId, id));
+  }
+
+  if (attaching && plan.tagIds.length > 0) {
+    await db
+      .insert(tagFinancialRecord)
+      .values(plan.tagIds.map((tagId) => ({ tagId, recordId: id })))
+      .onDuplicateKeyUpdate({ set: { recordId: id } });
   }
 
   return getFinancialRecord(dashboardId, id);

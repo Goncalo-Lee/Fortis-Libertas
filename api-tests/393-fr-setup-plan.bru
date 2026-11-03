@@ -15,7 +15,7 @@ auth:bearer {
 }
 
 body:json {
-  { "name": "Plan", "category_id": "{{frCat}}", "total_amount": "300.00", "total_installments": 3, "due_date": "2027-12-31" }
+  { "name": "Plan", "category_id": "{{frCat}}", "total_amount": "300.00", "total_installments": 3, "due_date": "2027-12-31", "tag_ids": ["{{frTagB}}"] }
 }
 
 script:post-response {

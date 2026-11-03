@@ -6,7 +6,7 @@ import { ApiError, withErrors } from "@/lib/api/errors";
 import { parseUuid } from "@/lib/api/ids";
 import { noContent, ok } from "@/lib/api/responses";
 import { updateBankAccountSchema } from "@/lib/api/schemas/bank-account";
-import { serializeBankAccount } from "@/lib/api/serializers/bank-account";
+import { presentBankAccount } from "@/lib/api/bank-account-response";
 
 export const runtime = "nodejs";
 
@@ -18,7 +18,7 @@ export const GET = withErrors(async (request: NextRequest, { params }: Ctx) => {
 
   const row = await getBankAccount(id, session.user.id);
   if (!row) throw new ApiError("NOT_FOUND");
-  return ok(serializeBankAccount(row));
+  return ok(await presentBankAccount(row));
 });
 
 export const PATCH = withErrors(async (request: NextRequest, { params }: Ctx) => {
@@ -31,7 +31,7 @@ export const PATCH = withErrors(async (request: NextRequest, { params }: Ctx) =>
     initialBalance: input.initial_balance,
   });
   if (!row) throw new ApiError("NOT_FOUND");
-  return ok(serializeBankAccount(row));
+  return ok(await presentBankAccount(row));
 });
 
 export const DELETE = withErrors(async (request: NextRequest, { params }: Ctx) => {

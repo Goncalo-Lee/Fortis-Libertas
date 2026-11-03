@@ -6,7 +6,7 @@ import { ApiError, withErrors } from "@/lib/api/errors";
 import { parsePagination } from "@/lib/api/pagination";
 import { created, paginated } from "@/lib/api/responses";
 import { createBankAccountSchema, listBankAccountsQuery } from "@/lib/api/schemas/bank-account";
-import { serializeBankAccount } from "@/lib/api/serializers/bank-account";
+import { presentBankAccount, presentBankAccounts } from "@/lib/api/bank-account-response";
 
 export const runtime = "nodejs";
 
@@ -27,7 +27,7 @@ export const GET = withErrors(async (request: NextRequest) => {
     offset,
   });
 
-  return paginated(rows.map(serializeBankAccount), { page, perPage, total });
+  return paginated(await presentBankAccounts(rows), { page, perPage, total });
 });
 
 /** POST /bank-accounts: creates an account; the caller becomes its owner. */
@@ -42,5 +42,5 @@ export const POST = withErrors(async (request: NextRequest) => {
   });
   if (!row) throw new ApiError("INTERNAL_ERROR");
 
-  return created(serializeBankAccount(row), `/api/v1/bank-accounts/${row.id}`);
+  return created(await presentBankAccount(row), `/api/v1/bank-accounts/${row.id}`);
 });

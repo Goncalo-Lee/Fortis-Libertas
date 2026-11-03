@@ -6,6 +6,7 @@ import { ApiError, withErrors } from "@/lib/api/errors";
 import { parseUuid } from "@/lib/api/ids";
 import { ok } from "@/lib/api/responses";
 import { setPlanTagsSchema } from "@/lib/api/schemas/installment-plan";
+import { convertPlanTotals } from "@/lib/api/installment-plan-response";
 import { serializeInstallmentPlan } from "@/lib/api/serializers/installment-plan";
 
 export const runtime = "nodejs";
@@ -17,13 +18,17 @@ export const PUT = withErrors(async (request: NextRequest, { params }: Ctx) => {
   const p = await params;
   const dashboardId = parseUuid(p.dashboard_id);
   const id = parseUuid(p.installment_plan_id);
-  await requireDashboardRole(request, dashboardId, "editor");
+  const { session } = await requireDashboardRole(request, dashboardId, "editor");
   const { tag_ids } = await parseJson(request, setPlanTagsSchema);
 
   if (!(await setInstallmentPlanTags(dashboardId, id, tag_ids))) throw new ApiError("NOT_FOUND");
 
   const row = await getInstallmentPlan(dashboardId, id);
   if (!row) throw new ApiError("NOT_FOUND");
-  const [tags, progress] = await Promise.all([getTagsByPlan([id]), getPlanProgress(id)]);
-  return ok(serializeInstallmentPlan(row, tags.get(id) ?? [], progress));
+  const [tags, progress, [converted]] = await Promise.all([
+    getTagsByPlan([id]),
+    getPlanProgress(id),
+    convertPlanTotals([row], session.user.id),
+  ]);
+  return ok(serializeInstallmentPlan(row, tags.get(id) ?? [], progress, converted));
 });

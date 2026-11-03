@@ -11,6 +11,8 @@ import {
   listInstallmentPlansQuery,
   statusListSchema,
 } from "@/lib/api/schemas/installment-plan";
+import { convertPlanTotals } from "@/lib/api/installment-plan-response";
+import { rateMode } from "@/lib/api/schemas/financial-record";
 import { serializeInstallmentPlan } from "@/lib/api/serializers/installment-plan";
 
 export const runtime = "nodejs";
@@ -19,7 +21,7 @@ type Ctx = { params: Promise<{ dashboard_id: string }> };
 
 export const GET = withErrors(async (request: NextRequest, { params }: Ctx) => {
   const dashboardId = parseUuid((await params).dashboard_id);
-  await requireDashboardRole(request, dashboardId, "viewer");
+  const { session } = await requireDashboardRole(request, dashboardId, "viewer");
 
   const { searchParams } = request.nextUrl;
   const { page, perPage, offset } = parsePagination(searchParams);
@@ -39,9 +41,13 @@ export const GET = withErrors(async (request: NextRequest, { params }: Ctx) => {
     offset,
   });
 
-  const tags = await getTagsByPlan(rows.map((r) => r.id));
+  const rate = rateMode.parse(searchParams.get("rate") ?? undefined);
+  const [tags, converted] = await Promise.all([
+    getTagsByPlan(rows.map((r) => r.id)),
+    convertPlanTotals(rows, session.user.id, rate),
+  ]);
   return paginated(
-    rows.map((r) => serializeInstallmentPlan(r, tags.get(r.id.toLowerCase()) ?? [])),
+    rows.map((r, i) => serializeInstallmentPlan(r, tags.get(r.id.toLowerCase()) ?? [], undefined, converted[i])),
     { page, perPage, total },
   );
 });
@@ -64,9 +70,9 @@ export const POST = withErrors(async (request: NextRequest, { params }: Ctx) => 
   });
   if (!row) throw new ApiError("INTERNAL_ERROR");
 
-  const tags = await getTagsByPlan([row.id]);
+  const [tags, [converted]] = await Promise.all([getTagsByPlan([row.id]), convertPlanTotals([row], session.user.id)]);
   return created(
-    serializeInstallmentPlan(row, tags.get(row.id.toLowerCase()) ?? []),
+    serializeInstallmentPlan(row, tags.get(row.id.toLowerCase()) ?? [], undefined, converted),
     `/api/v1/dashboards/${dashboardId}/installment-plans/${row.id}`,
   );
 });

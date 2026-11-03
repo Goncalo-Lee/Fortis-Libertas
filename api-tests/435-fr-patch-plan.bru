@@ -21,4 +21,6 @@ body:json {
 assert {
   res.status: eq 200
   res.body.data.installment_plan_id: eq {{frPlan}}
+  res.body.data.category_id: eq {{frCat}}
+  res.body.data.tags.length: eq 1
 }

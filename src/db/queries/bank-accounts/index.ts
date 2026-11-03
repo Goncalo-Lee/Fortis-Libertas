@@ -4,4 +4,5 @@
  */
 export * from "./read";
 export * from "./write";
+export * from "./balance";
 export * from "./type";

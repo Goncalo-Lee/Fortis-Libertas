@@ -475,6 +475,7 @@ A dashboard is the multi-tenant workspace that contains record types, categories
 | `PATCH` | `/dashboards/{dashboard_id}` | Rename, activate, or deactivate | `owner` | `200` | `401`, `404`, `422` |
 | `DELETE` | `/dashboards/{dashboard_id}` | Soft-delete a dashboard | `owner` | `204` | `401`, `404` |
 | `POST` | `/dashboards/{dashboard_id}/restore` | Restore a soft-deleted dashboard | `owner` | `200` | `401`, `404`, `409` |
+| `GET` | `/dashboards/{dashboard_id}/balance` | Balance of the dashboard: `{ balance, currency }`. Net of its paid or settled records (`income` adds, `expense` subtracts, `neutral` ignored), converted into `?currency=` (default `Profile.currency`; `422` if unsupported) | `viewer` | `200` | `401`, `404`, `422` |
 
 ### 8.2 Representation
 
@@ -875,10 +876,10 @@ All paths are relative to `/dashboards/{dashboard_id}`.
 
 | Field | Type | Required | Constraints | Notes |
 | :--- | :--- | :-: | :--- | :--- |
-| `record_type_id` | uuid | `POST`: Yes | Same dashboard, non-deleted | |
-| `category_id` | uuid | `POST`: Yes | Same dashboard, non-deleted | Must be linked to `record_type_id` (`422` otherwise). On `PATCH`, the resulting pair must still be valid. |
+| `record_type_id` | uuid | `POST`: Cond. | Same dashboard, non-deleted | Required unless `installment_plan_id` is set. In a plan it is the plan's record type: if sent, it must match (`422`). |
+| `category_id` | uuid | `POST`: Cond. | Same dashboard, non-deleted | Required unless `installment_plan_id` is set. Must be linked to `record_type_id` (`422` otherwise). In a plan it is the plan's category: if sent, it must match (`422`). On `PATCH`, the resulting pair must still be valid. |
 | `payment_method_id` | uuid | `POST`: Yes | Same dashboard, non-deleted | |
-| `installment_plan_id` | uuid \| null | No | Same dashboard, non-deleted | `null` for one-off transactions. |
+| `installment_plan_id` | uuid \| null | No | Same dashboard, non-deleted | `null` for one-off transactions. A record of a plan inherits the plan's record type and category, and the plan's tags are added to its own (`tag_ids`) when it is created or attached with `PATCH`; later changes to the plan's tags do not propagate. A cancelled plan returns `409 PLAN_CANCELLED`. |
 | `name` | string | `POST`: Yes | 1–50 chars | |
 | `description` | string \| null | No | | |
 | `price` | decimal string | `POST`: Yes | `> 0`, `^\d{1,8}(\.\d{1,2})?$` | |

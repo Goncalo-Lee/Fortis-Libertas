@@ -12,6 +12,8 @@ import { ApiError, withErrors } from "@/lib/api/errors";
 import { parseUuid } from "@/lib/api/ids";
 import { noContent, ok } from "@/lib/api/responses";
 import { deleteInstallmentPlanQuery, updateInstallmentPlanSchema } from "@/lib/api/schemas/installment-plan";
+import { convertPlanTotals } from "@/lib/api/installment-plan-response";
+import { rateMode } from "@/lib/api/schemas/financial-record";
 import { serializeInstallmentPlan } from "@/lib/api/serializers/installment-plan";
 
 export const runtime = "nodejs";
@@ -25,18 +27,23 @@ async function ids({ params }: Ctx) {
 
 export const GET = withErrors(async (request: NextRequest, ctx: Ctx) => {
   const { dashboardId, id } = await ids(ctx);
-  await requireDashboardRole(request, dashboardId, "viewer");
+  const { session } = await requireDashboardRole(request, dashboardId, "viewer");
 
   const row = await getInstallmentPlan(dashboardId, id);
   if (!row) throw new ApiError("NOT_FOUND");
 
-  const [tags, progress] = await Promise.all([getTagsByPlan([id]), getPlanProgress(id)]);
-  return ok(serializeInstallmentPlan(row, tags.get(id) ?? [], progress));
+  const rate = rateMode.parse(request.nextUrl.searchParams.get("rate") ?? undefined);
+  const [tags, progress, [converted]] = await Promise.all([
+    getTagsByPlan([id]),
+    getPlanProgress(id),
+    convertPlanTotals([row], session.user.id, rate),
+  ]);
+  return ok(serializeInstallmentPlan(row, tags.get(id) ?? [], progress, converted));
 });
 
 export const PATCH = withErrors(async (request: NextRequest, ctx: Ctx) => {
   const { dashboardId, id } = await ids(ctx);
-  await requireDashboardRole(request, dashboardId, "editor");
+  const { session } = await requireDashboardRole(request, dashboardId, "editor");
   const input = await parseJson(request, updateInstallmentPlanSchema);
 
   const row = await updateInstallmentPlan(dashboardId, id, {
@@ -51,8 +58,12 @@ export const PATCH = withErrors(async (request: NextRequest, ctx: Ctx) => {
   });
   if (!row) throw new ApiError("NOT_FOUND");
 
-  const [tags, progress] = await Promise.all([getTagsByPlan([id]), getPlanProgress(id)]);
-  return ok(serializeInstallmentPlan(row, tags.get(id) ?? [], progress));
+  const [tags, progress, [converted]] = await Promise.all([
+    getTagsByPlan([id]),
+    getPlanProgress(id),
+    convertPlanTotals([row], session.user.id),
+  ]);
+  return ok(serializeInstallmentPlan(row, tags.get(id) ?? [], progress, converted));
 });
 
 /** DELETE: 409 `IN_USE` while records are linked; `?detach_records=true` unlinks them first. */

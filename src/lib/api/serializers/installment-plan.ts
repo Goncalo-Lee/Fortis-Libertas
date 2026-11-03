@@ -1,14 +1,15 @@
 import type { InstallmentPlanRow } from "@/db/queries/installment-plans";
+import type { Converted } from "@/lib/exchange";
 import { toIso } from "./common";
 
 type PlanTag = { id: string; name: string };
 type Progress = { recordsCount: number; recordsTotal: string };
 
 /**
- * Serializes a plan. `converted` is not included yet (it needs the exchange rate client).
+ * Serializes a plan. `converted` is `total_amount` in the caller's currency (see `convertPlanTotals`).
  * `progress` is only passed by the detail endpoint.
  */
-export function serializeInstallmentPlan(row: InstallmentPlanRow, tags: PlanTag[], progress?: Progress) {
+export function serializeInstallmentPlan(row: InstallmentPlanRow, tags: PlanTag[], progress?: Progress, converted: Converted | null = null) {
   return {
     installment_plan_id: row.id,
     dashboard_id: row.dashboardId,
@@ -20,6 +21,7 @@ export function serializeInstallmentPlan(row: InstallmentPlanRow, tags: PlanTag[
     currency: row.currency,
     tags: tags.map((t) => ({ tag_id: t.id, name: t.name })),
     total_amount: String(row.totalAmount),
+    converted,
     total_installments: row.totalInstallments,
     due_date: row.dueDate,
     status: row.status,

@@ -1,5 +1,7 @@
-import { and, count, desc, asc, eq, inArray, sql, isNotNull, isNull, like, or } from "drizzle-orm";
-import { financialRecord, recordType, dashboard, userDashboard, user } from "@/db/schema";
+import { and, count, desc, asc, eq, inArray, ne, sql, isNotNull, isNull, like, or } from "drizzle-orm";
+import { currency, financialRecord, recordType, dashboard, userDashboard, user } from "@/db/schema";
+import { convertAmount, todayUtc } from "@/lib/exchange";
+import { addDecimal } from "@/lib/exchange/decimal";
 import { ListFiltersDashboards } from "./type";
 import { db } from "@/db"; // Ajusta o caminho
 
@@ -198,31 +200,48 @@ export async function listDashboards(userId: string, f: ListFiltersDashboards) {
   return { rows, total: totalRow?.total ?? 0 };
 }
 
-export async function getDashboardCurrentBalance(dashId: string) {
-  // Balance of the dashboard = net of its own financial records (income minus expense).
-  // Bank accounts are independent of dashboards, so their initial balances do not belong here.
-  // Only money that really moved counts (paid, settled). TODO: convert records to one currency.
-  const [transactionsResult] = await db
-      .select({
-        netTransactions: sql<number>`
-                COALESCE(SUM(
-                    CASE ${recordType.kind}
-                        WHEN 'income' THEN ${financialRecord.price}
-                        WHEN 'expense' THEN -${financialRecord.price}
-                        ELSE 0
-                    END
-                ), 0)
-            `.as("net_transactions")
-      })
-      .from(financialRecord)
-      .innerJoin(recordType, eq(financialRecord.recordTypeId, recordType.id))
-      .where(
-        and(
-          eq(financialRecord.dashboardId, dashId),
-          isNull(financialRecord.deletedAt),
-          inArray(financialRecord.status, ["paid", "settled"]),
-        ),
-      );
+/**
+ * Balance of a dashboard in `target` currency: the net of its own financial records (income minus expense) with
+ * status `paid` or `settled`. Bank accounts are independent of dashboards, so initial balances do not belong here.
+ *
+ * Amounts in other currencies are converted with the rate of the payment day (the latest rate for a day still
+ * ahead). A group of records whose rate is not available is left out rather than failing the request.
+ *
+ * @returns Decimal string, e.g. "-12.50"
+ */
+export async function getDashboardBalance(dashboardId: string, target: string) {
+  const day = sql<string>`DATE_FORMAT(${financialRecord.paymentDate}, '%Y-%m-%d')`;
+  const rows = await db
+    .select({
+      currency: currency.code,
+      kind: recordType.kind,
+      day,
+      total: sql<string>`SUM(${financialRecord.price})`,
+    })
+    .from(financialRecord)
+    .innerJoin(recordType, eq(financialRecord.recordTypeId, recordType.id))
+    .innerJoin(currency, eq(currency.id, financialRecord.currencyId))
+    .where(
+      and(
+        eq(financialRecord.dashboardId, dashboardId),
+        isNull(financialRecord.deletedAt),
+        inArray(financialRecord.status, ["paid", "settled"]),
+        ne(recordType.kind, "neutral"),
+      ),
+    )
+    .groupBy(currency.code, recordType.kind, day);
 
-  return Number(transactionsResult?.netTransactions || 0);
+  const today = todayUtc();
+  let balance = "0.00";
+  for (const row of rows) {
+    let amount: string | null = String(row.total);
+    if (row.currency !== target) {
+      const converted = await convertAmount(amount, row.currency, target, row.day >= today ? "current" : row.day);
+      amount = converted?.amount ?? null;
+    }
+    if (amount === null) continue;
+
+    balance = addDecimal(balance, row.kind === "expense" ? `-${amount}` : amount);
+  }
+  return balance;
 }

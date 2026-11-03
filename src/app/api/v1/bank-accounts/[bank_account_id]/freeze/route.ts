@@ -4,7 +4,7 @@ import { requireBankAccountRole } from "@/lib/api/access";
 import { ApiError, withErrors } from "@/lib/api/errors";
 import { parseUuid } from "@/lib/api/ids";
 import { ok } from "@/lib/api/responses";
-import { serializeBankAccount } from "@/lib/api/serializers/bank-account";
+import { presentBankAccount } from "@/lib/api/bank-account-response";
 
 export const runtime = "nodejs";
 
@@ -17,5 +17,5 @@ export const POST = withErrors(async (request: NextRequest, { params }: Ctx) => 
 
   const row = await setBankAccountFrozenState(id, session.user.id, true);
   if (!row) throw new ApiError("NOT_FOUND");
-  return ok(serializeBankAccount(row));
+  return ok(await presentBankAccount(row));
 });

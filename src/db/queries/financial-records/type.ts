@@ -42,8 +42,9 @@ export interface ListFiltersFinancialRecord {
 }
 
 export interface CreateFinancialRecordInput {
-  recordTypeId: string;
-  categoryId: string;
+  /** Optional only when `installmentPlanId` is set (inherited from the plan) */
+  recordTypeId?: string;
+  categoryId?: string;
   paymentMethodId: string;
   installmentPlanId?: string | null;
   name: string;

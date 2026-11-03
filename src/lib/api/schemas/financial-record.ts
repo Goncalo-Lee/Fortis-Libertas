@@ -18,9 +18,10 @@ const tagIds = z
   .transform((ids) => ids.map((id) => id.toLowerCase()))
   .refine((ids) => new Set(ids).size === ids.length, { message: "Tag ids must be distinct." });
 
-export const createFinancialRecordSchema = z.strictObject({
-  record_type_id: uuid,
-  category_id: uuid,
+export const createFinancialRecordSchema = z
+  .strictObject({
+  record_type_id: uuid.optional(),
+  category_id: uuid.optional(),
   payment_method_id: uuid,
   installment_plan_id: uuid.nullable().optional(),
   name,
@@ -30,7 +31,14 @@ export const createFinancialRecordSchema = z.strictObject({
   payment_date: dateTime,
   status,
   tag_ids: tagIds.optional(),
-});
+  })
+  // Without a plan the record type and category are required; with one they are inherited from it.
+  .superRefine((v, ctx) => {
+    if (v.installment_plan_id) return;
+    for (const key of ["record_type_id", "category_id"] as const) {
+      if (!v[key]) ctx.addIssue({ code: "custom", path: [key], message: "Required when there is no installment plan." });
+    }
+  });
 
 export const updateFinancialRecordSchema = z
   .strictObject({

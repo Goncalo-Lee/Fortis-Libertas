@@ -1,0 +1,23 @@
+meta {
+  name: Balances - expense pending (ignored)
+  type: http
+  seq: 476
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/financial-records
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"record_type_id": "{{fbRtExp}}", "category_id": "{{fbCat}}", "payment_method_id": "{{fbPm}}", "name": "Later", "price": "30", "payment_date": "2026-10-12T18:20:00.000Z", "status": "pending"}
+}
+
+assert {
+  res.status: eq 201
+}
