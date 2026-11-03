@@ -6,7 +6,7 @@ import { ApiError, withErrors } from "@/lib/api/errors";
 import { parsePagination } from "@/lib/api/pagination";
 import { created, paginated } from "@/lib/api/responses";
 import { createBankAccountSchema, listBankAccountsQuery } from "@/lib/api/schemas/bank-account";
-import { presentBankAccount, presentBankAccounts } from "@/lib/api/bank-account-response";
+import { presentBankAccount, presentBankAccounts } from "@/lib/api/response/bank-account";
 
 export const runtime = "nodejs";
 

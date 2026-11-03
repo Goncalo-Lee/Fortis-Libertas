@@ -11,7 +11,7 @@ import {
   listInstallmentPlansQuery,
   statusListSchema,
 } from "@/lib/api/schemas/installment-plan";
-import { convertPlanTotals } from "@/lib/api/installment-plan-response";
+import { convertPlanTotals } from "@/lib/api/response/installment-plan";
 import { rateMode } from "@/lib/api/schemas/financial-record";
 import { serializeInstallmentPlan } from "@/lib/api/serializers/installment-plan";
 

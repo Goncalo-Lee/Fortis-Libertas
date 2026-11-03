@@ -12,7 +12,7 @@ import { ApiError, withErrors } from "@/lib/api/errors";
 import { parseUuid } from "@/lib/api/ids";
 import { noContent, ok } from "@/lib/api/responses";
 import { deleteInstallmentPlanQuery, updateInstallmentPlanSchema } from "@/lib/api/schemas/installment-plan";
-import { convertPlanTotals } from "@/lib/api/installment-plan-response";
+import { convertPlanTotals } from "@/lib/api/response/installment-plan";
 import { rateMode } from "@/lib/api/schemas/financial-record";
 import { serializeInstallmentPlan } from "@/lib/api/serializers/installment-plan";
 

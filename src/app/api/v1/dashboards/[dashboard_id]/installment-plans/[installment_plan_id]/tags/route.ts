@@ -6,7 +6,7 @@ import { ApiError, withErrors } from "@/lib/api/errors";
 import { parseUuid } from "@/lib/api/ids";
 import { ok } from "@/lib/api/responses";
 import { setPlanTagsSchema } from "@/lib/api/schemas/installment-plan";
-import { convertPlanTotals } from "@/lib/api/installment-plan-response";
+import { convertPlanTotals } from "@/lib/api/response/installment-plan";
 import { serializeInstallmentPlan } from "@/lib/api/serializers/installment-plan";
 
 export const runtime = "nodejs";

@@ -4,7 +4,7 @@ import { requireBankAccountRole } from "@/lib/api/access";
 import { ApiError, withErrors } from "@/lib/api/errors";
 import { parseUuid } from "@/lib/api/ids";
 import { ok } from "@/lib/api/responses";
-import { presentBankAccount } from "@/lib/api/bank-account-response";
+import { presentBankAccount } from "@/lib/api/response/bank-account";
 
 export const runtime = "nodejs";
 

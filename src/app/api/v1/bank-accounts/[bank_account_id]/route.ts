@@ -6,7 +6,7 @@ import { ApiError, withErrors } from "@/lib/api/errors";
 import { parseUuid } from "@/lib/api/ids";
 import { noContent, ok } from "@/lib/api/responses";
 import { updateBankAccountSchema } from "@/lib/api/schemas/bank-account";
-import { presentBankAccount } from "@/lib/api/bank-account-response";
+import { presentBankAccount } from "@/lib/api/response/bank-account";
 
 export const runtime = "nodejs";
 
