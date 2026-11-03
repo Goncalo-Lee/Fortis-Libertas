@@ -1,0 +1,23 @@
+meta {
+  name: Exchange rates - latest USD to EUR
+  type: http
+  seq: 527
+}
+
+get {
+  url: {{baseUrl}}/api/v1/exchange-rates?base=USD&quote=EUR
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.base: eq USD
+  res.body.data.quote: eq EUR
+  res.body.data.rate: matches ^[0-9]+(\.[0-9]+)?$
+  res.body.data.rate_date: matches ^\d{4}-\d{2}-\d{2}$
+}
