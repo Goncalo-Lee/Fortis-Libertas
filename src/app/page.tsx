@@ -3,16 +3,11 @@ import React from 'react';
 
 import Link from 'next/link';
 
-import { authClient } from '@/lib/auth-client'; // Ajusta este caminho se o teu auth-client estiver noutra pasta
+import { authClient } from '@/lib/auth-client';
 
 
 
 export default function Home() {
-
-
-
-// Função para fazer o login automático de Admin
-
     const handleFastAdminLogin = async () => {
 
         await authClient.signIn.email({
@@ -24,7 +19,7 @@ export default function Home() {
 
             onSuccess: () => {
 
-                window.location.href = "/dashboard"; // Redireciona para a dashboard após sucesso
+                window.location.href = "/admin/dashboard";
 
             },
 

@@ -1,6 +1,5 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -8,7 +7,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import {CirclePlusIcon, LayoutDashboardIcon, MailIcon} from "lucide-react"
+import {LayoutDashboardIcon } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -21,7 +20,7 @@ export function NavMain({
     icon?: React.ReactNode
   }[]
 }) {
-  const pathname = usePathname() // 2. Obtém o URL atual
+  const pathname = usePathname()
 
   return (
       <SidebarGroup>
@@ -38,10 +37,8 @@ export function NavMain({
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
-
           <SidebarMenu>
             {items.map((item) => {
-              // 3. Compara o URL do item com o URL onde o utilizador está
               const isActive = pathname === item.url
 
               return (
@@ -49,7 +46,7 @@ export function NavMain({
                     <SidebarMenuButton
                         tooltip={item.title}
                         render={<Link href={item.url} />}
-                        isActive={isActive} // 4. Passa a prop para o shadcn!
+                        isActive={isActive}
                     >
                       {item.icon}
                       <span>{item.title}</span>
