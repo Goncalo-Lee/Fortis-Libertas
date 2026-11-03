@@ -1,0 +1,27 @@
+meta {
+  name: Financial records - setup category
+  type: http
+  seq: 385
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Gadgets", "color_id": "{{color1}}", "icon_id": "{{icon1}}", "record_type_ids": ["{{frRt}}"] }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("frCat", res.body.data.category_id);
+}
+
+assert {
+  res.status: eq 201
+}

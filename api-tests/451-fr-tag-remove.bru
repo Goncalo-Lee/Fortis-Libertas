@@ -1,0 +1,19 @@
+meta {
+  name: Financial records - remove one tag
+  type: http
+  seq: 451
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records/{{frId}}/tags/{{frTagB}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 204
+}

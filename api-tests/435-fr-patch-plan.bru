@@ -1,0 +1,24 @@
+meta {
+  name: Financial records - attach to plan
+  type: http
+  seq: 435
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records/{{frId2}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"installment_plan_id": "{{frPlan}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.installment_plan_id: eq {{frPlan}}
+}

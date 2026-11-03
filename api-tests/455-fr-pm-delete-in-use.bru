@@ -1,0 +1,20 @@
+meta {
+  name: Financial records - payment method in use cannot be deleted
+  type: http
+  seq: 455
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/payment-methods/{{frPm}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 409
+  res.body.code: eq IN_USE
+}

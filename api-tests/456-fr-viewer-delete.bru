@@ -1,0 +1,19 @@
+meta {
+  name: Financial records - viewer cannot delete
+  type: http
+  seq: 456
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records/{{frId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 403
+}

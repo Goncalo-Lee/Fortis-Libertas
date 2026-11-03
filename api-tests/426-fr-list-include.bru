@@ -1,0 +1,21 @@
+meta {
+  name: Financial records - include summaries
+  type: http
+  seq: 426
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records?include=record_type,category,payment_method&per_page=1
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data[0].category.name: eq Gadgets
+  res.body.data[0].record_type.record_type_id: isString
+}

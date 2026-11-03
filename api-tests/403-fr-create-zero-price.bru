@@ -1,0 +1,23 @@
+meta {
+  name: Financial records - create zero price
+  type: http
+  seq: 403
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"record_type_id": "{{frRt}}", "category_id": "{{frCat}}", "payment_method_id": "{{frPm}}", "name": "Laptop", "price": "0", "payment_date": "2026-10-12T18:20:00.000Z", "status": "paid"}
+}
+
+assert {
+  res.status: eq 422
+}

@@ -1,46 +1,37 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import {
-    linkTagToFinancialRecord,
-    unlinkTagFromFinancialRecord
-} from "@/db/queries/financial-records/write";
+import type { NextRequest } from "next/server";
+import { addFinancialRecordTag, removeFinancialRecordTag } from "@/db/queries/financial-records";
+import { requireDashboardRole } from "@/lib/api/access";
+import { ApiError, withErrors } from "@/lib/api/errors";
+import { parseUuid } from "@/lib/api/ids";
+import { noContent } from "@/lib/api/responses";
 
-interface RouteContext {
-    params: Promise<{
-        dashboard_id: string;
-        financial_record_id: string;
-        tag_id: string;
-    }>;
+export const runtime = "nodejs";
+
+type Ctx = { params: Promise<{ dashboard_id: string; financial_record_id: string; tag_id: string }> };
+
+async function ids({ params }: Ctx) {
+  const p = await params;
+  return {
+    dashboardId: parseUuid(p.dashboard_id),
+    id: parseUuid(p.financial_record_id),
+    tagId: parseUuid(p.tag_id),
+  };
 }
 
-export async function POST(request: NextRequest, context: RouteContext) {
-    try {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user?.id) {
-            return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
-        }
+/** POST: adds one tag (idempotent). 404 if the record or the tag does not exist in the dashboard. */
+export const POST = withErrors(async (request: NextRequest, ctx: Ctx) => {
+  const { dashboardId, id, tagId } = await ids(ctx);
+  await requireDashboardRole(request, dashboardId, "editor");
 
-        const { dashboard_id, financial_record_id, tag_id } = await context.params;
-        await linkTagToFinancialRecord(dashboard_id, financial_record_id, tag_id);
+  if ((await addFinancialRecordTag(dashboardId, id, tagId)) !== "ok") throw new ApiError("NOT_FOUND");
+  return noContent();
+});
 
-        return new NextResponse(null, { status: 204 });
-    } catch (error) {
-        return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
-    }
-}
+/** DELETE: removes one tag (no error if it was not linked). */
+export const DELETE = withErrors(async (request: NextRequest, ctx: Ctx) => {
+  const { dashboardId, id, tagId } = await ids(ctx);
+  await requireDashboardRole(request, dashboardId, "editor");
 
-export async function DELETE(request: NextRequest, context: RouteContext) {
-    try {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user?.id) {
-            return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
-        }
-
-        const { dashboard_id, financial_record_id, tag_id } = await context.params;
-        await unlinkTagFromFinancialRecord(dashboard_id, financial_record_id, tag_id);
-
-        return new NextResponse(null, { status: 204 });
-    } catch (error) {
-        return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
-    }
-}
+  if (!(await removeFinancialRecordTag(dashboardId, id, tagId))) throw new ApiError("NOT_FOUND");
+  return noContent();
+});

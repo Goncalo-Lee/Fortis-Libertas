@@ -1,0 +1,19 @@
+meta {
+  name: Financial records - delete again
+  type: http
+  seq: 458
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records/{{frId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 404
+}
