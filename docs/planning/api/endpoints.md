@@ -248,7 +248,7 @@ Operations on the authenticated user's own data: `User`, `Profile`, `Session`, a
 
 ### 3.8 Business Rules
 
-- `DELETE /me` returns `409 LAST_OWNER` if the user is the only `owner` of a dashboard that still has other active members. Transfer ownership first (see [9.3](#93-business-rules)).
+- `DELETE /me` returns `409 LAST_OWNER` if the user is the only `owner` of a dashboard or bank account that still has other active members. Transfer ownership first (see [9.3](#93-business-rules) and [6.4](#64-business-rules)).
 - `DELETE /me` sets `User.deleted_at` and physically removes all `Session` rows for the user.
 
 ---

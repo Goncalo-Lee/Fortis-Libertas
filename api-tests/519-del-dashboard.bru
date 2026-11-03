@@ -1,0 +1,27 @@
+meta {
+  name: Delete me - third user creates a dashboard
+  type: http
+  seq: 519
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token3}}
+}
+
+body:json {
+  { "name": "To-Be-Orphaned" }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("dashboard3", res.body.data.dashboard_id);
+}
+
+assert {
+  res.status: eq 201
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Sessions - sign out everywhere else
+  type: http
+  seq: 514
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/me/sessions
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 204
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Delete me - account kept after 409
+  type: http
+  seq: 522
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token3}}
+}
+
+assert {
+  res.status: eq 200
+}
