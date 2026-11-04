@@ -7,6 +7,7 @@ import { DEFAULT_CURRENCY, requireCurrencyId } from "../catalogs";
 import { assertTagsInDashboard } from "../categories/relations";
 import { getOrCreateProfile } from "../me/read";
 import { inDashboard } from "../utils";
+import { syncInstallmentPlanTransaction } from "../transactions/write";
 import { getExpensesRecordTypeId, getInstallmentPlan } from "./read";
 import type { CreateInstallmentPlanInput, UpdateInstallmentPlanInput } from "./type";
 
@@ -93,6 +94,9 @@ export async function createInstallmentPlan(dashboardId: string, userId: string,
     if (tagIds.length > 0) {
       await tx.insert(tagInstallmentPlan).values(tagIds.map((tagId) => ({ tagId, installmentPlanId: id })));
     }
+
+    // History entry of the new plan (endpoints.md, section 20.4).
+    await syncInstallmentPlanTransaction(tx, id);
   });
 
   return getInstallmentPlan(dashboardId, id);
@@ -129,10 +133,14 @@ export async function updateInstallmentPlan(dashboardId: string, id: string, cha
   }
 
   if (Object.keys(set).length > 0) {
-    await db
-      .update(installmentPlan)
-      .set({ ...set, updatedAt: new Date() })
-      .where(inDashboard(installmentPlan, dashboardId, id));
+    // The plan and its history snapshot are updated in one transaction.
+    await db.transaction(async (tx) => {
+      await tx
+        .update(installmentPlan)
+        .set({ ...set, updatedAt: new Date() })
+        .where(inDashboard(installmentPlan, dashboardId, id));
+      await syncInstallmentPlanTransaction(tx, id);
+    });
   }
 
   return getInstallmentPlan(dashboardId, id);
@@ -194,5 +202,8 @@ export async function softDeleteInstallmentPlan(dashboardId: string, id: string,
       .update(installmentPlan)
       .set({ deletedAt: new Date(), updatedAt: new Date() })
       .where(inDashboard(installmentPlan, dashboardId, id));
+
+    // The plan's history entry is kept with the same `deleted_at`.
+    await syncInstallmentPlanTransaction(tx, id);
   });
 }

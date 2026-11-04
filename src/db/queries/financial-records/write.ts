@@ -17,6 +17,7 @@ import { DEFAULT_CURRENCY, requireCurrencyId } from "../catalogs";
 import { assertTagsInDashboard } from "../categories/relations";
 import { getOrCreateProfile } from "../me/read";
 import { inDashboard } from "../utils";
+import { syncFinancialRecordTransaction } from "../transactions/write";
 import { getFinancialRecord } from "./read";
 import type { CreateFinancialRecordInput, UpdateFinancialRecordInput } from "./type";
 
@@ -180,6 +181,9 @@ export async function createFinancialRecord(dashboardId: string, userId: string,
     if (tagIds.length > 0) {
       await tx.insert(tagFinancialRecord).values(tagIds.map((tagId) => ({ tagId, recordId: id })));
     }
+
+    // History entry of the new record (endpoints.md, section 20.4).
+    await syncFinancialRecordTransaction(tx, id);
   });
 
   return getFinancialRecord(dashboardId, id);
@@ -229,24 +233,33 @@ export async function updateFinancialRecord(dashboardId: string, id: string, cha
   if (changes.paymentDate !== undefined) set.paymentDate = changes.paymentDate;
   if (changes.status !== undefined) set.status = changes.status;
 
-  if (Object.keys(set).length > 0) {
-    await db
-      .update(financialRecord)
-      .set({ ...set, updatedAt: new Date() })
-      .where(inDashboard(financialRecord, dashboardId, id));
-  }
+  // One transaction: the record, the inherited tags and the history snapshot are saved together or not at all.
+  await db.transaction(async (tx) => {
+    if (Object.keys(set).length > 0) {
+      await tx
+        .update(financialRecord)
+        .set({ ...set, updatedAt: new Date() })
+        .where(inDashboard(financialRecord, dashboardId, id));
 
-  if (attaching && plan.tagIds.length > 0) {
-    await db
-      .insert(tagFinancialRecord)
-      .values(plan.tagIds.map((tagId) => ({ tagId, recordId: id })))
-      .onDuplicateKeyUpdate({ set: { recordId: id } });
-  }
+      // Refresh the snapshot (name, amount, currency, date, record type) with the record's new values.
+      await syncFinancialRecordTransaction(tx, id);
+    }
+
+    if (attaching && plan.tagIds.length > 0) {
+      await tx
+        .insert(tagFinancialRecord)
+        .values(plan.tagIds.map((tagId) => ({ tagId, recordId: id })))
+        .onDuplicateKeyUpdate({ set: { recordId: id } });
+    }
+  });
 
   return getFinancialRecord(dashboardId, id);
 }
 
-/** Soft-deletes a record; its `Tag__Financial_Record` rows are removed physically. */
+/**
+ * Soft-deletes a record; its `Tag__Financial_Record` rows are removed physically.
+ * Its history entry is kept and gets the same `deleted_at`.
+ */
 export async function softDeleteFinancialRecord(dashboardId: string, id: string) {
   await db.transaction(async (tx) => {
     await tx.delete(tagFinancialRecord).where(eq(tagFinancialRecord.recordId, id));
@@ -254,6 +267,8 @@ export async function softDeleteFinancialRecord(dashboardId: string, id: string)
       .update(financialRecord)
       .set({ deletedAt: new Date(), updatedAt: new Date() })
       .where(inDashboard(financialRecord, dashboardId, id));
+
+    await syncFinancialRecordTransaction(tx, id);
   });
 }
 

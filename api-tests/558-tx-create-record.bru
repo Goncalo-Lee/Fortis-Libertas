@@ -1,0 +1,27 @@
+meta {
+  name: Transactions - creating a record writes an entry
+  type: http
+  seq: 558
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/financial-records
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"record_type_id": "{{fbRtExp}}", "category_id": "{{fbCat}}", "payment_method_id": "{{fbPm}}", "name": "History-Test", "price": "12.34", "payment_date": "2026-10-20T10:00:00.000Z", "status": "paid"}
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("histRec", res.body.data.financial_record_id);
+}
+
+assert {
+  res.status: eq 201
+}

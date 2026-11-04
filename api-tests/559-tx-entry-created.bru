@@ -1,0 +1,31 @@
+meta {
+  name: Transactions - entry of the new record
+  type: http
+  seq: 559
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/transactions?source_type=financial_record&per_page=100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("snapshot of the record", function () {
+    const t = res.body.data.find((t) => t.source_id === bru.getVar("histRec"));
+    expect(t).to.exist;
+    expect(t.name).to.equal("History-Test");
+    expect(t.amount).to.equal("12.34");
+    expect(t.occurred_at).to.equal("2026-10-20T10:00:00.000Z");
+    expect(t.user.user_id).to.equal(bru.getVar("userId"));
+    expect(t.deleted_at).to.equal(null);
+  });
+}

@@ -1215,6 +1215,9 @@ Financial history of the whole dashboard: movements of financial records, instal
 
 - There are no write endpoints. Every create, update and soft delete of a source row also writes its entry in the same database transaction: an update refreshes the snapshot, a soft delete sets `deleted_at`.
 - `source_id` has no foreign key, so entries never block the deletion of their source, and the history keeps the entries of deleted sources.
+- There is one entry per source (unique `source_type` + `source_id`). For a `financial_record`, `amount` is its `price` and `occurred_at` its `payment_date`; for an `installment_plan`, `amount` is its `total_amount` and `occurred_at` its `due_date` at `00:00:00Z`.
+- `user` is who registered the source and never changes on updates.
+- Entries of rows saved before the history existed are created with `bun run db:backfill:transactions`.
 - Entries are removed only when the dashboard is purged.
 
 ---
