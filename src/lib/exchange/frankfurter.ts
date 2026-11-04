@@ -4,7 +4,9 @@
  */
 
 const BASE_URL = process.env.EXCHANGE_RATE_API_URL ?? "https://api.frankfurter.dev/v1";
-const TIMEOUT_MS = 4000;
+// How long to wait for the provider. Historical dates can be slower than `latest`, so the default is generous;
+// set EXCHANGE_RATE_TIMEOUT_MS in .env to change it.
+const TIMEOUT_MS = Number(process.env.EXCHANGE_RATE_TIMEOUT_MS) || 10_000;
 
 /**
  * Fetches the rate to convert one unit of `base` into `quote`.
