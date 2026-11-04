@@ -6,8 +6,8 @@ import type { Role } from "./type";
 ======== */
 
 /** Adds a member to a dashboard, or reactivates a removed one. `ALREADY_MEMBER` if already active. */
-export const addMember = (dashboardId: string, userId: string, role: Role) =>
-  memberships.addMember(memberships.dashboardMembership, dashboardId, userId, role);
+export const addMember = (dashboardId: string, userId: string, role: Role, addedBy: string) =>
+  memberships.addMember(memberships.dashboardMembership, dashboardId, userId, role, addedBy);
 
 /** Changes a member's role. `NOT_FOUND` if not a member, `LAST_OWNER` if it would demote the last owner. */
 export const changeMemberRole = (dashboardId: string, userId: string, role: Role) =>

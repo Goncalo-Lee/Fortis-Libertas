@@ -1,0 +1,20 @@
+meta {
+  name: Notifications - mark all as read
+  type: http
+  seq: 550
+}
+
+post {
+  url: {{baseUrl}}/api/v1/me/notifications/read-all
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.updated: gte 1
+}

@@ -297,6 +297,17 @@ Notifications are created server-side only. There is no public `POST`.
 `GET /me/notifications/unread-count` → `{ "data": { "unread": 3 } }`
 `POST /me/notifications/read-all` → `{ "data": { "updated": 3 } }`
 
+### 4.5 Notification Types
+
+Created in the same database transaction as the change that triggers them, so a rolled-back change never notifies anyone.
+
+| `type` | Sent to | `data` |
+| :--- | :--- | :--- |
+| `dashboard.member_added` | The user added to (or re-added to) a dashboard | `{ dashboard_id, role, added_by }` |
+| `bank_account.member_added` | The user added to (or re-added to) a bank account | `{ bank_account_id, role, added_by }` |
+
+`added_by` is the `user_id` of the owner who made the request.
+
 ---
 
 ## 5. Bank Accounts

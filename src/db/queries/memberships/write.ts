@@ -4,6 +4,7 @@ import { db } from "../..";
 import type { Role } from "../type";
 import { activeMember } from "./read";
 import { Membership, Tx } from "./type";
+import { createNotification } from "../notifications/write";
 
 /* =======
   WRITE
@@ -25,9 +26,13 @@ async function lockOwners(tx: Tx, m: Membership, scopeId: string) {
  * Adds a member. If the user was removed before, the row is reactivated with the new role,
  * because `(scope, user)` is the primary key.
  *
+ * The new member is notified in the same transaction (`dashboard.member_added` / `bank_account.member_added`),
+ * so the notification exists only if the membership was really saved.
+ *
+ * @param addedBy - The user who made the request, stored in the notification as `added_by`
  * @throws {ApiError} `ALREADY_MEMBER` when the user is an active member
  */
-export async function addMember(m: Membership, scopeId: string, userId: string, role: Role) {
+export async function addMember(m: Membership, scopeId: string, userId: string, role: Role, addedBy: string) {
   await db.transaction(async (tx) => {
     const [existing] = await tx
       .select({ deletedAt: m.table.deletedAt })
@@ -46,6 +51,9 @@ export async function addMember(m: Membership, scopeId: string, userId: string, 
     } else {
       await tx.insert(m.table).values({ [m.scopeKey]: scopeId, userId, role } as never);
     }
+
+    const { type, scopeField } = m.addedNotification;
+    await createNotification(tx, userId, type, { [scopeField]: scopeId, role, added_by: addedBy });
   });
 }
 

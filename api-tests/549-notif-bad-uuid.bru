@@ -1,0 +1,23 @@
+meta {
+  name: Notifications - bad uuid
+  type: http
+  seq: 549
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/me/notifications/not-a-uuid
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  { "read": true }
+}
+
+assert {
+  res.status: eq 400
+}

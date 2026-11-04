@@ -46,16 +46,20 @@ export interface Membership {
   scopeId: MySqlColumn;
   /** Property name of the scope column in the table (used to insert a new row). */
   scopeKey: "dashboardId" | "bankId";
+  /** Notification sent to a user added to the scope, and the key of the scope id inside its `data`. */
+  addedNotification: { type: "dashboard.member_added" | "bank_account.member_added"; scopeField: string };
 }
 
 export const dashboardMembership: Membership = {
   table: userDashboard,
   scopeId: userDashboard.dashboardId,
   scopeKey: "dashboardId",
+  addedNotification: { type: "dashboard.member_added", scopeField: "dashboard_id" },
 };
 
 export const bankAccountMembership: Membership = {
   table: bankAccountUser,
   scopeId: bankAccountUser.bankId,
   scopeKey: "bankId",
+  addedNotification: { type: "bank_account.member_added", scopeField: "bank_account_id" },
 };

@@ -33,7 +33,7 @@ export async function addBankAccountMember(
 
   if (!target) throw new ApiError("NOT_FOUND");
 
-  await memberships.addMember(memberships.bankAccountMembership, bankAccountId, target.id, input.role);
+  await memberships.addMember(memberships.bankAccountMembership, bankAccountId, target.id, input.role, callerUserId);
 
   return { userId: target.id, role: input.role };
 }

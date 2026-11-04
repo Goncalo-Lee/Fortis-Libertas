@@ -1,0 +1,25 @@
+meta {
+  name: Notifications - filter by type
+  type: http
+  seq: 540
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me/notifications?type=bank_account.member_added
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("only that type", function () {
+    res.body.data.forEach((n) => expect(n.type).to.equal("bank_account.member_added"));
+  });
+}

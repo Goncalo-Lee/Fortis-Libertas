@@ -76,7 +76,7 @@ export const POST = withErrors(async (request: NextRequest, { params }: Ctx) => 
   //    NOTE: unlike PATCH/DELETE on the dashboard itself, this does NOT pass
   //    requireActive: false. So inviting to an inactive dashboard is blocked
   //    with 409 DASHBOARD_INACTIVE. (See consideration below.)
-  await requireDashboardRole(request, dashboardId, "owner");
+  const { session } = await requireDashboardRole(request, dashboardId, "owner");
 
   // 3. Validate body — exactly one identifier + role
   const input = await parseJson(request, addMemberSchema);
@@ -106,7 +106,7 @@ export const POST = withErrors(async (request: NextRequest, { params }: Ctx) => 
   };
 
   // 6. Add (or reactivate) the membership — transactional, handles ALREADY_MEMBER
-  await addMember(dashboardId, targetUser.id, input.role);
+  await addMember(dashboardId, targetUser.id, input.role, session.user.id);
 
   // 7. Read back the created membership (with joined user data) for the response.
   const member = await getMember(dashboardId, targetUser.id);
