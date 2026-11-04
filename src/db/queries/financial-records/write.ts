@@ -1,3 +1,4 @@
+import { changedFields, logDashboardActivity } from "../activity-logs/write";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import {
@@ -184,6 +185,9 @@ export async function createFinancialRecord(dashboardId: string, userId: string,
 
     // History entry of the new record (endpoints.md, section 20.4).
     await syncFinancialRecordTransaction(tx, id);
+    await logDashboardActivity(tx, dashboardId, {
+      entityType: "financial_record", entityId: id, action: "created", metadata: { name: input.name },
+    });
   });
 
   return getFinancialRecord(dashboardId, id);
@@ -243,6 +247,9 @@ export async function updateFinancialRecord(dashboardId: string, id: string, cha
 
       // Refresh the snapshot (name, amount, currency, date, record type) with the record's new values.
       await syncFinancialRecordTransaction(tx, id);
+      await logDashboardActivity(tx, dashboardId, {
+        entityType: "financial_record", entityId: id, action: "updated", metadata: { fields: changedFields(set) },
+      });
     }
 
     if (attaching && plan.tagIds.length > 0) {
@@ -269,6 +276,7 @@ export async function softDeleteFinancialRecord(dashboardId: string, id: string)
       .where(inDashboard(financialRecord, dashboardId, id));
 
     await syncFinancialRecordTransaction(tx, id);
+    await logDashboardActivity(tx, dashboardId, { entityType: "financial_record", entityId: id, action: "deleted" });
   });
 }
 
@@ -302,6 +310,11 @@ export async function setFinancialRecordTags(dashboardId: string, id: string, ta
     if (toAdd.length > 0) {
       await tx.insert(tagFinancialRecord).values(toAdd.map((tagId) => ({ tagId, recordId: id })));
     }
+    if (toAdd.length > 0 || toRemove.length > 0) {
+      await logDashboardActivity(tx, dashboardId, {
+        entityType: "financial_record", entityId: id, action: "tags_changed", metadata: { added: toAdd, removed: toRemove },
+      });
+    }
   });
 
   return true;
@@ -322,7 +335,19 @@ export async function addFinancialRecordTag(dashboardId: string, id: string, tag
     .limit(1);
   if (!found) return "tag" as const;
 
-  await db.insert(tagFinancialRecord).values({ tagId, recordId: id }).onDuplicateKeyUpdate({ set: { tagId } });
+  await db.transaction(async (tx) => {
+    const [result] = await tx
+      .insert(tagFinancialRecord)
+      .values({ tagId, recordId: id })
+      .onDuplicateKeyUpdate({ set: { tagId } });
+
+    // MySQL reports 1 for a new row and 0 when the tag was already there (nothing to log).
+    if (result.affectedRows === 1) {
+      await logDashboardActivity(tx, dashboardId, {
+        entityType: "financial_record", entityId: id, action: "tags_changed", metadata: { added: [tagId], removed: [] },
+      });
+    }
+  });
   return "ok" as const;
 }
 
@@ -333,8 +358,16 @@ export async function addFinancialRecordTag(dashboardId: string, id: string, tag
  */
 export async function removeFinancialRecordTag(dashboardId: string, id: string, tagId: string) {
   if (!(await getFinancialRecord(dashboardId, id))) return false;
-  await db
-    .delete(tagFinancialRecord)
-    .where(and(eq(tagFinancialRecord.recordId, id), eq(tagFinancialRecord.tagId, tagId)));
+  await db.transaction(async (tx) => {
+    const [result] = await tx
+      .delete(tagFinancialRecord)
+      .where(and(eq(tagFinancialRecord.recordId, id), eq(tagFinancialRecord.tagId, tagId)));
+
+    if (result.affectedRows > 0) {
+      await logDashboardActivity(tx, dashboardId, {
+        entityType: "financial_record", entityId: id, action: "tags_changed", metadata: { added: [], removed: [tagId] },
+      });
+    }
+  });
   return true;
 }

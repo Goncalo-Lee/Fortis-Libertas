@@ -1,0 +1,19 @@
+meta {
+  name: Activity logs - period out of order
+  type: http
+  seq: 584
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/activity-logs?created_from=2026-12-01T00:00:00.000Z&created_to=2026-01-01T00:00:00.000Z
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 422
+}

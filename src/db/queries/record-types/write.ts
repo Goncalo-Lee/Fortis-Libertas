@@ -1,3 +1,4 @@
+import { changedFields, logDashboardActivity } from "../activity-logs/write";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "../..";
 import { financialRecord, installmentPlan, recordType, recordTypeCategory } from "../../schema";
@@ -40,14 +41,19 @@ export async function createRecordType(dashboardId: string, input: CreateRecordT
 
   const id = generateId();
   try {
-    await db.insert(recordType).values({
-      id,
-      dashboardId,
-      name: input.name,
-      description: input.description ?? null,
-      colorId: input.color_id,
-      iconId: input.icon_id,
-      kind: input.kind ?? "neutral",
+    await db.transaction(async (tx) => {
+      await tx.insert(recordType).values({
+        id,
+        dashboardId,
+        name: input.name,
+        description: input.description ?? null,
+        colorId: input.color_id,
+        iconId: input.icon_id,
+        kind: input.kind ?? "neutral",
+      });
+      await logDashboardActivity(tx, dashboardId, {
+        entityType: "record_type", entityId: id, action: "created", metadata: { name: input.name },
+      });
     });
   } catch (error) {
     if (await isColorTaken({ table: recordType, dashboardId, colorId: input.color_id, exceptId: id })) {
@@ -113,10 +119,15 @@ export async function updateRecordType(
 
   if (Object.keys(set).length > 0) {
     try {
-      await db
-        .update(recordType)
-        .set({ ...set, updatedAt: new Date() })
-        .where(inDashboard(recordType, dashboardId, id));
+      await db.transaction(async (tx) => {
+        await tx
+          .update(recordType)
+          .set({ ...set, updatedAt: new Date() })
+          .where(inDashboard(recordType, dashboardId, id));
+        await logDashboardActivity(tx, dashboardId, {
+          entityType: "record_type", entityId: id, action: "updated", metadata: { fields: changedFields(set) },
+        });
+      });
     } catch (error) {
       if (set.colorId !== undefined && (await isColorTaken({ table: recordType, dashboardId, colorId: set.colorId, exceptId: id }))) {
         throw new ApiError("COLOR_IN_USE");
@@ -172,9 +183,13 @@ export async function softDeleteRecordType(dashboardId: string, id: string) {
 
   await db.transaction(async (tx) => {
     await tx.delete(recordTypeCategory).where(eq(recordTypeCategory.recordTypeId, id));
-    await tx
+    const [result] = await tx
       .update(recordType)
       .set({ deletedAt: new Date(), updatedAt: new Date() })
       .where(inDashboard(recordType, dashboardId, id));
+
+    if (result.affectedRows > 0) {
+      await logDashboardActivity(tx, dashboardId, { entityType: "record_type", entityId: id, action: "deleted" });
+    }
   });
 }

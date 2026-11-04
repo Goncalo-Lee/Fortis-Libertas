@@ -1,3 +1,5 @@
+import { logActivity } from "../activity-logs/write";
+import { getRequestContext } from "@/lib/api/request-context";
 import { and, eq, isNull } from "drizzle-orm";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "../..";
@@ -54,6 +56,8 @@ export async function addMember(m: Membership, scopeId: string, userId: string, 
 
     const { type, scopeField } = m.addedNotification;
     await createNotification(tx, userId, type, { [scopeField]: scopeId, role, added_by: addedBy });
+
+    await logMember(tx, m, scopeId, userId, "member_added", { role });
   });
 }
 
@@ -82,6 +86,10 @@ export async function changeMemberRole(m: Membership, scopeId: string, userId: s
       .update(m.table)
       .set({ role, updatedAt: new Date() })
       .where(activeMember(m, scopeId, userId));
+
+    if (target.role !== role) {
+      await logMember(tx, m, scopeId, userId, "member_role_changed", { from: target.role, to: role });
+    }
   });
 }
 
@@ -118,5 +126,22 @@ export async function removeMember(
       .update(m.table)
       .set({ deletedAt: new Date(), updatedAt: new Date() })
       .where(activeMember(m, scopeId, userId));
+
+    // Leaving (removing yourself) and being removed by an owner are different events for whoever reads the log.
+    const self = getRequestContext()?.userId?.toLowerCase() === userId.toLowerCase();
+    await logMember(tx, m, scopeId, userId, self ? "member_left" : "member_removed", { role: target.role });
   });
+}
+
+/**
+ * Logs a membership change in the right scope: a dashboard membership in the dashboard's log,
+ * a bank account membership in the bank account's log. `entity_id` is the member's user id.
+ */
+function logMember(tx: Tx, m: Membership, scopeId: string, memberId: string, action: string, metadata: object) {
+  const target =
+    m.scopeKey === "dashboardId"
+      ? ({ scope: "dashboard", dashboardId: scopeId } as const)
+      : ({ scope: "bank_account", bankAccountId: scopeId } as const);
+
+  return logActivity(tx, { ...target, entityType: "member", entityId: memberId, action, metadata: { ...metadata } });
 }

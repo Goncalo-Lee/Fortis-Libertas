@@ -1,3 +1,4 @@
+import { changedFields, logDashboardActivity } from "../activity-logs/write";
 import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { dashboard, recordType, userDashboard } from "@/db/schema";
@@ -61,6 +62,14 @@ export async function createDashboard(
         kind: r.kind,
       })),
     );
+
+    await logDashboardActivity(tx, id, {
+      userId,
+      entityType: "dashboard",
+      entityId: id,
+      action: "created",
+      metadata: { name: input.name },
+    });
   });
 
   return id;
@@ -94,10 +103,22 @@ export async function updateDashboard(
   if (changes.is_active !== undefined) set.isActive = changes.is_active;
 
   if (Object.keys(set).length > 0) {
-    await db
-      .update(dashboard)
-      .set({ ...set, updatedAt: new Date() })
-      .where(and(eq(dashboard.id, id), isNull(dashboard.deletedAt))); // Soft-delete guard
+    await db.transaction(async (tx) => {
+      const [result] = await tx
+        .update(dashboard)
+        .set({ ...set, updatedAt: new Date() })
+        .where(and(eq(dashboard.id, id), isNull(dashboard.deletedAt))); // Soft-delete guard
+
+      // Log only real changes, with the NAMES of the fields sent (never their values).
+      if (result.affectedRows > 0) {
+        await logDashboardActivity(tx, id, {
+          entityType: "dashboard",
+          entityId: id,
+          action: "updated",
+          metadata: { fields: changedFields(set) },
+        });
+      }
+    });
   }
 
   const [row] = await db.select().from(dashboard).where(eq(dashboard.id, id)).limit(1);
@@ -117,10 +138,17 @@ export async function updateDashboard(
  * await softDeleteDashboard("dash_123");
  */
 export async function softDeleteDashboard(id: string) {
-  await db
-    .update(dashboard)
-    .set({ deletedAt: new Date(), updatedAt: new Date() })
-    .where(and(eq(dashboard.id, id), isNull(dashboard.deletedAt)));
+  await db.transaction(async (tx) => {
+    const [result] = await tx
+      .update(dashboard)
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(dashboard.id, id), isNull(dashboard.deletedAt)));
+
+    // Idempotent: a second delete changes no row, so it is not logged again.
+    if (result.affectedRows > 0) {
+      await logDashboardActivity(tx, id, { entityType: "dashboard", entityId: id, action: "deleted" });
+    }
+  });
 }
 
 /**
@@ -139,10 +167,16 @@ export async function softDeleteDashboard(id: string) {
  * const restored = await restoreDashboard("dash_123");
  */
 export async function restoreDashboard(id: string) {
-  await db
-    .update(dashboard)
-    .set({ deletedAt: null, updatedAt: new Date() })
-    .where(and(eq(dashboard.id, id), isNotNull(dashboard.deletedAt)));
+  await db.transaction(async (tx) => {
+    const [result] = await tx
+      .update(dashboard)
+      .set({ deletedAt: null, updatedAt: new Date() })
+      .where(and(eq(dashboard.id, id), isNotNull(dashboard.deletedAt)));
+
+    if (result.affectedRows > 0) {
+      await logDashboardActivity(tx, id, { entityType: "dashboard", entityId: id, action: "restored" });
+    }
+  });
 
   const [row] = await db.select().from(dashboard).where(eq(dashboard.id, id)).limit(1);
 

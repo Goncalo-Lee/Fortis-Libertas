@@ -1,3 +1,4 @@
+import { changedFields, logDashboardActivity } from "../activity-logs/write";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { card, financialRecord, paymentMethod } from "@/db/schema";
@@ -40,13 +41,19 @@ export async function createPaymentMethod(dashboardId: string, userId: string, i
 
   const id = generateId();
   try {
-    await db.insert(paymentMethod).values({
-      id,
-      dashboardId,
-      userId,
-      cardId: input.cardId ?? null,
-      name: input.name,
-      description: input.description ?? "",
+    await db.transaction(async (tx) => {
+      await tx.insert(paymentMethod).values({
+        id,
+        dashboardId,
+        userId,
+        cardId: input.cardId ?? null,
+        name: input.name,
+        description: input.description ?? "",
+      });
+      // Only the name: which card is linked is card data and stays out of the log.
+      await logDashboardActivity(tx, dashboardId, {
+        entityType: "payment_method", entityId: id, action: "created", metadata: { name: input.name },
+      });
     });
   } catch (error) {
     // Two concurrent requests can pass the check above; the unique index rejects the second one.
@@ -84,10 +91,15 @@ export async function updatePaymentMethod(dashboardId: string, id: string, chang
 
   if (Object.keys(set).length > 0) {
     try {
-      await db
-        .update(paymentMethod)
-        .set({ ...set, updatedAt: new Date() })
-        .where(inDashboard(paymentMethod, dashboardId, id));
+      await db.transaction(async (tx) => {
+        await tx
+          .update(paymentMethod)
+          .set({ ...set, updatedAt: new Date() })
+          .where(inDashboard(paymentMethod, dashboardId, id));
+        await logDashboardActivity(tx, dashboardId, {
+          entityType: "payment_method", entityId: id, action: "updated", metadata: { fields: changedFields(set) },
+        });
+      });
     } catch (error) {
       if (set.name !== undefined && (await nameTaken({ table: paymentMethod, dashboardId, name: set.name, exceptId: id }))) {
         throw new ApiError("NAME_ALREADY_EXISTS");
@@ -113,8 +125,14 @@ export async function softDeletePaymentMethod(dashboardId: string, id: string) {
 
   if (used) throw new ApiError("IN_USE");
 
-  await db
-    .update(paymentMethod)
-    .set({ deletedAt: new Date(), updatedAt: new Date() })
-    .where(inDashboard(paymentMethod, dashboardId, id));
+  await db.transaction(async (tx) => {
+    const [result] = await tx
+      .update(paymentMethod)
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(inDashboard(paymentMethod, dashboardId, id));
+
+    if (result.affectedRows > 0) {
+      await logDashboardActivity(tx, dashboardId, { entityType: "payment_method", entityId: id, action: "deleted" });
+    }
+  });
 }

@@ -1,3 +1,4 @@
+import { changedFields, logDashboardActivity } from "../activity-logs/write";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { category, financialRecord, installmentPlan, recordTypeCategory, tagCategory } from "@/db/schema";
@@ -63,6 +64,9 @@ export async function createCategory(
       if (tagIds.length > 0) {
         await tx.insert(tagCategory).values(tagIds.map((tagId) => ({ categoryId: id, tagId })));
       }
+      await logDashboardActivity(tx, dashboardId, {
+        entityType: "category", entityId: id, action: "created", metadata: { name: input.name },
+      });
     });
   } catch (error) {
     if (await isColorTaken({ table: category, dashboardId, colorId: input.colorId, exceptId: id })) throw new ApiError("COLOR_IN_USE");
@@ -118,10 +122,15 @@ export async function updateCategory(
 
   if (Object.keys(set).length > 0) {
     try {
-      await db
-        .update(category)
-        .set({ ...set, updatedAt: new Date() })
-        .where(inDashboard(category, dashboardId, id));
+      await db.transaction(async (tx) => {
+        await tx
+          .update(category)
+          .set({ ...set, updatedAt: new Date() })
+          .where(inDashboard(category, dashboardId, id));
+        await logDashboardActivity(tx, dashboardId, {
+          entityType: "category", entityId: id, action: "updated", metadata: { fields: changedFields(set) },
+        });
+      });
     } catch (error) {
       if (set.colorId !== undefined && (await isColorTaken({ table: category, dashboardId, colorId: set.colorId, exceptId: id }))) {
         throw new ApiError("COLOR_IN_USE");
@@ -171,9 +180,13 @@ export async function softDeleteCategory(dashboardId: string, id: string) {
   await db.transaction(async (tx) => {
     await tx.delete(tagCategory).where(eq(tagCategory.categoryId, id));
     await tx.delete(recordTypeCategory).where(eq(recordTypeCategory.categoryId, id));
-    await tx
+    const [result] = await tx
       .update(category)
       .set({ deletedAt: new Date(), updatedAt: new Date() })
       .where(inDashboard(category, dashboardId, id));
+
+    if (result.affectedRows > 0) {
+      await logDashboardActivity(tx, dashboardId, { entityType: "category", entityId: id, action: "deleted" });
+    }
   });
 }

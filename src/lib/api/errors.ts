@@ -1,3 +1,4 @@
+import { runWithRequestContext } from "./request-context";
 import { ZodError } from "zod";
 
 // Centralized error codes with consistent HTTP status mapping
@@ -140,7 +141,8 @@ export function withErrors<Req extends Request, Ctx>(
 ) {
   return async (request: Req, ctx: Ctx): Promise<Response> => {
     try {
-      return await handler(request, ctx);
+      // Each request gets its own context (who, IP, user agent), read later by the activity log.
+      return await runWithRequestContext(request, () => handler(request, ctx));
     } catch (error) {
       return toProblem(error); // Convert any thrown error to proper HTTP response
     }

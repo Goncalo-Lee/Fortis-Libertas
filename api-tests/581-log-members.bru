@@ -1,0 +1,30 @@
+meta {
+  name: Activity logs - member events (dashboard now owned by the second user)
+  type: http
+  seq: 581
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboardId}}/activity-logs?entity_type=member
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.meta.total: gte 1
+}
+
+tests {
+  test("member actions only", function () {
+    res.body.data.forEach((x) => expect(x.action).to.match(/^member_/));
+  });
+  test("tests 32-48: added, promoted, removed and left are all there", function () {
+    const actions = res.body.data.map((x) => x.action);
+    ["member_added", "member_role_changed", "member_removed", "member_left"].forEach((a) => expect(actions).to.include(a));
+  });
+}

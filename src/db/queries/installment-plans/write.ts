@@ -1,3 +1,4 @@
+import { changedFields, logDashboardActivity } from "../activity-logs/write";
 import { and, count, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { category, financialRecord, installmentPlan, recordTypeCategory, tagInstallmentPlan } from "@/db/schema";
@@ -97,6 +98,9 @@ export async function createInstallmentPlan(dashboardId: string, userId: string,
 
     // History entry of the new plan (endpoints.md, section 20.4).
     await syncInstallmentPlanTransaction(tx, id);
+    await logDashboardActivity(tx, dashboardId, {
+      entityType: "installment_plan", entityId: id, action: "created", metadata: { name: input.name },
+    });
   });
 
   return getInstallmentPlan(dashboardId, id);
@@ -140,6 +144,9 @@ export async function updateInstallmentPlan(dashboardId: string, id: string, cha
         .set({ ...set, updatedAt: new Date() })
         .where(inDashboard(installmentPlan, dashboardId, id));
       await syncInstallmentPlanTransaction(tx, id);
+      await logDashboardActivity(tx, dashboardId, {
+        entityType: "installment_plan", entityId: id, action: "updated", metadata: { fields: changedFields(set) },
+      });
     });
   }
 
@@ -176,6 +183,11 @@ export async function setInstallmentPlanTags(dashboardId: string, id: string, ta
     if (toAdd.length > 0) {
       await tx.insert(tagInstallmentPlan).values(toAdd.map((tagId) => ({ tagId, installmentPlanId: id })));
     }
+    if (toAdd.length > 0 || toRemove.length > 0) {
+      await logDashboardActivity(tx, dashboardId, {
+        entityType: "installment_plan", entityId: id, action: "tags_changed", metadata: { added: toAdd, removed: toRemove },
+      });
+    }
   });
 
   return true;
@@ -205,5 +217,8 @@ export async function softDeleteInstallmentPlan(dashboardId: string, id: string,
 
     // The plan's history entry is kept with the same `deleted_at`.
     await syncInstallmentPlanTransaction(tx, id);
+    await logDashboardActivity(tx, dashboardId, {
+      entityType: "installment_plan", entityId: id, action: "deleted", metadata: { detached_records: detachRecords },
+    });
   });
 }

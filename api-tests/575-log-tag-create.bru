@@ -1,0 +1,27 @@
+meta {
+  name: Activity logs - create a tag
+  type: http
+  seq: 575
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/tags
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Log-Test" }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("logTag", res.body.data.tag_id);
+}
+
+assert {
+  res.status: eq 201
+}

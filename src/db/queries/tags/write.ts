@@ -1,3 +1,4 @@
+import { changedFields, logDashboardActivity } from "../activity-logs/write";
 import { db } from "@/db";
 import { eq } from "drizzle-orm";
 import { tag, tagCategory, tagFinancialRecord } from "@/db/schema";
@@ -50,11 +51,16 @@ export async function createTag(
   const id = generateId();
 
   try {
-    await db.insert(tag).values({
-      id,
-      dashboardId,
-      name: input.name,
-      description: input.description ?? null,
+    await db.transaction(async (tx) => {
+      await tx.insert(tag).values({
+        id,
+        dashboardId,
+        name: input.name,
+        description: input.description ?? null,
+      });
+      await logDashboardActivity(tx, dashboardId, {
+        entityType: "tag", entityId: id, action: "created", metadata: { name: input.name },
+      });
     });
   } catch (error) {
     // Race condition: two simultaneous requests can both pass the check above,
@@ -110,10 +116,15 @@ export async function updateTag(
   // Skip the UPDATE entirely when there is nothing to change
   if (Object.keys(set).length > 0) {
     try {
-      await db
-        .update(tag)
-        .set({ ...set, updatedAt: new Date() })
-        .where(inDashboard(tag, dashboardId, id));
+      await db.transaction(async (tx) => {
+        await tx
+          .update(tag)
+          .set({ ...set, updatedAt: new Date() })
+          .where(inDashboard(tag, dashboardId, id));
+        await logDashboardActivity(tx, dashboardId, {
+          entityType: "tag", entityId: id, action: "updated", metadata: { fields: changedFields(set) },
+        });
+      });
     } catch (error) {
       // Same race condition as in createTag: another request may have taken the name
       // between our check and the UPDATE; the unique index rejects it.
@@ -164,6 +175,7 @@ export async function softDeleteTag(dashboardId: string, id: string) {
       .set({ deletedAt: new Date(), updatedAt: new Date() })
       .where(inDashboard(tag, dashboardId, id));
 
+    await logDashboardActivity(tx, dashboardId, { entityType: "tag", entityId: id, action: "deleted" });
     return true;
   });
 }
