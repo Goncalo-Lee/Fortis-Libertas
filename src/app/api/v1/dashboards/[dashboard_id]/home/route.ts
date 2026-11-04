@@ -18,6 +18,7 @@ import { RECORD_STATUSES } from "@/lib/api/schemas/report";
 import { serializeColor, serializeIcon } from "@/lib/api/serializers/catalog";
 import { serializeInstallmentPlan } from "@/lib/api/serializers/installment-plan";
 import { todayUtc } from "@/lib/exchange";
+import { DAY_MS } from "@/lib/constants";
 
 export const runtime = "nodejs";
 
@@ -29,7 +30,7 @@ const UPCOMING_DAYS = 30;
 
 /** "YYYY-MM-DD" of today + `days` (UTC), for comparing with `due_date`. */
 function dayPlus(days: number) {
-  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  return new Date(Date.now() + days * DAY_MS).toISOString().slice(0, 10);
 }
 
 /**
