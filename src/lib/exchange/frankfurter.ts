@@ -4,7 +4,9 @@
  */
 
 const BASE_URL = process.env.EXCHANGE_RATE_API_URL ?? "https://api.frankfurter.dev/v1";
-const TIMEOUT_MS = 4000;
+// How long to wait for the provider. Historical dates can be slower than `latest`, so the default is generous;
+// set EXCHANGE_RATE_TIMEOUT_MS in .env to change it.
+const TIMEOUT_MS = Number(process.env.EXCHANGE_RATE_TIMEOUT_MS) || 10_000;
 
 /**
  * Fetches the rate to convert one unit of `base` into `quote`.
@@ -19,7 +21,13 @@ const TIMEOUT_MS = 4000;
 export async function fetchRate(base: string, quote: string, date: string): Promise<string> {
   const url = `${BASE_URL}/${date}?base=${encodeURIComponent(base)}&symbols=${encodeURIComponent(quote)}`;
 
-  const response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS), cache: "no-store" });
+  let response: Response;
+  try {
+    response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS), cache: "no-store" });
+  } catch (error) {
+    // Say where the request went: a timeout alone does not tell which provider URL was used.
+    throw new Error(`Request to ${url} failed`, { cause: error });
+  }
   if (!response.ok) throw new Error(`Exchange rate provider answered ${response.status}`);
 
   const body = (await response.json()) as { rates?: Record<string, unknown> };
