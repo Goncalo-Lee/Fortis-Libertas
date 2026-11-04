@@ -1120,6 +1120,13 @@ Aggregated read model for the app's home screen. It has no table of its own and 
 
 > The contents above are a proposal. Adjust the fields to match the home screen of the Android app before implementing.
 
+### 18.4 Business Rules
+
+- Each part reuses the query of its own endpoint, so `balance` always equals `GET /balance` and `totals` always equals `GET /reports/summary?group_by=record_type` for the same month and currency.
+- `totals` lists every record type of the dashboard, including those without records in the month (`total: "0.00"`, `count: 0`), so the app always shows the same rows. Each item also carries `kind`.
+- `recent_records` only includes records with `payment_date` up to now and status other than `cancelled`: a record scheduled for a future date is not "recent".
+- `upcoming_installments` includes `pending` plans with `due_date` in the next 30 days **and** every `late` plan (a late plan is already past its due date), ordered by `due_date`.
+
 ---
 
 ## 19. Activity Logs

@@ -1,0 +1,29 @@
+meta {
+  name: Home - month without records
+  type: http
+  seq: 608
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/home?month=2020-01
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("every record type is listed with zero", function () {
+    expect(res.body.data.totals.length).to.be.at.least(2);
+    res.body.data.totals.forEach((t) => {
+      expect(t.total).to.equal("0.00");
+      expect(t.count).to.equal(0);
+    });
+  });
+}

@@ -1,0 +1,15 @@
+meta {
+  name: Home - no token
+  type: http
+  seq: 612
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/home
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 401
+}
