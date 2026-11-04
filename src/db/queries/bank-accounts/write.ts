@@ -1,3 +1,4 @@
+import { changedFields, logBankAccountActivity } from "../activity-logs/write";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { bankAccount, bankAccountUser, card } from "@/db/schema";
@@ -21,6 +22,9 @@ export async function createBankAccount(userId: string, input: CreateBankAccount
   await db.transaction(async (tx) => {
     await tx.insert(bankAccount).values({ id, name: input.name, initialBalance: input.initialBalance, currencyId });
     await tx.insert(bankAccountUser).values({ bankId: id, userId, role: "owner" });
+    await logBankAccountActivity(tx, id, {
+      userId, entityType: "bank_account", entityId: id, action: "created", metadata: { name: input.name },
+    });
   });
 
   return getBankAccount(id, userId);
@@ -32,10 +36,18 @@ export async function updateBankAccount(bankAccountId: string, userId: string, i
   if (input.initialBalance !== undefined) set.initialBalance = input.initialBalance;
 
   if (Object.keys(set).length > 0) {
-    await db
-      .update(bankAccount)
-      .set({ ...set, updatedAt: new Date() })
-      .where(and(eq(bankAccount.id, bankAccountId), isNull(bankAccount.deletedAt)));
+    await db.transaction(async (tx) => {
+      const [result] = await tx
+        .update(bankAccount)
+        .set({ ...set, updatedAt: new Date() })
+        .where(and(eq(bankAccount.id, bankAccountId), isNull(bankAccount.deletedAt)));
+
+      if (result.affectedRows > 0) {
+        await logBankAccountActivity(tx, bankAccountId, {
+          entityType: "bank_account", entityId: bankAccountId, action: "updated", metadata: { fields: changedFields(set) },
+        });
+      }
+    });
   }
   return getBankAccount(bankAccountId, userId);
 }
@@ -49,10 +61,16 @@ export async function softDeleteBankAccount(bankAccountId: string) {
     .limit(1);
   if (activeCard) throw new ApiError("HAS_ACTIVE_CARDS");
 
-  await db
-    .update(bankAccount)
-    .set({ deletedAt: new Date(), updatedAt: new Date() })
-    .where(and(eq(bankAccount.id, bankAccountId), isNull(bankAccount.deletedAt)));
+  await db.transaction(async (tx) => {
+    const [result] = await tx
+      .update(bankAccount)
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(bankAccount.id, bankAccountId), isNull(bankAccount.deletedAt)));
+
+    if (result.affectedRows > 0) {
+      await logBankAccountActivity(tx, bankAccountId, { entityType: "bank_account", entityId: bankAccountId, action: "deleted" });
+    }
+  });
 }
 
 /** Idempotent freeze/unfreeze; returns the updated account. */
@@ -61,9 +79,15 @@ export async function setBankAccountFrozenState(bankAccountId: string, userId: s
   if (!current) return null;
   if (freeze === Boolean(current.frozenAt)) return current;
 
-  await db
-    .update(bankAccount)
-    .set({ frozenAt: freeze ? new Date() : null, updatedAt: new Date() })
-    .where(and(eq(bankAccount.id, bankAccountId), isNull(bankAccount.deletedAt)));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(bankAccount)
+      .set({ frozenAt: freeze ? new Date() : null, updatedAt: new Date() })
+      .where(and(eq(bankAccount.id, bankAccountId), isNull(bankAccount.deletedAt)));
+    // Reaching here means the state really changes (the early return above skips no-ops).
+    await logBankAccountActivity(tx, bankAccountId, {
+      entityType: "bank_account", entityId: bankAccountId, action: freeze ? "frozen" : "unfrozen",
+    });
+  });
   return getBankAccount(bankAccountId, userId);
 }

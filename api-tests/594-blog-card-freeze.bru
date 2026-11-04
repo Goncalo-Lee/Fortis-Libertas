@@ -1,0 +1,19 @@
+meta {
+  name: Bank account log - freeze the card
+  type: http
+  seq: 594
+}
+
+post {
+  url: {{baseUrl}}/api/v1/cards/{{logCard}}/freeze
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}

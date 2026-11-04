@@ -1,0 +1,23 @@
+meta {
+  name: Bank account log - change the card's CVV
+  type: http
+  seq: 593
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/cards/{{logCard}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "cvv": "654" }
+}
+
+assert {
+  res.status: eq 200
+}

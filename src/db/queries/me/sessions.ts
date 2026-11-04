@@ -1,6 +1,7 @@
 import { and, desc, eq, gt, ne } from "drizzle-orm";
 import { db } from "../..";
 import { session } from "../../schema";
+import { logActivity } from "../activity-logs/write";
 
 /* ======
   SESSIONS
@@ -40,7 +41,15 @@ export type SessionRow = Awaited<ReturnType<typeof listSessions>>[number];
 
 /** Deletes every session of the user except the current one ("sign out everywhere else"). */
 export async function revokeOtherSessions(userId: string, currentSessionId: string) {
-  await db.delete(session).where(and(eq(session.userId, userId), ne(session.id, currentSessionId)));
+  await db.transaction(async (tx) => {
+    const [result] = await tx.delete(session).where(and(eq(session.userId, userId), ne(session.id, currentSessionId)));
+    if (result.affectedRows > 0) {
+      await logActivity(tx, {
+        scope: "account", userId, entityType: "session", action: "sessions_revoked",
+        metadata: { count: result.affectedRows },
+      });
+    }
+  });
 }
 
 /**
@@ -52,8 +61,13 @@ export async function revokeOtherSessions(userId: string, currentSessionId: stri
  * @returns `true` if a row was deleted, `false` if the session does not exist or is not the user's
  */
 export async function revokeSessionById(userId: string, targetSessionId: string) {
-  const [result] = await db
-    .delete(session)
-    .where(and(eq(session.userId, userId), eq(session.id, targetSessionId)));
-  return result.affectedRows > 0;
+  return db.transaction(async (tx) => {
+    const [result] = await tx
+      .delete(session)
+      .where(and(eq(session.userId, userId), eq(session.id, targetSessionId)));
+    if (result.affectedRows === 0) return false;
+
+    await logActivity(tx, { scope: "account", userId, entityType: "session", entityId: targetSessionId, action: "session_revoked" });
+    return true;
+  });
 }

@@ -23,7 +23,7 @@ export type RequestContext = {
 const storage = new AsyncLocalStorage<RequestContext>();
 
 /** Client IP: the first address of `x-forwarded-for` (set by proxies), then `x-real-ip`. */
-function clientIp(headers: Headers) {
+export function clientIp(headers: Headers) {
   const forwarded = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   return (forwarded || headers.get("x-real-ip") || null)?.slice(0, 45) ?? null; // 45 = longest IPv6 text form
 }

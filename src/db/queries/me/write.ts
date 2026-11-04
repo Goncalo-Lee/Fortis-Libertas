@@ -1,3 +1,4 @@
+import { changedFields, logActivity } from "../activity-logs/write";
 import { and, eq, inArray, isNull, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { bankAccount, bankAccountUser, profile, session, user } from "@/db/schema";
@@ -78,10 +79,17 @@ export async function updateProfile(userId: string, changes: ProfileChanges) {
   }
 
   if (Object.keys(set).length > 0) {
-    await db
-      .update(profile)
-      .set({ ...set, updatedAt: new Date() })
-      .where(eq(profile.userId, userId));
+    await db.transaction(async (tx) => {
+      await tx
+        .update(profile)
+        .set({ ...set, updatedAt: new Date() })
+        .where(eq(profile.userId, userId));
+      // `changes` already uses the API names (birth_date, currency...); the phone number itself stays out.
+      await logActivity(tx, {
+        scope: "account", userId, entityType: "profile", entityId: userId, action: "updated",
+        metadata: { fields: changedFields(changes) },
+      });
+    });
   }
 
   return getOrCreateProfile(userId);
@@ -112,7 +120,13 @@ export async function updateUser(userId: string, changes: UpdateMeInput) {
   }
 
   try {
-    await db.update(user).set(set).where(eq(user.id, userId));
+    await db.transaction(async (tx) => {
+      await tx.update(user).set(set).where(eq(user.id, userId));
+      await logActivity(tx, {
+        scope: "account", userId, entityType: "user", entityId: userId, action: "updated",
+        metadata: { fields: changedFields(changes) },
+      });
+    });
   } catch (error) {
     if (changes.user_name && (await userNameTaken(changes.user_name, userId))) {
       throw new ApiError("USER_NAME_TAKEN");
@@ -154,6 +168,7 @@ export async function deleteAccount(userId: string) {
     }
 
     await tx.update(user).set({ deletedAt: new Date() }).where(eq(user.id, userId));
+    await logActivity(tx, { scope: "account", userId, entityType: "user", entityId: userId, action: "deleted" });
     await tx.delete(session).where(eq(session.userId, userId));
   });
 }

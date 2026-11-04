@@ -31,6 +31,9 @@ export type ActivityEntry = Target & {
   metadata?: Record<string, unknown> | null;
   /** Who did it. Defaults to the authenticated user of the current request. */
   userId?: string;
+  /** Device data, when it does not come from the request context (Better Auth hooks run outside `withErrors`). */
+  ipAddress?: string | null;
+  userAgent?: string | null;
 };
 
 /**
@@ -58,8 +61,8 @@ export async function logActivity(executor: Executor, entry: ActivityEntry) {
     entityId: entry.entityId ?? null,
     action: entry.action,
     metadata: entry.metadata ?? null,
-    ipAddress: context?.ipAddress ?? null,
-    userAgent: context?.userAgent ?? null,
+    ipAddress: entry.ipAddress ?? context?.ipAddress ?? null,
+    userAgent: entry.userAgent ?? context?.userAgent ?? null,
   });
 }
 
@@ -70,6 +73,15 @@ export function logDashboardActivity(
   entry: Omit<ActivityEntry, "scope" | "dashboardId" | "bankAccountId">,
 ) {
   return logActivity(executor, { ...entry, scope: "dashboard", dashboardId } as ActivityEntry);
+}
+
+/** Shortcut for an event inside a bank account (the account itself, its members or its cards). */
+export function logBankAccountActivity(
+  executor: Executor,
+  bankAccountId: string,
+  entry: Omit<ActivityEntry, "scope" | "dashboardId" | "bankAccountId">,
+) {
+  return logActivity(executor, { ...entry, scope: "bank_account", bankAccountId } as ActivityEntry);
 }
 
 /**

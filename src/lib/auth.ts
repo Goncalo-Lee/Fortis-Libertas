@@ -7,6 +7,7 @@ import { generateId } from "../db/types";
 import { getDefaultProfileCatalogIds } from "../db/queries/catalogs";
 import {nextCookies} from "better-auth/next-js";
 import nodemailer from "nodemailer";
+import { onAccountUpdated, onSessionCreated, onSessionDeleted, onUserUpdated } from "./auth-activity";
 import {error} from "better-auth/api";
 
 /**
@@ -118,6 +119,17 @@ export const auth = betterAuth({
           })
         }
       },
+      // 2FA switched on/off -> activity log (see auth-activity.ts).
+      update: { after: (user, ctx) => onUserUpdated(user, ctx) },
+    },
+    // Sign-up, sign-in and sign-out -> activity log.
+    session: {
+      create: { after: (session, ctx) => onSessionCreated(session, ctx) },
+      delete: { after: (session, ctx) => onSessionDeleted(session, ctx) },
+    },
+    // Password change or reset -> activity log.
+    account: {
+      update: { after: (account, ctx) => onAccountUpdated(account, ctx) },
     },
   },
   appName: "FortisLibertas",
