@@ -1,0 +1,19 @@
+meta {
+  name: Bank account log - a viewer cannot read it
+  type: http
+  seq: 597
+}
+
+get {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{logBank}}/activity-logs
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 403
+}

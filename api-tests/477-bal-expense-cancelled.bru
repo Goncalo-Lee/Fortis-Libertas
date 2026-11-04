@@ -1,0 +1,23 @@
+meta {
+  name: Balances - expense cancelled (ignored)
+  type: http
+  seq: 477
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/financial-records
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"record_type_id": "{{fbRtExp}}", "category_id": "{{fbCat}}", "payment_method_id": "{{fbPm}}", "name": "Cancelled", "price": "40", "payment_date": "2026-10-12T18:20:00.000Z", "status": "cancelled"}
+}
+
+assert {
+  res.status: eq 201
+}

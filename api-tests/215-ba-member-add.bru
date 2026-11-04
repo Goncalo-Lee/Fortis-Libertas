@@ -1,0 +1,27 @@
+meta {
+  name: Bank accounts - add member by id (viewer)
+  type: http
+  seq: 215
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{baId}}/members
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "user_id": "{{userId2}}", "role": "viewer" }
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("viewer", function () { expect(res.body.data.role).to.equal("viewer"); });
+}

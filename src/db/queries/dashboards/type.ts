@@ -1,13 +1,4 @@
-import { ListFilters } from "../type";
-
-/**
- * Role a user can have within a dashboard.
- *
- * @property `owner`: full control, including managing members and deleting the dashboard
- * @property `editor`: can modify the dashboard's content
- * @property `viewer`: read-only access
- */
-export type Role = "owner" | "editor" | "viewer";
+import { ListFilters, Role } from "../type";
 
 /**
  * Query filters accepted by `listDashboards`.

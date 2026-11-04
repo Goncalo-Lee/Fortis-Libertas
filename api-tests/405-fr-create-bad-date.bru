@@ -1,0 +1,23 @@
+meta {
+  name: Financial records - create bad date
+  type: http
+  seq: 405
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"record_type_id": "{{frRt}}", "category_id": "{{frCat}}", "payment_method_id": "{{frPm}}", "name": "Laptop", "price": "100.50", "payment_date": "12/10/2026", "status": "paid"}
+}
+
+assert {
+  res.status: eq 422
+}

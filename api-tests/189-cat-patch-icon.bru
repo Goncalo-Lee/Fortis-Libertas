@@ -1,0 +1,27 @@
+meta {
+  name: Categories - patch icon
+  type: http
+  seq: 189
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories/{{linkedId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "icon_id": "{{icon2}}" }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("icon changed", function () { expect(res.body.data.icon_id).to.equal(bru.getVar("icon2")); });
+}

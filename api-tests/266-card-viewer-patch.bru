@@ -1,0 +1,23 @@
+meta {
+  name: Cards - viewer (not owner) cannot patch
+  type: http
+  seq: 266
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/cards/{{cardId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  { "cardholder_name": "Nope" }
+}
+
+assert {
+  res.status: eq 403
+}

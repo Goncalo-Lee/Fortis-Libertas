@@ -1,0 +1,19 @@
+meta {
+  name: Notifications - delete again is 404
+  type: http
+  seq: 555
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/me/notifications/{{notificationId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 404
+}

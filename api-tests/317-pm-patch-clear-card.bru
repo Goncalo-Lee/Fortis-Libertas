@@ -1,0 +1,27 @@
+meta {
+  name: Payment methods - patch clear card
+  type: http
+  seq: 317
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods/{{pmId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "card_id": null }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("null", function () { expect(res.body.data.card_id).to.equal(null); });
+}

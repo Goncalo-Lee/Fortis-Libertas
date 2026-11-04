@@ -1,0 +1,19 @@
+meta {
+  name: Reports - period over 366 days
+  type: http
+  seq: 491
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/reports/summary?payment_date_from=2025-01-01T00:00:00.000Z&payment_date_to=2026-10-31T00:00:00.000Z
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 422
+}

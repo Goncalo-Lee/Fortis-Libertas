@@ -7,9 +7,11 @@ import { softDelete, timestamps } from "../columns";
 export const paymentMethod = mysqlTable("payment_method", {
     id: uuidBinary("payment_method_id").primaryKey(),
     dashboardId: uuidBinary("dashboard_id").notNull(),
+    // Creator. Only the creator (or a dashboard owner) can change or delete the payment method.
+    userId: uuidBinary("user_id").notNull(),
     cardId: uuidBinary("card_id"),
     name: t.varchar("name", { length: 50 }).notNull(),
-    description: t.text("description"),
+    description: t.text("description").notNull(),
     ...softDelete,
     ...timestamps,
 }, (table) => [
@@ -20,6 +22,12 @@ export const paymentMethod = mysqlTable("payment_method", {
     }).onDelete("cascade"),
 
     t.foreignKey({
+        name: "fk_payment_method_user",
+        columns: [table.userId],
+        foreignColumns: [s.user.id],
+    }).onDelete("restrict"),
+
+    t.foreignKey({
         name: "fk_payment_method_card",
         columns: [table.cardId],
         foreignColumns: [s.card.id],
@@ -28,4 +36,5 @@ export const paymentMethod = mysqlTable("payment_method", {
     t.uniqueIndex("idx_payment_method_dashboard_name").on(table.dashboardId, table.name),
     t.index("idx_payment_method_dashboard_id").on(table.dashboardId),
     t.index("idx_payment_method_card_id").on(table.cardId),
+    t.index("idx_payment_method_user_id").on(table.userId),
 ]);

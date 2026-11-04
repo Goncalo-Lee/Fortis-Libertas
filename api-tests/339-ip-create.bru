@@ -1,0 +1,40 @@
+meta {
+  name: Installment plans - create
+  type: http
+  seq: 339
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Laptop", "category_id": "{{ipCatId}}", "total_amount": "1200.00", "total_installments": 12, "due_date": "2027-12-31", "tag_ids": ["{{ipTagA}}"] }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("ipId", res.body.data.installment_plan_id);
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("shape", function () {
+    const d = res.body.data;
+    expect(d.record_type_id).to.equal(bru.getVar("ipRtExpenses"));
+    expect(d.register_by_id).to.equal(bru.getVar("userId"));
+    expect(d.status).to.equal("pending");
+    expect(d.total_amount).to.equal("1200.00");
+    expect(d.due_date).to.equal("2027-12-31");
+    expect(d.currency).to.match(/^[A-Z]{3}$/);
+    expect(d.tags.map((x) => x.name)).to.deep.equal(["tech"]);
+  });
+}

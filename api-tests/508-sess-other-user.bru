@@ -1,0 +1,19 @@
+meta {
+  name: Sessions - another user's session is 404
+  type: http
+  seq: 508
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/me/sessions/{{sessionOther2}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 404
+}

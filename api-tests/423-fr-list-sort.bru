@@ -1,0 +1,20 @@
+meta {
+  name: Financial records - sort by price
+  type: http
+  seq: 423
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records?sort=price
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data[0].name: eq Coffee
+}

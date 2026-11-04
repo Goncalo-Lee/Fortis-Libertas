@@ -1,0 +1,34 @@
+meta {
+  name: Activity logs - the tag's three events
+  type: http
+  seq: 579
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/activity-logs?entity_type=tag&action=created,updated,deleted&per_page=100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("created, updated and deleted, once each, newest first", function () {
+    const mine = res.body.data.filter((x) => x.entity_id === bru.getVar("logTag"));
+    expect(mine.map((x) => x.action)).to.deep.equal(["deleted", "updated", "created"]);
+  });
+  test("metadata has names, never values", function () {
+    const mine = res.body.data.filter((x) => x.entity_id === bru.getVar("logTag"));
+    expect(mine.find((x) => x.action === "created").metadata).to.deep.equal({ name: "Log-Test" });
+    expect(mine.find((x) => x.action === "updated").metadata).to.deep.equal({ fields: ["name"] });
+  });
+  test("all entries are tags", function () {
+    res.body.data.forEach((x) => expect(x.entity_type).to.equal("tag"));
+  });
+}

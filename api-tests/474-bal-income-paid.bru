@@ -1,0 +1,23 @@
+meta {
+  name: Balances - income paid
+  type: http
+  seq: 474
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/financial-records
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"record_type_id": "{{fbRtInc}}", "category_id": "{{fbCat}}", "payment_method_id": "{{fbPm}}", "name": "Salary", "price": "1000", "payment_date": "2026-10-12T18:20:00.000Z", "status": "paid"}
+}
+
+assert {
+  res.status: eq 201
+}

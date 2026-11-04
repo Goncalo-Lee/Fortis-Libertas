@@ -1,0 +1,19 @@
+meta {
+  name: Bank accounts - get as non-member
+  type: http
+  seq: 210
+}
+
+get {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{baId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 404
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Bank accounts - viewer cannot freeze
+  type: http
+  seq: 221
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{baId}}/freeze
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 403
+}

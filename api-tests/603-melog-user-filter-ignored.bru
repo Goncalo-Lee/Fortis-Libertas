@@ -1,0 +1,25 @@
+meta {
+  name: My activity log - user_id cannot show someone else
+  type: http
+  seq: 603
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me/activity-logs?user_id={{userId2}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("still only the caller", function () {
+    res.body.data.forEach((x) => expect(x.user.user_id).to.equal(bru.getVar("userId")));
+  });
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Me - email cannot be changed here
+  type: http
+  seq: 502
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/me
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "email": "x@example.com" }
+}
+
+assert {
+  res.status: eq 422
+}

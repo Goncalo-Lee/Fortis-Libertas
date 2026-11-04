@@ -1,0 +1,19 @@
+meta {
+  name: Financial records - viewer cannot add tag
+  type: http
+  seq: 450
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records/{{frId}}/tags/{{frTagA}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 403
+}

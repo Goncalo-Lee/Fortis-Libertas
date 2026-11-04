@@ -1,0 +1,24 @@
+meta {
+  name: Financial records - no plan needs category
+  type: http
+  seq: 466
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"payment_method_id": "{{frPm}}", "name": "Plan rec", "price": "10", "payment_date": "2026-10-12T18:20:00.000Z", "status": "paid", "record_type_id": "{{frRt}}"}
+}
+
+assert {
+  res.status: eq 422
+  res.body.errors[0].pointer: eq /category_id
+}

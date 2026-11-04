@@ -1,0 +1,24 @@
+meta {
+  name: Financial records - plan record merges own tags with the plan's
+  type: http
+  seq: 461
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"payment_method_id": "{{frPm}}", "name": "Plan rec", "price": "10", "payment_date": "2026-10-12T18:20:00.000Z", "status": "paid", "installment_plan_id": "{{frPlan}}", "tag_ids": ["{{frTagA}}"]}
+}
+
+assert {
+  res.status: eq 201
+  res.body.data.tags.length: eq 2
+}

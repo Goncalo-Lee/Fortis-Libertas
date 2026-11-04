@@ -1,0 +1,27 @@
+meta {
+  name: Cards - patch number
+  type: http
+  seq: 263
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/cards/{{cardId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "card_number": "4539578763621486" }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("last4", function () { expect(res.body.data.card_number_last4).to.equal("1486"); });
+}

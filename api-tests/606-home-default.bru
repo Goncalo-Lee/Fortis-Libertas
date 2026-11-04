@@ -1,0 +1,36 @@
+meta {
+  name: Home - current month
+  type: http
+  seq: 606
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/home
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.dashboard.dashboard_id: eq {{fbDash}}
+  res.body.data.balance: matches ^749\.50$
+  res.body.data.unread_notifications: isNumber
+}
+
+tests {
+  test("has every part", function () {
+    expect(res.body.data).to.have.all.keys("dashboard", "period", "currency", "balance", "totals", "recent_records", "upcoming_installments", "unread_notifications");
+  });
+  test("recent records: at most 5, none cancelled, none in the future", function () {
+    const r = res.body.data.recent_records;
+    expect(r.length).to.be.at.most(5);
+    r.forEach((x) => {
+      expect(x.status).to.not.equal("cancelled");
+      expect(new Date(x.payment_date).getTime()).to.be.at.most(Date.now());
+    });
+  });
+}

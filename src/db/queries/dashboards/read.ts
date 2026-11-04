@@ -1,5 +1,7 @@
-import { and, count, desc, asc, eq, sql, isNotNull, isNull, like, or } from "drizzle-orm";
-import { financialRecord, recordType, bankAccount, dashboard, userDashboard, user } from "@/db/schema";
+import { and, count, desc, asc, eq, inArray, ne, sql, isNotNull, isNull, like, or } from "drizzle-orm";
+import { currency, financialRecord, recordType, dashboard, userDashboard, user } from "@/db/schema";
+import { convertAmount, todayUtc } from "@/lib/exchange";
+import { addDecimal } from "@/lib/exchange/decimal";
 import { ListFiltersDashboards } from "./type";
 import { db } from "@/db"; // Ajusta o caminho
 
@@ -198,35 +200,48 @@ export async function listDashboards(userId: string, f: ListFiltersDashboards) {
   return { rows, total: totalRow?.total ?? 0 };
 }
 
-export async function getDashboardCurrentBalance(dashId: string) {
-  // 1. Somar os saldos iniciais de todas as contas do dashboard
-  const [accountsResult] = await db
-      .select({
-        totalInitial: sql<number>`COALESCE(SUM(${bankAccount.initialBalance}), 0)`.as("total_initial")
-      })
-      .from(bankAccount)
-      .where(eq(bankAccount.dashboardId, dashId));
+/**
+ * Balance of a dashboard in `target` currency: the net of its own financial records (income minus expense) with
+ * status `paid` or `settled`. Bank accounts are independent of dashboards, so initial balances do not belong here.
+ *
+ * Amounts in other currencies are converted with the rate of the payment day (the latest rate for a day still
+ * ahead). A group of records whose rate is not available is left out rather than failing the request.
+ *
+ * @returns Decimal string, e.g. "-12.50"
+ */
+export async function getDashboardBalance(dashboardId: string, target: string) {
+  const day = sql<string>`DATE_FORMAT(${financialRecord.paymentDate}, '%Y-%m-%d')`;
+  const rows = await db
+    .select({
+      currency: currency.code,
+      kind: recordType.kind,
+      day,
+      total: sql<string>`SUM(${financialRecord.price})`,
+    })
+    .from(financialRecord)
+    .innerJoin(recordType, eq(financialRecord.recordTypeId, recordType.id))
+    .innerJoin(currency, eq(currency.id, financialRecord.currencyId))
+    .where(
+      and(
+        eq(financialRecord.dashboardId, dashboardId),
+        isNull(financialRecord.deletedAt),
+        inArray(financialRecord.status, ["paid", "settled"]),
+        ne(recordType.kind, "neutral"),
+      ),
+    )
+    .groupBy(currency.code, recordType.kind, day);
 
-  // 2. Somar e subtrair os registos financeiros do dashboard
-  const [transactionsResult] = await db
-      .select({
-        netTransactions: sql<number>`
-                COALESCE(SUM(
-                    CASE 
-                        WHEN ${recordType.name} = 'INCOME' THEN ${financialRecord.price}
-                        WHEN ${recordType.name} = 'EXPENSE' THEN -${financialRecord.price}
-                        ELSE 0 
-                    END
-                ), 0)
-            `.as("net_transactions")
-      })
-      .from(financialRecord)
-      .innerJoin(recordType, eq(financialRecord.recordTypeId, recordType.id))
-      .where(eq(financialRecord.dashboardId, dashId));
+  const today = todayUtc();
+  let balance = "0.00";
+  for (const row of rows) {
+    let amount: string | null = String(row.total);
+    if (row.currency !== target) {
+      const converted = await convertAmount(amount, row.currency, target, row.day >= today ? "current" : row.day);
+      amount = converted?.amount ?? null;
+    }
+    if (amount === null) continue;
 
-  // 3. O saldo final é a soma dos dois
-  const totalInitial = Number(accountsResult?.totalInitial || 0);
-  const netTransactions = Number(transactionsResult?.netTransactions || 0);
-
-  return totalInitial + netTransactions;
+    balance = addDecimal(balance, row.kind === "expense" ? `-${amount}` : amount);
+  }
+  return balance;
 }

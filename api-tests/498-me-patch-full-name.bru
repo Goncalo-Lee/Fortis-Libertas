@@ -1,0 +1,25 @@
+meta {
+  name: Me - patch full_name
+  type: http
+  seq: 498
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/me
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "full_name": "API Tester Renamed" }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.full_name: eq API Tester Renamed
+  res.body.data.profile: isJson
+}

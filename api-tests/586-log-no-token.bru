@@ -1,0 +1,15 @@
+meta {
+  name: Activity logs - no token
+  type: http
+  seq: 586
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/activity-logs
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 401
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Installment plans - patch tag_ids rejected
+  type: http
+  seq: 366
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans/{{ipId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "tag_ids": [] }
+}
+
+assert {
+  res.status: eq 422
+}

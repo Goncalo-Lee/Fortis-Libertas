@@ -1,0 +1,23 @@
+meta {
+  name: Installment plans - list due range
+  type: http
+  seq: 355
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans?due_from=2027-06-01
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("one", function () { expect(res.body.data[0].name).to.equal("Laptop"); expect(res.body.data.length).to.equal(1); });
+}

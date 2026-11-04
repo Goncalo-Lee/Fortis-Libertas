@@ -11,7 +11,7 @@ type UserRow = Omit<InferSelectModel<typeof user>, "emailVerified"> & {
 
 // Type representing the raw database row for 'profile' table.
 // Uses the standard inferred type from Drizzle.
-type ProfileRow = InferSelectModel<typeof profile>;
+type ProfileRow = InferSelectModel<typeof profile> & { currency: string; language: string };
 
 /**
  * Serializes a raw database 'profile' row into a safe, standardized API response object.
@@ -42,6 +42,9 @@ export function serializeProfile(row: ProfileRow) {
     // Pass through enum/string fields directly
     currency: row.currency,
     language: row.language,
+
+    // Null when unset, deleted, or the user left the account
+    primary_bank_account_id: row.primaryBankAccountId,
 
     // Standard audit timestamps converted to ISO strings
     created_at: toIso(row.createdAt),

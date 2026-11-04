@@ -1,0 +1,23 @@
+meta {
+  name: Financial records - update unknown
+  type: http
+  seq: 440
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records/00000000-0000-7000-8000-000000000000
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"name": "x"}
+}
+
+assert {
+  res.status: eq 404
+}

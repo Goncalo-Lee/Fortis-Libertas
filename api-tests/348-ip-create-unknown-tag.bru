@@ -1,0 +1,23 @@
+meta {
+  name: Installment plans - create unknown tag
+  type: http
+  seq: 348
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Bad", "category_id": "{{ipCatId}}", "tag_ids": ["00000000-0000-7000-8000-000000000000"], "total_amount": "10", "total_installments": 1, "due_date": "2027-01-01" }
+}
+
+assert {
+  res.status: eq 422
+}

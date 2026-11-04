@@ -1,0 +1,23 @@
+meta {
+  name: Installment plans - patch empty
+  type: http
+  seq: 368
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans/{{ipId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {}
+}
+
+assert {
+  res.status: eq 422
+}

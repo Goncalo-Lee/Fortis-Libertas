@@ -1,0 +1,23 @@
+meta {
+  name: Cards - list sort cardholder_name
+  type: http
+  seq: 253
+}
+
+get {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{cardBaId}}/cards?sort=cardholder_name
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("alphabetical", function () { expect(res.body.data[0].cardholder_name).to.equal("Cash-like"); });
+}

@@ -1,0 +1,36 @@
+meta {
+  name: Catalogs - list colors
+  type: http
+  seq: 24
+}
+
+get {
+  url: {{baseUrl}}/api/v1/colors?per_page=100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:post-response {
+  if (res.status === 200) {
+    const free = res.body.data.filter((c) => !c.is_reserved);
+    free.slice(0, 12).forEach((c, i) => bru.setVar("color" + (i + 1), c.color_id));
+    const reserved = res.body.data.find((c) => c.is_reserved);
+    if (reserved) bru.setVar("colorReservedId", reserved.color_id);
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.meta.total: eq 24
+}
+
+tests {
+  test("exactly two reserved colors, with hex codes", function () {
+    expect(res.body.data.filter((c) => c.is_reserved)).to.have.length(2);
+    expect(res.body.data[0].code_color).to.match(/^#[0-9A-Fa-f]{6}$/);
+  });
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Categories - link unknown record type
+  type: http
+  seq: 186
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories/{{linkedId}}/record-types/00000000-0000-7000-8000-000000000001
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 404
+}

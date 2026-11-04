@@ -1,0 +1,19 @@
+meta {
+  name: Sessions - current session still works
+  type: http
+  seq: 516
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 200
+}

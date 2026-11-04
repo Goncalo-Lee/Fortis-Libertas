@@ -1,0 +1,35 @@
+meta {
+  name: Bank accounts - create (default currency)
+  type: http
+  seq: 200
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Main", "initial_balance": "1000.00" }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("baId", res.body.data.bank_account_id);
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("owner, currency, no dashboard", function () {
+    expect(res.body.data.role).to.equal("owner");
+    expect(res.body.data.currency).to.match(/^[A-Z]{3}$/);
+    expect(res.body.data.initial_balance).to.equal("1000.00");
+  });
+}

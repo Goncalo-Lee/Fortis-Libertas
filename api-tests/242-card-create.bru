@@ -1,0 +1,39 @@
+meta {
+  name: Cards - create
+  type: http
+  seq: 242
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{cardBaId}}/cards
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "cardholder_name": "Main Card", "type_card": "debit", "card_number": "4539578763621486", "expiry_date": "2030-12-31", "cvv": "123" }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("cardId", res.body.data.card_id);
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("masked, caller owns it", function () {
+    const d = res.body.data;
+    expect(d.card_number_last4).to.equal("1486");
+    expect(d.user_id).to.equal(bru.getVar("userId"));
+    expect(d.expiry_date).to.equal("2030-12-31");
+    expect(d).to.not.have.property("card_number");
+    expect(d).to.not.have.property("cvv");
+    expect(d.frozen_at).to.equal(null);
+  });
+}

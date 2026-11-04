@@ -1,0 +1,23 @@
+meta {
+  name: Cards - get
+  type: http
+  seq: 258
+}
+
+get {
+  url: {{baseUrl}}/api/v1/cards/{{cardId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("id", function () { expect(res.body.data.card_id).to.equal(bru.getVar("cardId")); });
+}

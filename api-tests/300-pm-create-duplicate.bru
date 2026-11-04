@@ -1,0 +1,23 @@
+meta {
+  name: Payment methods - create duplicate name
+  type: http
+  seq: 300
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Visa" }
+}
+
+assert {
+  res.status: eq 409
+}

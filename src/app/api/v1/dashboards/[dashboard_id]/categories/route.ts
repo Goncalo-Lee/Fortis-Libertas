@@ -1,72 +1,63 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { listCategories } from "@/db/queries/categories/read";
-import { createCategory } from "@/db/queries/categories/write";
-import { ApiError } from "@/lib/api/errors";
+import type { NextRequest } from "next/server";
+import { createCategory, listCategories, loadCategoryExtras } from "@/db/queries/categories";
+import { requireDashboardRole } from "@/lib/api/access";
+import { parseJson } from "@/lib/api/body";
+import { ApiError, withErrors } from "@/lib/api/errors";
+import { parseUuid } from "@/lib/api/ids";
+import { parsePagination } from "@/lib/api/pagination";
+import { created, paginated } from "@/lib/api/responses";
+import { createCategorySchema, listCategoriesQuery } from "@/lib/api/schemas/category";
+import { serializeCategory } from "@/lib/api/serializers/category";
 
-interface RouteContext {
-  params: Promise<{ dashboard_id: string }>;
-}
+export const runtime = "nodejs";
 
-export async function GET(request: NextRequest, context: RouteContext) {
-  try {
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
+type Ctx = { params: Promise<{ dashboard_id: string }> };
 
-    // 2. O AWAIT AQUI É OBRIGATÓRIO!
-    const { dashboard_id } = await context.params;
+export const GET = withErrors(async (request: NextRequest, { params }: Ctx) => {
+  const dashboardId = parseUuid((await params).dashboard_id);
+  await requireDashboardRole(request, dashboardId, "viewer");
 
-    const { searchParams } = request.nextUrl;
-    const page = parseInt(searchParams.get("page") ?? "1", 10);
-    const perPage = parseInt(searchParams.get("per_page") ?? "15", 10);
-    const offset = (page - 1) * perPage;
+  const { searchParams } = request.nextUrl;
+  const { page, perPage, offset } = parsePagination(searchParams);
+  const { include, tag_id, record_type_id, ...filters } = listCategoriesQuery.parse(
+    Object.fromEntries(searchParams),
+  );
 
-    const { rows, total } = await listCategories(dashboard_id, {
-      q: searchParams.get("q") ?? undefined,
-      tagId: searchParams.get("tag_id") ?? undefined,
-      sort: (searchParams.get("sort") as any) ?? "name",
-      limit: perPage,
-      offset,
-      includeTags: searchParams.get("include") === "tags",
-    });
+  const { rows, total } = await listCategories(dashboardId, {
+    ...filters,
+    tagId: tag_id?.toLowerCase(),
+    recordTypeId: record_type_id?.toLowerCase(),
+    limit: perPage,
+    offset,
+  });
 
-    return NextResponse.json({
-      data: rows,
-      meta: {
-        page,
-        per_page: perPage,
-        total,
-        total_pages: Math.ceil(total / perPage),
-      },
-    }, { status: 200 });
-  } catch (error) {
-    console.error("Erro no GET /categories:", error);
-    return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
-  }
-}
+  const extras = await loadCategoryExtras(rows.map((r) => r.id), include === "tags");
 
-export async function POST(request: NextRequest, context: RouteContext) {
-  try {
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
+  return paginated(
+    rows.map((r) => serializeCategory(r, extras.recordTypesOf(r.id), extras.tagsOf?.(r.id))),
+    { page, perPage, total },
+  );
+});
 
-    const { dashboard_id } = await context.params;
-    const body = await request.json();
+export const POST = withErrors(async (request: NextRequest, { params }: Ctx) => {
+  const dashboardId = parseUuid((await params).dashboard_id);
+  await requireDashboardRole(request, dashboardId, "editor");
 
-    const created = await createCategory(dashboard_id, {
-      name: body.name,
-      description: body.description ?? null,
-      tagIds: body.tag_ids ?? [],
-    });
+  const input = await parseJson(request, createCategorySchema);
+  const row = await createCategory(dashboardId, {
+    name: input.name,
+    description: input.description,
+    tagIds: input.tag_ids,
+    colorId: input.color_id,
+    iconId: input.icon_id,
+    recordTypeIds: input.record_type_ids,
+  });
+  if (!row) throw new ApiError("INTERNAL_ERROR");
 
-    return NextResponse.json(
-        { data: created },
-        { status: 201, headers: { Location: `/api/v1/dashboards/${dashboard_id}/categories/${created.id}` } }
-    );
-  } catch (error) {
-    if (error instanceof ApiError && error.code === "NAME_ALREADY_EXISTS") {
-      return NextResponse.json({ code: "NAME_ALREADY_EXISTS", status: 409 }, { status: 409 });
-    }
-    return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
-  }
-}
+  const extras = await loadCategoryExtras([row.id], false);
+
+  return created(
+    serializeCategory(row, extras.recordTypesOf(row.id)),
+    `/api/v1/dashboards/${dashboardId}/categories/${row.id}`,
+  );
+});

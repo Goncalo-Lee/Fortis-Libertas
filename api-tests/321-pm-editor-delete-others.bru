@@ -1,0 +1,19 @@
+meta {
+  name: Payment methods - editor cannot delete others
+  type: http
+  seq: 321
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods/{{pmId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 403
+}

@@ -1,29 +1,18 @@
-import { db } from "@/db";
-import { bankAccountUser, user } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import * as memberships from "../memberships";
 
 /* ======
   READ
 ======= */
 
+/** One active member of a bank account with the user data joined, or `null`. */
+export const getBankAccountMember = (bankAccountId: string, userId: string) =>
+  memberships.getMember(memberships.bankAccountMembership, bankAccountId, userId);
+
 /**
- * Lists all members belonging to a bank account.
+ * Lists the active members of a bank account (up to 500; accounts have few members).
+ * `callerUserId` is kept for the current routes and is not used.
  */
-export async function listBankAccountMembers(bankAccountId: string, callerUserId: string) {
-    return db
-        .select({
-            userId: user.id,
-            userName: user.username,
-            fullName: user.name,
-            image: user.image,
-            role: bankAccountUser.role,
-            createdAt: bankAccountUser.createdAt,
-            updatedAt: bankAccountUser.updatedAt,
-        })
-        .from(bankAccountUser)
-        .innerJoin(user, eq(bankAccountUser.userId, user.id))
-        .where(eq(bankAccountUser.bankId, sql`UUID_TO_BIN
-        (
-        ${bankAccountId}
-        )`));
+export async function listBankAccountMembers(bankAccountId: string, callerUserId?: string) {
+  const { rows } = await memberships.listMembers(memberships.bankAccountMembership, bankAccountId, 500, 0);
+  return rows;
 }

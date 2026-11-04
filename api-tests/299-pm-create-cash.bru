@@ -1,0 +1,31 @@
+meta {
+  name: Payment methods - create without card
+  type: http
+  seq: 299
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Cash" }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("pmId2", res.body.data.payment_method_id);
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("defaults", function () { expect(res.body.data.card_id).to.equal(null); expect(res.body.data.description).to.equal(""); });
+}

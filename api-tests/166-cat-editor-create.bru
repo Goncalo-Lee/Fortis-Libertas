@@ -1,0 +1,23 @@
+meta {
+  name: Categories - editor can create
+  type: http
+  seq: 166
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  { "name": "ByEditor", "color_id": "{{color5}}", "icon_id": "{{icon1}}", "record_type_ids": ["{{catRtExpenses}}"] }
+}
+
+assert {
+  res.status: eq 201
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Bank account log - rename it
+  type: http
+  seq: 588
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{logBank}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Log-Bank-Renamed" }
+}
+
+assert {
+  res.status: eq 200
+}

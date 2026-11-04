@@ -1,0 +1,19 @@
+meta {
+  name: Notifications - bad unread
+  type: http
+  seq: 542
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me/notifications?unread=yes
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 422
+}

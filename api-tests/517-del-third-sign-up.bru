@@ -1,0 +1,23 @@
+meta {
+  name: Delete me - third user signs up
+  type: http
+  seq: 517
+}
+
+post {
+  url: {{baseUrl}}/api/auth/sign-up/email
+  body: json
+  auth: none
+}
+
+body:json {
+  { "name": "API Third", "email": "{{email3}}", "password": "{{process.env.TEST_PASSWORD}}" }
+}
+
+script:pre-request {
+  bru.setVar("email3", `api3.${Date.now()}@example.com`);
+}
+
+assert {
+  res.status: eq 200
+}

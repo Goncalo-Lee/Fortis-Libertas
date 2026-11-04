@@ -1,0 +1,27 @@
+meta {
+  name: Financial records - setup installment plan
+  type: http
+  seq: 393
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/installment-plans
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Plan", "category_id": "{{frCat}}", "total_amount": "300.00", "total_installments": 3, "due_date": "2027-12-31", "tag_ids": ["{{frTagB}}"] }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("frPlan", res.body.data.installment_plan_id);
+}
+
+assert {
+  res.status: eq 201
+}

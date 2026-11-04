@@ -1,0 +1,31 @@
+meta {
+  name: Home - create a plan due in 10 days
+  type: http
+  seq: 613
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Soon-Plan", "category_id": "{{ipCatId}}", "total_amount": "120.00", "total_installments": 2, "due_date": "{{soonDue}}" }
+}
+
+script:pre-request {
+  bru.setVar("soonDue", new Date(Date.now() + 10 * 86400000).toISOString().slice(0, 10));
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("soonPlan", res.body.data.installment_plan_id);
+}
+
+assert {
+  res.status: eq 201
+}

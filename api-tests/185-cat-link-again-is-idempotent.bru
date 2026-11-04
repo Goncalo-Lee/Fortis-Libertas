@@ -1,0 +1,19 @@
+meta {
+  name: Categories - link again is idempotent
+  type: http
+  seq: 185
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories/{{linkedId}}/record-types/{{catRtIncome}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 204
+}

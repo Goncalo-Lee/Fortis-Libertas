@@ -1,0 +1,19 @@
+meta {
+  name: Financial records - bad include
+  type: http
+  seq: 427
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records?include=foo
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 422
+}

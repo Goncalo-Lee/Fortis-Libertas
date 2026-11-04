@@ -1,0 +1,15 @@
+meta {
+  name: Reports - no token
+  type: http
+  seq: 497
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/reports/summary?payment_date_from=2026-10-01T00:00:00.000Z&payment_date_to=2026-10-31T23:59:59.999Z
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 401
+}

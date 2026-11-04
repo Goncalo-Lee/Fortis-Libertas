@@ -1,0 +1,23 @@
+meta {
+  name: Categories - reserved color rejected
+  type: http
+  seq: 174
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Reserved", "color_id": "{{colorReservedId}}", "icon_id": "{{icon1}}", "record_type_ids": ["{{catRtExpenses}}"] }
+}
+
+assert {
+  res.status: eq 422
+}

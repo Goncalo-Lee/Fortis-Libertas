@@ -1,0 +1,27 @@
+meta {
+  name: Primary account - set primary
+  type: http
+  seq: 283
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/me/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "primary_bank_account_id": "{{primBaId}}" }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("set", function () { expect(res.body.data.primary_bank_account_id).to.equal(bru.getVar("primBaId")); });
+}

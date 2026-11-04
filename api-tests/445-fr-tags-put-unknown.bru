@@ -1,0 +1,23 @@
+meta {
+  name: Financial records - unknown tag
+  type: http
+  seq: 445
+}
+
+put {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records/{{frId}}/tags
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"tag_ids": ["00000000-0000-7000-8000-000000000000"]}
+}
+
+assert {
+  res.status: eq 422
+}

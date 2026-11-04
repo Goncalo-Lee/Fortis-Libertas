@@ -1,0 +1,27 @@
+meta {
+  name: Installment plans - setup expense category
+  type: http
+  seq: 334
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Gadgets", "color_id": "{{color1}}", "icon_id": "{{icon1}}", "record_type_ids": ["{{ipRtExpenses}}"] }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("ipCatId", res.body.data.category_id);
+}
+
+assert {
+  res.status: eq 201
+}

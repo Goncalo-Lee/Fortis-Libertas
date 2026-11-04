@@ -1,0 +1,24 @@
+meta {
+  name: Financial records - change category of a record in a plan
+  type: http
+  seq: 467
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records/{{frId4}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"category_id": "{{frCatIncome}}"}
+}
+
+assert {
+  res.status: eq 422
+  res.body.errors[0].pointer: eq /category_id
+}

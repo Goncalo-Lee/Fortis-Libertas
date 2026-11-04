@@ -3,6 +3,7 @@ import { db } from "../..";
 import { recordType } from "../../schema";
 import { escapeLike } from "../../utils";
 import { inDashboard } from "./../utils";
+import { attachColorIcon } from "../catalogs";
 import { ListFilters } from "./../type";
 
 /* ======
@@ -31,7 +32,10 @@ export async function getRecordType(dashboardId: string, id: string) {
     .where(inDashboard(recordType, dashboardId, id))
     .limit(1);
 
-  return row ?? null;
+  if (!row) return null;
+
+  const [full] = await attachColorIcon([row]);
+  return full ?? null;
 }
 
 /**
@@ -77,5 +81,5 @@ export async function listRecordTypes(dashboardId: string, f: ListFilters) {
     .from(recordType)
     .where(where);
 
-  return { rows, total: totalRow?.total ?? 0 };
+  return { rows: await attachColorIcon(rows), total: totalRow?.total ?? 0 };
 }

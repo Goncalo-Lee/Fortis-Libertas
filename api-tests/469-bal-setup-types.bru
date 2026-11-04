@@ -1,0 +1,25 @@
+meta {
+  name: Balances - setup record types
+  type: http
+  seq: 469
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/record-types
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:post-response {
+  const by = (n) => res.body.data.find((r) => r.name === n).record_type_id;
+  bru.setVar("fbRtExp", by("Expenses"));
+  bru.setVar("fbRtInc", by("Income"));
+}
+
+assert {
+  res.status: eq 200
+}

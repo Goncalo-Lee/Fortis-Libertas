@@ -1,0 +1,23 @@
+meta {
+  name: Bank accounts - promote to editor
+  type: http
+  seq: 222
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{baId}}/members/{{userId2}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "role": "editor" }
+}
+
+assert {
+  res.status: eq 200
+}

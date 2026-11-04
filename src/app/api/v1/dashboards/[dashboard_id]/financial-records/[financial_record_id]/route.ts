@@ -1,56 +1,75 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { getFinancialRecord } from "@/db/queries/financial-records/read";
-import { updateFinancialRecord, softDeleteFinancialRecord } from "@/db/queries/financial-records/write";
+import type { NextRequest } from "next/server";
+import {
+  getFinancialRecord,
+  softDeleteFinancialRecord,
+  updateFinancialRecord,
+} from "@/db/queries/financial-records";
+import { requireDashboardRole } from "@/lib/api/access";
+import { parseJson } from "@/lib/api/body";
+import { ApiError, withErrors } from "@/lib/api/errors";
+import { parseUuid } from "@/lib/api/ids";
+import { getMulti } from "@/lib/api/query";
+import { noContent, ok } from "@/lib/api/responses";
+import { presentFinancialRecords } from "@/lib/api/financial-record-response";
+import {
+  getFinancialRecordQuery,
+  listMultiQuery,
+  updateFinancialRecordSchema,
+} from "@/lib/api/schemas/financial-record";
 
-interface RouteContext {
-    params: Promise<{ dashboard_id: string; financial_record_id: string }>;
+export const runtime = "nodejs";
+
+type Ctx = { params: Promise<{ dashboard_id: string; financial_record_id: string }> };
+
+async function ids({ params }: Ctx) {
+  const p = await params;
+  return { dashboardId: parseUuid(p.dashboard_id), id: parseUuid(p.financial_record_id) };
 }
 
-export async function GET(request: NextRequest, context: RouteContext) {
-    const { dashboard_id, financial_record_id } = await context.params;
-    const record = await getFinancialRecord(dashboard_id, financial_record_id);
-    if (!record) return NextResponse.json({ code: "NOT_FOUND", status: 404 }, { status: 404 });
-    return NextResponse.json({ data: record }, { status: 200 });
+async function respond(request: NextRequest, userId: string, row: NonNullable<Awaited<ReturnType<typeof getFinancialRecord>>>) {
+  const { searchParams } = request.nextUrl;
+  const { rate } = getFinancialRecordQuery.parse(Object.fromEntries(searchParams));
+  const { include } = listMultiQuery.pick({ include: true }).parse({ include: getMulti(searchParams, "include") });
+
+  const [data] = await presentFinancialRecords([row], userId, { rate, include });
+  return ok(data);
 }
 
-export async function PATCH(request: NextRequest, context: RouteContext) {
-    try {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
+export const GET = withErrors(async (request: NextRequest, ctx: Ctx) => {
+  const { dashboardId, id } = await ids(ctx);
+  const { session } = await requireDashboardRole(request, dashboardId, "viewer");
 
-        const { dashboard_id, financial_record_id } = await context.params;
-        const body = await request.json();
+  const row = await getFinancialRecord(dashboardId, id);
+  if (!row) throw new ApiError("NOT_FOUND");
+  return respond(request, session.user.id, row);
+});
 
-        const updated = await updateFinancialRecord(dashboard_id, financial_record_id, {
-            recordTypeId: body.record_type_id,
-            categoryId: body.category_id,
-            paymentMethodId: body.payment_method_id,
-            installmentPlanId: body.installment_plan_id,
-            name: body.name,
-            description: body.description,
-            price: body.price !== undefined ? String(body.price) : undefined,
-            currency: body.currency,
-            paymentDate: body.payment_date ? new Date(body.payment_date) : undefined,
-            status: body.status,
-        });
+export const PATCH = withErrors(async (request: NextRequest, ctx: Ctx) => {
+  const { dashboardId, id } = await ids(ctx);
+  const { session } = await requireDashboardRole(request, dashboardId, "editor");
+  const input = await parseJson(request, updateFinancialRecordSchema);
 
-        return NextResponse.json({ data: updated }, { status: 200 });
-    } catch (error) {
-        return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
-    }
-}
+  const row = await updateFinancialRecord(dashboardId, id, {
+    recordTypeId: input.record_type_id,
+    categoryId: input.category_id,
+    paymentMethodId: input.payment_method_id,
+    installmentPlanId: input.installment_plan_id,
+    name: input.name,
+    description: input.description,
+    price: input.price,
+    currency: input.currency,
+    paymentDate: input.payment_date,
+    status: input.status,
+  });
+  if (!row) throw new ApiError("NOT_FOUND");
+  return respond(request, session.user.id, row);
+});
 
-export async function DELETE(request: NextRequest, context: RouteContext) {
-    try {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
+export const DELETE = withErrors(async (request: NextRequest, ctx: Ctx) => {
+  const { dashboardId, id } = await ids(ctx);
+  await requireDashboardRole(request, dashboardId, "editor");
 
-        const { dashboard_id, financial_record_id } = await context.params;
-        await softDeleteFinancialRecord(dashboard_id, financial_record_id);
-
-        return new NextResponse(null, { status: 204 });
-    } catch (error) {
-        return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
-    }
-}
+  if (!(await getFinancialRecord(dashboardId, id))) throw new ApiError("NOT_FOUND");
+  await softDeleteFinancialRecord(dashboardId, id);
+  return noContent();
+});

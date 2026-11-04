@@ -1,0 +1,20 @@
+meta {
+  name: Notifications - unread count is zero
+  type: http
+  seq: 551
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me/notifications/unread-count
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.unread: eq 0
+}

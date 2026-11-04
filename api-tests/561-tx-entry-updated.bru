@@ -1,0 +1,28 @@
+meta {
+  name: Transactions - entry snapshot refreshed
+  type: http
+  seq: 561
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/transactions?per_page=100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("one entry per source, with the new values", function () {
+    const list = res.body.data.filter((t) => t.source_id === bru.getVar("histRec"));
+    expect(list).to.have.length(1);
+    expect(list[0].name).to.equal("History-Renamed");
+    expect(list[0].amount).to.equal("20.00");
+  });
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Installment plans - viewer cannot patch
+  type: http
+  seq: 369
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans/{{ipId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  { "name": "Nope" }
+}
+
+assert {
+  res.status: eq 403
+}

@@ -1,62 +1,78 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { getInstallmentPlan } from "@/db/queries/installment-plans/read";
-import { updateInstallmentPlan, softDeleteInstallmentPlan } from "@/db/queries/installment-plans/write";
-import { ApiError } from "@/lib/api/errors";
+import type { NextRequest } from "next/server";
+import {
+  getInstallmentPlan,
+  getPlanProgress,
+  getTagsByPlan,
+  softDeleteInstallmentPlan,
+  updateInstallmentPlan,
+} from "@/db/queries/installment-plans";
+import { requireDashboardRole } from "@/lib/api/access";
+import { parseJson } from "@/lib/api/body";
+import { ApiError, withErrors } from "@/lib/api/errors";
+import { parseUuid } from "@/lib/api/ids";
+import { noContent, ok } from "@/lib/api/responses";
+import { deleteInstallmentPlanQuery, updateInstallmentPlanSchema } from "@/lib/api/schemas/installment-plan";
+import { convertPlanTotals } from "@/lib/api/response/installment-plan";
+import { rateMode } from "@/lib/api/schemas/financial-record";
+import { serializeInstallmentPlan } from "@/lib/api/serializers/installment-plan";
 
-interface RouteContext {
-    params: Promise<{ dashboard_id: string; installment_plan_id: string }>;
+export const runtime = "nodejs";
+
+type Ctx = { params: Promise<{ dashboard_id: string; installment_plan_id: string }> };
+
+async function ids({ params }: Ctx) {
+  const p = await params;
+  return { dashboardId: parseUuid(p.dashboard_id), id: parseUuid(p.installment_plan_id) };
 }
 
-export async function GET(request: NextRequest, context: RouteContext) {
-    const { dashboard_id, installment_plan_id } = await context.params;
-    const plan = await getInstallmentPlan(dashboard_id, installment_plan_id);
-    if (!plan) return NextResponse.json({ code: "NOT_FOUND", status: 404 }, { status: 404 });
-    return NextResponse.json({ data: plan }, { status: 200 });
-}
+export const GET = withErrors(async (request: NextRequest, ctx: Ctx) => {
+  const { dashboardId, id } = await ids(ctx);
+  const { session } = await requireDashboardRole(request, dashboardId, "viewer");
 
-export async function PATCH(request: NextRequest, context: RouteContext) {
-    try {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
+  const row = await getInstallmentPlan(dashboardId, id);
+  if (!row) throw new ApiError("NOT_FOUND");
 
-        const { dashboard_id, installment_plan_id } = await context.params;
-        const body = await request.json();
+  const rate = rateMode.parse(request.nextUrl.searchParams.get("rate") ?? undefined);
+  const [tags, progress, [converted]] = await Promise.all([
+    getTagsByPlan([id]),
+    getPlanProgress(id),
+    convertPlanTotals([row], session.user.id, rate),
+  ]);
+  return ok(serializeInstallmentPlan(row, tags.get(id) ?? [], progress, converted));
+});
 
-        const updated = await updateInstallmentPlan(dashboard_id, installment_plan_id, {
-            name: body.name,
-            description: body.description,
-            totalAmount: body.total_amount !== undefined ? String(body.total_amount) : undefined,
-            totalInstallments: body.total_installments !== undefined ? Number(body.total_installments) : undefined,
-            dueDate: body.due_date,
-            status: body.status,
-        });
+export const PATCH = withErrors(async (request: NextRequest, ctx: Ctx) => {
+  const { dashboardId, id } = await ids(ctx);
+  const { session } = await requireDashboardRole(request, dashboardId, "editor");
+  const input = await parseJson(request, updateInstallmentPlanSchema);
 
-        return NextResponse.json({ data: updated }, { status: 200 });
-    } catch (error) {
-        return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
-    }
-}
+  const row = await updateInstallmentPlan(dashboardId, id, {
+    name: input.name,
+    description: input.description,
+    categoryId: input.category_id,
+    currency: input.currency,
+    totalAmount: input.total_amount,
+    totalInstallments: input.total_installments,
+    dueDate: input.due_date,
+    status: input.status,
+  });
+  if (!row) throw new ApiError("NOT_FOUND");
 
-export async function DELETE(request: NextRequest, context: RouteContext) {
-    try {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
+  const [tags, progress, [converted]] = await Promise.all([
+    getTagsByPlan([id]),
+    getPlanProgress(id),
+    convertPlanTotals([row], session.user.id),
+  ]);
+  return ok(serializeInstallmentPlan(row, tags.get(id) ?? [], progress, converted));
+});
 
-        const { dashboard_id, installment_plan_id } = await context.params;
-        const { searchParams } = new URL(request.url);
-        const detachRecords = searchParams.get("detach_records") === "true";
+/** DELETE: 409 `IN_USE` while records are linked; `?detach_records=true` unlinks them first. */
+export const DELETE = withErrors(async (request: NextRequest, ctx: Ctx) => {
+  const { dashboardId, id } = await ids(ctx);
+  await requireDashboardRole(request, dashboardId, "editor");
+  const { detach_records } = deleteInstallmentPlanQuery.parse(Object.fromEntries(request.nextUrl.searchParams));
 
-        await softDeleteInstallmentPlan(dashboard_id, installment_plan_id, detachRecords);
-
-        return new NextResponse(null, { status: 204 });
-    } catch (error) {
-        if (error instanceof ApiError && error.code === "IN_USE") {
-            return NextResponse.json(
-                { code: "IN_USE", status: 409, detail: "Linked records exist. Pass ?detach_records=true to unbind." },
-                { status: 409 }
-            );
-        }
-        return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
-    }
-}
+  if (!(await getInstallmentPlan(dashboardId, id))) throw new ApiError("NOT_FOUND");
+  await softDeleteInstallmentPlan(dashboardId, id, detach_records ?? false);
+  return noContent();
+});

@@ -1,0 +1,19 @@
+meta {
+  name: Cards - delete card
+  type: http
+  seq: 275
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/cards/{{cardId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 204
+}

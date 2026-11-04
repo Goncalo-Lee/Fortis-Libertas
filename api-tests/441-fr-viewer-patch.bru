@@ -1,0 +1,23 @@
+meta {
+  name: Financial records - viewer cannot update
+  type: http
+  seq: 441
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records/{{frId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  {"name": "x"}
+}
+
+assert {
+  res.status: eq 403
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Installment plans - setup add token2 user as viewer
+  type: http
+  seq: 332
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/members
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "user_id": "{{userId2}}", "role": "viewer" }
+}
+
+assert {
+  res.status: eq 201
+}

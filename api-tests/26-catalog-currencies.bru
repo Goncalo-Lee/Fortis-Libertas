@@ -1,0 +1,26 @@
+meta {
+  name: Catalogs - list currencies
+  type: http
+  seq: 26
+}
+
+get {
+  url: {{baseUrl}}/api/v1/currencies
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.meta.total: eq 4
+}
+
+tests {
+  test("has EUR, USD, GBP and BRL", function () {
+    expect(res.body.data.map((c) => c.code).sort()).to.deep.equal(["BRL", "EUR", "GBP", "USD"]);
+  });
+}

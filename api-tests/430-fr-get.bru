@@ -1,0 +1,20 @@
+meta {
+  name: Financial records - get
+  type: http
+  seq: 430
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records/{{frId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.financial_record_id: eq {{frId}}
+}

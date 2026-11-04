@@ -1,0 +1,23 @@
+meta {
+  name: Installment plans - create zero amount
+  type: http
+  seq: 344
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Bad", "category_id": "{{ipCatId}}", "total_amount": "0", "total_installments": 1, "due_date": "2027-01-01" }
+}
+
+assert {
+  res.status: eq 422
+}

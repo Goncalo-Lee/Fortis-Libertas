@@ -1,0 +1,23 @@
+meta {
+  name: Me - empty body
+  type: http
+  seq: 503
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/me
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {}
+}
+
+assert {
+  res.status: eq 422
+}

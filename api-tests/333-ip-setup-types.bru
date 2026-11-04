@@ -1,0 +1,27 @@
+meta {
+  name: Installment plans - setup record types
+  type: http
+  seq: 333
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/record-types
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:post-response {
+  if (res.status === 200) {
+    const by = (n) => res.body.data.find((r) => r.name === n).record_type_id;
+    bru.setVar("ipRtExpenses", by("Expenses"));
+    bru.setVar("ipRtIncome", by("Income"));
+  }
+}
+
+assert {
+  res.status: eq 200
+}

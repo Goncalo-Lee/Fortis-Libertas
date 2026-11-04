@@ -1,0 +1,20 @@
+meta {
+  name: Catalogs - only reserved colors
+  type: http
+  seq: 28
+}
+
+get {
+  url: {{baseUrl}}/api/v1/colors?is_reserved=true
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.meta.total: eq 2
+}

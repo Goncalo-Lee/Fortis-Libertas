@@ -1,0 +1,20 @@
+meta {
+  name: Exchange rates - rate of a past day
+  type: http
+  seq: 528
+}
+
+get {
+  url: {{baseUrl}}/api/v1/exchange-rates?base=USD&quote=EUR&date=2026-10-30
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.rate_date: matches ^2026-10-30$
+}

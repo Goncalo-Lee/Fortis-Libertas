@@ -1,0 +1,27 @@
+meta {
+  name: Installment plans - patch currency
+  type: http
+  seq: 364
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans/{{ipId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "currency": "GBP" }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("gbp", function () { expect(res.body.data.currency).to.equal("GBP"); });
+}

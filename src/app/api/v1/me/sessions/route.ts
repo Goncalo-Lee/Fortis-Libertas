@@ -1,19 +1,36 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import type { NextRequest } from "next/server";
 import { listSessions, revokeOtherSessions } from "@/db/queries/me/sessions";
+import { requireSession } from "@/lib/api/auth";
+import { withErrors } from "@/lib/api/errors";
+import { noContent, ok } from "@/lib/api/responses";
+import { serializeSession } from "@/lib/api/serializers/session";
 
-export async function GET(request: NextRequest) {
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
+export const runtime = "nodejs";
 
-    const sessions = await listSessions(session.user.id, session.session.id);
-    return NextResponse.json({ data: sessions }, { status: 200 });
-}
+/**
+ * GET /api/v1/me/sessions
+ *
+ * Lists the caller's active sessions (one per signed-in device), newest first.
+ * `is_current` marks the session making this request, so the client can label it "this device".
+ *
+ * Errors: 401 / 403 from requireSession.
+ */
+export const GET = withErrors(async (request: NextRequest) => {
+  const { user, session } = await requireSession(request);
+  const rows = await listSessions(user.id, session.id);
+  return ok(rows.map(serializeSession));
+});
 
-export async function DELETE(request: NextRequest) {
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
-
-    await revokeOtherSessions(session.user.id, session.session.id);
-    return new NextResponse(null, { status: 204 });
-}
+/**
+ * DELETE /api/v1/me/sessions
+ *
+ * Revokes every session of the caller **except** the current one ("sign out of all other devices").
+ * To end the current session, the client uses POST /api/auth/sign-out instead.
+ *
+ * Errors: 401 / 403 from requireSession.
+ */
+export const DELETE = withErrors(async (request: NextRequest) => {
+  const { user, session } = await requireSession(request);
+  await revokeOtherSessions(user.id, session.id);
+  return noContent();
+});

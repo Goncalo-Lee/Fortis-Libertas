@@ -1,0 +1,19 @@
+meta {
+  name: Sessions - revoke the other device
+  type: http
+  seq: 509
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/me/sessions/{{sessionOther2}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 204
+}

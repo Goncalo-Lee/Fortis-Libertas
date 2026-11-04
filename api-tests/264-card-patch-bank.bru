@@ -1,0 +1,23 @@
+meta {
+  name: Cards - patch bank_id rejected
+  type: http
+  seq: 264
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/cards/{{cardId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "bank_id": "00000000-0000-7000-8000-000000000000" }
+}
+
+assert {
+  res.status: eq 422
+}

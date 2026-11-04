@@ -1,0 +1,19 @@
+meta {
+  name: Activity logs - bad dashboard id
+  type: http
+  seq: 585
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/not-a-uuid/activity-logs
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 400
+}

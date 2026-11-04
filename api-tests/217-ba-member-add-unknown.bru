@@ -1,0 +1,23 @@
+meta {
+  name: Bank accounts - add unknown user
+  type: http
+  seq: 217
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{baId}}/members
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "email": "nobody-here@example.com", "role": "viewer" }
+}
+
+assert {
+  res.status: eq 422
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Cards - non-member after removal
+  type: http
+  seq: 279
+}
+
+get {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{cardBaId}}/cards
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 404
+}
