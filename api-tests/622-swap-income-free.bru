@@ -1,0 +1,24 @@
+meta {
+  name: Color swap - Income cannot take a non-reserved color
+  type: http
+  seq: 622
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{swapDash}}/record-types/{{incomeRt}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "color_id": "{{neutralColor}}" }
+}
+
+assert {
+  res.status: eq 422
+  res.body.errors[0].pointer: eq /color_id
+}

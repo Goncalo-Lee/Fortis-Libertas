@@ -1,0 +1,24 @@
+meta {
+  name: Color swap - a normal type cannot take a reserved color
+  type: http
+  seq: 621
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{swapDash}}/record-types/{{neutralRt}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "color_id": "{{expensesColor}}" }
+}
+
+assert {
+  res.status: eq 422
+  res.body.errors[0].pointer: eq /color_id
+}

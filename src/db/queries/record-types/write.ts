@@ -1,11 +1,12 @@
 import { changedFields, logDashboardActivity } from "../activity-logs/write";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne, notInArray } from "drizzle-orm";
 import { db } from "../..";
-import { financialRecord, installmentPlan, recordType, recordTypeCategory } from "../../schema";
+import { color, financialRecord, installmentPlan, recordType, recordTypeCategory } from "../../schema";
 import { generateId } from "../../types";
 import { ApiError } from "../../../lib/api/errors";
 import { inDashboard, nameTaken } from "./../utils";
 import { assertColorAvailable, assertIconExists, isColorTaken } from "../catalogs";
+import type { Tx } from "../memberships";
 import { getRecordType } from "./read";
 import { CreateRecordTypeInput, UpdateRecordTypeInput } from "./type";
 
@@ -98,7 +99,14 @@ export async function updateRecordType(
   if (changes.description !== undefined) set.description = changes.description;
 
   // Income and Expenses (reserved color) can only swap to another reserved color; the others cannot take one.
+  // If the other reserved color is held by the other seeded type, this is a SWAP (README, Open Item 11).
+  let swapWith: string | null = null;
   if (changes.color_id !== undefined && changes.color_id !== current.colorId.toLowerCase()) {
+    swapWith = current.color.isReserved ? await findReservedSwapPartner(dashboardId, id, changes.color_id) : null;
+  }
+  if (swapWith) {
+    set.colorId = changes.color_id;
+  } else if (changes.color_id !== undefined && changes.color_id !== current.colorId.toLowerCase()) {
     await assertColorAvailable({
       table: recordType,
       dashboardId,
@@ -120,13 +128,24 @@ export async function updateRecordType(
   if (Object.keys(set).length > 0) {
     try {
       await db.transaction(async (tx) => {
-        await tx
-          .update(recordType)
-          .set({ ...set, updatedAt: new Date() })
-          .where(inDashboard(recordType, dashboardId, id));
+        if (swapWith) {
+          // The swap writes both rows itself, in the order the unique index allows.
+          await swapReservedColors(tx, dashboardId, id, swapWith, current.colorId, set);
+        } else {
+          await tx
+            .update(recordType)
+            .set({ ...set, updatedAt: new Date() })
+            .where(inDashboard(recordType, dashboardId, id));
+        }
         await logDashboardActivity(tx, dashboardId, {
           entityType: "record_type", entityId: id, action: "updated", metadata: { fields: changedFields(set) },
         });
+        if (swapWith) {
+          await logDashboardActivity(tx, dashboardId, {
+            entityType: "record_type", entityId: swapWith, action: "updated",
+            metadata: { fields: ["color_id"], swapped_with: id },
+          });
+        }
       });
     } catch (error) {
       if (set.colorId !== undefined && (await isColorTaken({ table: recordType, dashboardId, colorId: set.colorId, exceptId: id }))) {
@@ -192,4 +211,73 @@ export async function softDeleteRecordType(dashboardId: string, id: string) {
       await logDashboardActivity(tx, dashboardId, { entityType: "record_type", entityId: id, action: "deleted" });
     }
   });
+}
+
+/* ======================
+  RESERVED COLOR SWAP
+====================== */
+
+/**
+ * When Income asks for the reserved color that Expenses holds (or the other way round), returns the id of the
+ * record type holding it, so the two colors can be exchanged. Returns `null` when it is not a swap
+ * (the target color is not reserved, or nobody in the dashboard holds it): the normal checks then apply.
+ *
+ * Soft-deleted record types are included on purpose: the unique index counts them too.
+ */
+async function findReservedSwapPartner(dashboardId: string, id: string, targetColorId: string) {
+  const [holder] = await db
+    .select({ id: recordType.id })
+    .from(recordType)
+    .innerJoin(color, eq(color.id, recordType.colorId))
+    .where(
+      and(
+        eq(recordType.dashboardId, dashboardId),
+        eq(recordType.colorId, targetColorId),
+        ne(recordType.id, id),
+        eq(color.isReserved, true),
+      ),
+    )
+    .limit(1);
+  return holder?.id ?? null;
+}
+
+/**
+ * Exchanges the reserved colors of two record types (README, Open Item 11).
+ *
+ * `UNIQUE (dashboard_id, color_id)` rejects a direct swap: the first UPDATE would leave two rows with the same color.
+ * So the partner first moves to a free "parking" color, like swapping two glasses with the help of a third one:
+ *
+ *   1. partner: B -> temp      (B is now free)
+ *   2. current: A -> B         (+ any other field of the same PATCH)
+ *   3. partner: temp -> A
+ *
+ * It runs inside the caller's transaction: if any step fails, nothing changes. Both rows are locked first
+ * (SELECT ... FOR UPDATE) so two swaps at the same time wait for each other instead of colliding halfway.
+ *
+ * @param set - The rest of the PATCH for the current record type (its `colorId` is the partner's color)
+ * @throws {ApiError} `COLOR_IN_USE` in the (unlikely) case that every color of the palette is taken in the dashboard
+ */
+async function swapReservedColors(
+  tx: Tx,
+  dashboardId: string,
+  id: string,
+  partnerId: string,
+  currentColorId: string,
+  set: Partial<typeof recordType.$inferInsert>,
+) {
+  await tx
+    .select({ id: recordType.id })
+    .from(recordType)
+    .where(and(eq(recordType.dashboardId, dashboardId), inArray(recordType.id, [id, partnerId])))
+    .for("update");
+
+  // Any color no record type of this dashboard uses (deleted ones included), only held for a moment.
+  const used = tx.select({ colorId: recordType.colorId }).from(recordType).where(eq(recordType.dashboardId, dashboardId));
+  const [temp] = await tx.select({ id: color.id }).from(color).where(notInArray(color.id, used)).limit(1);
+  if (!temp) throw new ApiError("COLOR_IN_USE", "No free color is available to swap the reserved colors.");
+
+  const now = new Date();
+  await tx.update(recordType).set({ colorId: temp.id, updatedAt: now }).where(eq(recordType.id, partnerId));
+  await tx.update(recordType).set({ ...set, updatedAt: now }).where(eq(recordType.id, id));
+  await tx.update(recordType).set({ colorId: currentColorId, updatedAt: now }).where(eq(recordType.id, partnerId));
 }
