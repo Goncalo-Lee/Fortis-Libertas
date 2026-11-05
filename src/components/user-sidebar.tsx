@@ -3,7 +3,6 @@
 import * as React from "react"
 import { NavDocuments } from "@/components/nav/nav-documents"
 import { NavMain } from "@/components/nav/nav-main"
-import { NavSecondary } from "@/components/nav/nav-secondary"
 import { NavUser } from "@/components/nav/nav-user"
 import {
   Sidebar,
@@ -15,12 +14,11 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import {
-  FileTextIcon, Settings2Icon, CircleHelpIcon, SearchIcon,
+  FileTextIcon,
   FileChartColumnIcon, CommandIcon, BadgeEuroIcon, MinusCircleIcon,
   CalendarArrowDownIcon, ClipboardMinusIcon, PiggyBankIcon,
   FileOutputIcon, BellIcon, ArrowLeftRightIcon
 } from "lucide-react"
-import {SidebarSearchTrigger} from "@/components/SidebarSearchTrigger";
 import ChatToggleDialog from "@/components/chat-toggle-dialog";
 
 const navMain = [
@@ -39,9 +37,7 @@ const documents = [
   { name: "Registo de transações", url: "/dashboard/documents/transactions-log", icon: <ArrowLeftRightIcon /> },
 ]
 
-const navSecondary = [
-  { title: "Configurações", url: "/dashboard/configurations", icon: <Settings2Icon /> },
-]
+
 
 interface UserSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user?: {
@@ -76,13 +72,9 @@ export function UserSidebar({ user, ...props }: UserSidebarProps) {
         <SidebarContent>
           <NavMain items={navMain} />
           <NavDocuments items={documents} />
-          <NavSecondary items={navSecondary} className="mt-auto" />
-
-          <ChatToggleDialog />
-          <SidebarSearchTrigger />
-
         </SidebarContent>
         <SidebarFooter>
+          <ChatToggleDialog />
           <NavUser user={userData} />
         </SidebarFooter>
       </Sidebar>

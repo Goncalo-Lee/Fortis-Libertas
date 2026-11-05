@@ -1,21 +1,15 @@
 // src/db/data/seed.ts
-import mysql from 'mysql2/promise';
-import { randomUUID } from 'crypto';
+import { randomUUID } from "crypto";
+import { eq } from "drizzle-orm";
+import { db } from "@/db"; // Ajusta para o caminho correto da tua instância DB
+import * as schema from "@/db/schema"; // Ajusta para o caminho correto do teu schema Drizzle
 
 async function seed() {
-    console.log("🌱 A conectar à base de dados MySQL...");
-
-    const connection = await mysql.createConnection({
-        host: process.env.DB_HOST || 'localhost',
-        user: process.env.DB_USER || 'root',
-        password: process.env.DB_PASSWORD || '',
-        database: process.env.DB_NAME || 'fortis_libertas',
-        port: Number(process.env.DB_PORT) || 3306,
-        namedPlaceholders: true,
-    });
+    console.log("🌱 A preparar seed com Drizzle ORM...");
 
     try {
-        console.log("🚀 A gerar identificadores e a preparar dados relacionais...");
+        // Gera a password com Bun (compatível com Better Auth)
+        const hashedPassword = await Bun.password.hash("Password!");
 
         // 1. Gerar UUIDs para todas as entidades principais
         const userId = randomUUID();
@@ -26,186 +20,193 @@ async function seed() {
         const recordTypeId = randomUUID();
         const categoryId = randomUUID();
         const tagId = randomUUID();
-        const paymentMethodId = "PM-" + Date.now().toString().slice(-13);
+        const paymentMethodId = randomUUID(); // Corrigido para UUID válido
         const installmentPlanId = randomUUID();
         const financialRecordId = randomUUID();
 
-        await connection.beginTransaction();
-        console.log("📦 A inserir entidades principais (User, Account, Profile, Dashboard)...");
+        await db.transaction(async (tx) => {
+            console.log("🔍 A carregar referências dos catálogos globais...");
 
-        // ==========================================
-        // BLOCO 1: UTILIZADOR, CONTA (AUTH) & WORKSPACE
-        // ==========================================
-        await connection.execute(`
-            INSERT INTO user (
-                user_id, user_name, full_name, email, email_verified_at, two_factor_enabled, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:userId), 'maria.silva', 'Maria Silva', 'maria@example.com', NOW(), 0, NOW(), NOW()
-                     )
-        `, { userId });
+            // Vai buscar as referências obrigatórias geradas pelo db:seed:catalogs
+            const [eurCurrency] = await tx.select().from(schema.currency).where(eq(schema.currency.code, 'EUR')).limit(1);
+            const [ptLanguage] = await tx.select().from(schema.language).where(eq(schema.language.code, 'pt-PT')).limit(1);
+            const [defaultIcon] = await tx.select().from(schema.icon).limit(1);
+            // Busca cores distintas para o tipo de registo e categoria
+            const colors = await tx.select().from(schema.color).where(eq(schema.color.isReserved, false)).limit(2);
 
-        // Inserção da Tabela Account com a password solicitada
-        // Nota: Se o teu sistema de Auth (ex: NextAuth/BetterAuth) exigir que a password esteja em hash (bcrypt/argon2) na base de dados,
-        // terás de substituir 'Password!' pela respetiva hash gerada, caso contrário o login falhará ao comparar.
-// Inserção da Tabela Account com o account_identifier_id incluído
-// 1. Gera o hash compatível com o Better Auth usando o Bun
-        const hashedPassword = await Bun.password.hash("Password!");
+            if (!eurCurrency || !ptLanguage || !defaultIcon || colors.length < 2) {
+                throw new Error("Catálogos globais vazios. Corre primeiro o 'bun run db:seed:catalogs'!");
+            }
 
-        // 2. Insere na Tabela Account (nota o provider_id como 'credential' no singular)
-        await connection.execute(`
-            INSERT INTO account (
-                account_id, account_identifier_id, user_id, provider_id, password, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:accountPkId), :accountIdentifierId, UUID_TO_BIN(:userId), 'credential', :password, NOW(), NOW()
-                     )
-        `, {
-            accountPkId,
-            accountIdentifierId: 'maria@example.com',
-            userId,
-            password: hashedPassword // Passamos a password criptografada!
+            console.log("📦 A inserir entidades principais (User, Account, Profile, Dashboard)...");
+
+            // ==========================================
+            // BLOCO 1: UTILIZADOR, CONTA (AUTH) & WORKSPACE
+            // ==========================================
+            await tx.insert(schema.user).values({
+                id: userId, // Drizzle costuma mapear o PK 'user_id' como 'id'
+                userName: "maria.silva",
+                fullName: "Maria Silva",
+                email: "maria@example.com",
+                emailVerifiedAt: new Date(),
+                twoFactorEnabled: false,
+            });
+
+            await tx.insert(schema.account).values({
+                id: accountPkId,
+                accountId: "maria@example.com", // Equivalente ao account_identifier_id do Better Auth
+                userId: userId,
+                providerId: "credential",
+                password: hashedPassword,
+            });
+
+            await tx.insert(schema.profile).values({
+                userId: userId,
+                birthDate: new Date("1990-05-20"),
+                phone: "+351912345678",
+                currencyId: eurCurrency.currencyId, // Usa a FK obrigatória
+                languageId: ptLanguage.languageId,  // Usa a FK obrigatória
+            });
+
+            await tx.insert(schema.dashboard).values({
+                dashboardId: dashboardId,
+                name: "Finanças da Maria",
+                isActive: true,
+            });
+
+            await tx.insert(schema.userDashboard).values({
+                dashboardId: dashboardId,
+                userId: userId,
+                role: "owner",
+            });
+
+            // ==========================================
+            // BLOCO 2: BANCOS & CARTÕES
+            // ==========================================
+            console.log("🏦 A inserir contas bancárias e cartões...");
+
+            await tx.insert(schema.bankAccount).values({
+                bankAccountId: bankAccountId,
+                name: "Conta à Ordem CGD",
+                initialBalance: "1500.00",
+                currencyId: eurCurrency.currencyId, // FK obrigatória
+            });
+
+            await tx.insert(schema.bankAccountUser).values({
+                bankId: bankAccountId,
+                userId: userId,
+                role: "owner",
+            });
+
+            await tx.insert(schema.card).values({
+                cardId: cardId,
+                bankId: bankAccountId,
+                userId: userId,
+                cardholderName: "MARIA SILVA",
+                typeCard: "debit",
+                cardNumber: "1234567812345678",
+                expiryDate: new Date("2028-12-31"),
+                cvv: "123",
+            });
+
+            // ==========================================
+            // BLOCO 3: CLASSIFICAÇÕES & DEFINIÇÕES
+            // ==========================================
+            console.log("🏷️ A inserir classificações...");
+
+            await tx.insert(schema.recordType).values({
+                recordTypeId: recordTypeId,
+                dashboardId: dashboardId,
+                name: "Despesa",
+                description: "Saídas de dinheiro",
+                colorId: colors[0].colorId, // FK obrigatória
+                iconId: defaultIcon.id, // FK obrigatória
+                kind: "expense", // FK obrigatória ('income', 'expense' ou 'neutral')
+            });
+
+            await tx.insert(schema.category).values({
+                categoryId: categoryId,
+                dashboardId: dashboardId,
+                name: "Supermercado",
+                description: "Compras de mercearia",
+                colorId: colors[1].colorId, // Cores exclusivas por dashboard
+                iconId: defaultIcon.id,
+            });
+
+            // A nova arquitetura exige que associes a categoria ao tipo de registo!
+            await tx.insert(schema.recordTypeCategory).values({
+                recordTypeId: recordTypeId,
+                categoryId: categoryId,
+            });
+
+            await tx.insert(schema.tag).values({
+                tagId: tagId,
+                dashboardId: dashboardId,
+                name: "Essencial",
+                description: "Despesas obrigatórias",
+            });
+
+            await tx.insert(schema.tagCategory).values({
+                tagId: tagId,
+                categoryId: categoryId,
+            });
+
+            await tx.insert(schema.paymentMethod).values({
+                paymentMethodId: paymentMethodId,
+                dashboardId: dashboardId,
+                userId: userId,
+                cardId: cardId,
+                name: "Cartão Débito Principal",
+                description: "Pagamentos diários",
+            });
+
+            // ==========================================
+            // BLOCO 4: TRANSAÇÕES
+            // ==========================================
+            console.log("💰 A gerar planos de pagamento e transações...");
+
+            await tx.insert(schema.installmentPlan).values({
+                installmentPlanId: installmentPlanId,
+                dashboardId: dashboardId,
+                registerById: userId,
+                recordTypeId: recordTypeId,
+                categoryId: categoryId,
+                currencyId: eurCurrency.id, // FK obrigatória
+                totalAmount: "120.00",
+                totalInstallments: 3,
+                dueDate: new Date("2026-11-25"),
+                status: "pending",
+                name: "Pagamento parcelado",
+            });
+
+            await tx.insert(schema.financialRecord).values({
+                financialRecordId: financialRecordId,
+                dashboardId: dashboardId,
+                registerById: userId,
+                recordTypeId: recordTypeId,
+                categoryId: categoryId,
+                paymentMethodId: paymentMethodId,
+                installmentPlanId: installmentPlanId,
+                name: "Compras Continente",
+                description: "Leite, pão e vegetais",
+                price: "40.00",
+                currencyId: eurCurrency.id, // FK obrigatória
+                paymentDate: new Date(),
+                status: "settled",
+            });
+
+            await tx.insert(schema.tagFinancialRecord).values({
+                tagId: tagId,
+                recordId: financialRecordId,
+            });
         });
 
-        await connection.execute(`
-            INSERT INTO profile (
-                user_id, birth_date, phone, currency, language, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:userId), '1990-05-20', '+351912345678', 'EUR', 'pt-PT', NOW(), NOW()
-                     )
-        `, { userId });
-
-        await connection.execute(`
-            INSERT INTO dashboard (
-                dashboard_id, name, is_active, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:dashboardId), 'Finanças da Maria', 1, NOW(), NOW()
-                     )
-        `, { dashboardId });
-
-        await connection.execute(`
-            INSERT INTO user__dashboard (
-                dashboard_id, user_id, role, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:dashboardId), UUID_TO_BIN(:userId), 'owner', NOW(), NOW()
-                     )
-        `, { dashboardId, userId });
-
-        // ==========================================
-        // BLOCO 2: BANCOS & CARTÕES
-        // ==========================================
-        console.log("🏦 A inserir contas bancárias e cartões...");
-
-        await connection.execute(`
-            INSERT INTO bank_account (
-                bank_account_id, name, initial_balance, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:bankAccountId), 'Conta à Ordem CGD', 1500.00, NOW(), NOW()
-                     )
-        `, { bankAccountId });
-
-        await connection.execute(`
-            INSERT INTO bank_account__user (
-                bank_id, user_id, role, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:bankAccountId), UUID_TO_BIN(:userId), 'owner', NOW(), NOW()
-                     )
-        `, { bankAccountId, userId });
-
-        await connection.execute(`
-            INSERT INTO card (
-                card_id, bank_id, user_id, cardholder_name, type_card, card_number, expiry_date, cvv, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:cardId), UUID_TO_BIN(:bankAccountId), UUID_TO_BIN(:userId), 'MARIA SILVA', 'debit', '1234567812345678', '2028-12-31', '123', NOW(), NOW()
-                     )
-        `, { cardId, bankAccountId, userId });
-
-        // ==========================================
-        // BLOCO 3: CLASSIFICAÇÕES & DEFINIÇÕES DO DASHBOARD
-        // ==========================================
-        console.log("🏷️ A inserir classificações (Tipos, Categorias, Tags, Métodos de Pagamento)...");
-
-        await connection.execute(`
-            INSERT INTO record_type (
-                record_type_id, dashboard_id, name, description, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:recordTypeId), UUID_TO_BIN(:dashboardId), 'Despesa', 'Saídas de dinheiro', NOW(), NOW()
-                     )
-        `, { recordTypeId, dashboardId });
-
-        await connection.execute(`
-            INSERT INTO category (
-                category_id, dashboard_id, name, description, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:categoryId), UUID_TO_BIN(:dashboardId), 'Supermercado', 'Compras de mercearia', NOW(), NOW()
-                     )
-        `, { categoryId, dashboardId });
-
-        await connection.execute(`
-            INSERT INTO tag (
-                tag_id, dashboard_id, name, description, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:tagId), UUID_TO_BIN(:dashboardId), 'Essencial', 'Despesas obrigatórias', NOW(), NOW()
-                     )
-        `, { tagId, dashboardId });
-
-        await connection.execute(`
-            INSERT INTO tag__category (
-                tag_id, category_id, created_at
-            ) VALUES (
-                         UUID_TO_BIN(:tagId), UUID_TO_BIN(:categoryId), NOW()
-                     )
-        `, { tagId, categoryId });
-
-        await connection.execute(`
-            INSERT INTO payment_method (
-                payment_method_id, dashboard_id, card_id, name, description, created_at, updated_at
-            ) VALUES (
-                         :paymentMethodId, UUID_TO_BIN(:dashboardId), UUID_TO_BIN(:cardId), 'Cartão Débito Principal', 'Pagamentos diários', NOW(), NOW()
-                     )
-        `, { paymentMethodId, dashboardId, cardId });
-
-        // ==========================================
-        // BLOCO 4: TRANSAÇÕES (PLANO DE PRESTAÇÕES & REGISTOS)
-        // ==========================================
-        console.log("💰 A gerar planos de pagamento e transações financeiras...");
-
-        await connection.execute(`
-            INSERT INTO installment_plan (
-                installment_plan_id, dashboard_id, register_by_id, total_amount, total_installments, due_date, status, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:installmentPlanId), UUID_TO_BIN(:dashboardId), UUID_TO_BIN(:userId), 120.00, 3, '2026-11-25', 'pending', NOW(), NOW()
-                     )
-        `, { installmentPlanId, dashboardId, userId });
-
-        await connection.execute(`
-            INSERT INTO financial_record (
-                financial_record_id, dashboard_id, register_by_id, record_type_id, category_id, payment_method_id, installment_plan_id, name, description, price, currency, payment_date, status, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:financialRecordId), UUID_TO_BIN(:dashboardId), UUID_TO_BIN(:userId), UUID_TO_BIN(:recordTypeId), UUID_TO_BIN(:categoryId), :paymentMethodId, UUID_TO_BIN(:installmentPlanId), 'Compras Continente', 'Leite, pão e vegetais', 40.00, 'EUR', NOW(), 'settled', NOW(), NOW()
-                     )
-        `, { financialRecordId, dashboardId, userId, recordTypeId, categoryId, paymentMethodId, installmentPlanId });
-
-        await connection.execute(`
-            INSERT INTO tag__financial_record (
-                tag_id, record_id, created_at
-            ) VALUES (
-                         UUID_TO_BIN(:tagId), UUID_TO_BIN(:financialRecordId), NOW()
-                     )
-        `, { tagId, financialRecordId });
-
-        // ==========================================
-        // COMMIT DA TRANSAÇÃO
-        // ==========================================
-        await connection.commit();
-
-        console.log("✅ Seed completo e coerente executado com sucesso!");
-        console.log(`👤 Utilizador criado: maria@example.com | Password: Password!`);
+        console.log("✅ Seed Drizzle completo e coerente executado com sucesso!");
+        console.log("👤 Utilizador criado: maria@example.com | Password: Password!");
 
     } catch (error) {
-        await connection.rollback();
-        console.error("❌ Erro ao executar o seed, transação revertida:");
-        console.error(error);
-    } finally {
-        await connection.end();
+        console.error("❌ Erro ao executar o seed:", error);
+        process.exit(1);
     }
 }
 

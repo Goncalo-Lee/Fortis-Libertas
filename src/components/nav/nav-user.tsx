@@ -27,7 +27,7 @@ import {
   BellIcon,
   LogOutIcon,
   Loader2,
-  LogOut
+  LogOut, Settings2Icon
 } from "lucide-react"
 
 import Link from "next/link";
@@ -121,15 +121,11 @@ export function NavUser({
                 A minha conta
               </Link>}>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCardIcon
-                />
-                Faturação
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <BellIcon
-                />
-                Notificações
+              <DropdownMenuItem render={
+                <Link href="/dashboard/configurations" className="w-full flex items-center cursor pointer">
+                  <Settings2Icon/>
+                  Configurações
+                </Link>}>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
