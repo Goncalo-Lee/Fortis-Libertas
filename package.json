@@ -59,6 +59,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@react-email/ui": "^6.11.6",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/bcryptjs": "^3.0.0",
     "@types/bun": "^1.4.2",
@@ -70,6 +71,7 @@
     "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
+    "react-email": "^6.11.6",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.15",
     "typescript": "^5"

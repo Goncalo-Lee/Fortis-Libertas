@@ -43,7 +43,7 @@ export default function SignUpForm({
       const res = await authClient.signIn.social({
         provider: "google",
         mode: "popup",
-        redirectTo: "/dashboard",
+        callbackURL: "/dashboard",
       });
 
       if (res?.error) {

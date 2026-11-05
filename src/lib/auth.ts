@@ -6,6 +6,10 @@ import * as schema from "../db/schema";
 import { generateId } from "@/db/types";
 import {nextCookies} from "better-auth/next-js";
 import nodemailer from "nodemailer";
+import ResetPasswordEmail from "@/emails/reset-password";
+import { render } from "@react-email/render";
+import {user} from "../db/schema";
+import VerificationEmail from "@/emails/verification-email";
 
 /**
  * Better Auth Configuration
@@ -44,10 +48,16 @@ export const auth = betterAuth({
   }),
 
   emailVerification: {
-    sendOnSignUp: false,
+    sendOnSignUp: true,
     autoSignInAfterVerification: true,
 
     sendVerificationEmail: async ({ user, url }) => {
+      const emailHtml = await render(
+          VerificationEmail({
+            verificationUrl: url,
+            username: user.name
+          })
+      )
       if (process.env.SEEDING === "true") {
         console.log(`Bypassing email verification for: ${user.email}`);
         return;
@@ -58,7 +68,7 @@ export const auth = betterAuth({
           from: '"Fortis Libertas" <no-reply@fortislibertas.com>',
           to: user.email,
           subject: "Verificação de Email - Fortis Libertas", // Tornámos mais genérico
-          html: `<p>Olá ${user.name},</p><p>Clica <a href="${url}">aqui</a> para verificar e confirmar o teu endereço de email.</p>`,
+          html: emailHtml,
         });
 
         console.log(`Email de verificação enviado com sucesso para ${user.email}!`);
@@ -74,11 +84,19 @@ export const auth = betterAuth({
     requireEmailVerification: false,
 
     sendResetPassword: async ({ user, url }) => {
-      await transporter.sendMail({
+      const emailHtml = await render(
+          ResetPasswordEmail({
+            resetUrl: url,
+            userEmail: user.email,
+            username: user.name,
+          })
+      )
+
+      transporter.sendMail({
         from: '"Fortis Libertas" <no-reply@fortislibertas.com>',
         to: user.email,
         subject: "Reinicia a tua senha",
-        html: `<p>Clica <a href="${url}">aqui</a> para reiniciar a tua senha.</p>`,
+        html: emailHtml,
       })
     },
   },
