@@ -1,0 +1,23 @@
+meta {
+  name: Financial records - setup add token2 user as viewer
+  type: http
+  seq: 383
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/members
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "user_id": "{{userId2}}", "role": "viewer" }
+}
+
+assert {
+  res.status: eq 201
+}

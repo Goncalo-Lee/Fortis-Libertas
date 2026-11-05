@@ -1,56 +1,59 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { getPaymentMethod } from "@/db/queries/payment-methods/read";
-import { updatePaymentMethod, softDeletePaymentMethod } from "@/db/queries/payment-methods/write";
-import { ApiError } from "@/lib/api/errors";
+import type { NextRequest } from "next/server";
+import { getPaymentMethod, softDeletePaymentMethod, updatePaymentMethod } from "@/db/queries/payment-methods";
+import { requireDashboardRole } from "@/lib/api/access";
+import { parseJson } from "@/lib/api/body";
+import { ApiError, withErrors } from "@/lib/api/errors";
+import { parseUuid } from "@/lib/api/ids";
+import { noContent, ok } from "@/lib/api/responses";
+import { updatePaymentMethodSchema } from "@/lib/api/schemas/payment-method";
+import { serializePaymentMethod } from "@/lib/api/serializers/payment-method";
 
-interface RouteContext {
-    params: Promise<{ dashboard_id: string; payment_method_id: string }>;
+export const runtime = "nodejs";
+
+type Ctx = { params: Promise<{ dashboard_id: string; payment_method_id: string }> };
+
+async function ids({ params }: Ctx) {
+  const p = await params;
+  return { dashboardId: parseUuid(p.dashboard_id), id: parseUuid(p.payment_method_id) };
 }
 
-export async function GET(request: NextRequest, context: RouteContext) {
-    const { dashboard_id, payment_method_id } = await context.params;
-    const method = await getPaymentMethod(dashboard_id, payment_method_id);
-    if (!method) return NextResponse.json({ code: "NOT_FOUND", status: 404 }, { status: 404 });
-    return NextResponse.json({ data: method }, { status: 200 });
-}
+export const GET = withErrors(async (request: NextRequest, ctx: Ctx) => {
+  const { dashboardId, id } = await ids(ctx);
+  await requireDashboardRole(request, dashboardId, "viewer");
 
-export async function PATCH(request: NextRequest, context: RouteContext) {
-    try {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
+  const row = await getPaymentMethod(dashboardId, id);
+  if (!row) throw new ApiError("NOT_FOUND");
+  return ok(serializePaymentMethod(row));
+});
 
-        const { dashboard_id, payment_method_id } = await context.params;
-        const body = await request.json();
+/** PATCH: the creator (editor) or a dashboard owner. Another editor gets 403. */
+export const PATCH = withErrors(async (request: NextRequest, ctx: Ctx) => {
+  const { dashboardId, id } = await ids(ctx);
+  const { session, role } = await requireDashboardRole(request, dashboardId, "editor");
 
-        const updated = await updatePaymentMethod(dashboard_id, payment_method_id, session.user.id, {
-            name: body.name,
-            description: body.description,
-            cardId: body.card_id,
-        });
+  const current = await getPaymentMethod(dashboardId, id);
+  if (!current) throw new ApiError("NOT_FOUND");
+  if (role !== "owner" && current.userId !== session.user.id.toLowerCase()) throw new ApiError("FORBIDDEN");
 
-        return NextResponse.json({ data: updated }, { status: 200 });
-    } catch (error) {
-        if (error instanceof ApiError && error.code === "FORBIDDEN") {
-            return NextResponse.json({ code: "FORBIDDEN", status: 403, detail: "Cannot edit others' payment methods." }, { status: 403 });
-        }
-        return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
-    }
-}
+  const input = await parseJson(request, updatePaymentMethodSchema);
+  const row = await updatePaymentMethod(dashboardId, id, {
+    name: input.name,
+    description: input.description,
+    cardId: input.card_id,
+  });
+  if (!row) throw new ApiError("NOT_FOUND");
+  return ok(serializePaymentMethod(row));
+});
 
-export async function DELETE(request: NextRequest, context: RouteContext) {
-    try {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
+/** DELETE: same rule as PATCH; 409 `IN_USE` while financial records reference it. */
+export const DELETE = withErrors(async (request: NextRequest, ctx: Ctx) => {
+  const { dashboardId, id } = await ids(ctx);
+  const { session, role } = await requireDashboardRole(request, dashboardId, "editor");
 
-        const { dashboard_id, payment_method_id } = await context.params;
-        await softDeletePaymentMethod(dashboard_id, payment_method_id, session.user.id);
+  const current = await getPaymentMethod(dashboardId, id);
+  if (!current) throw new ApiError("NOT_FOUND");
+  if (role !== "owner" && current.userId !== session.user.id.toLowerCase()) throw new ApiError("FORBIDDEN");
 
-        return new NextResponse(null, { status: 204 });
-    } catch (error) {
-        if (error instanceof ApiError && error.code === "IN_USE") {
-            return NextResponse.json({ code: "IN_USE", status: 409, detail: "Referenced by financial records." }, { status: 409 });
-        }
-        return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
-    }
-}
+  await softDeletePaymentMethod(dashboardId, id);
+  return noContent();
+});

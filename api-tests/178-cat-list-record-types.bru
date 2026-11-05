@@ -1,0 +1,26 @@
+meta {
+  name: Categories - list record types
+  type: http
+  seq: 178
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories/{{linkedId}}/record-types
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("has one record type with color", function () {
+    expect(res.body.data).to.have.length(1);
+    expect(res.body.data[0].color.name).to.equal("Expenses Red");
+  });
+}

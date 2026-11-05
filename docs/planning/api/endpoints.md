@@ -20,7 +20,11 @@ Endpoint-level specification for the **Fortis Libertas** REST API (Next.js Route
 14. [Installment Plans](#14-installment-plans)
 15. [Financial Records](#15-financial-records)
 16. [Reports](#16-reports)
-17. [Error Catalog](#17-error-catalog)
+17. [Catalogs (Colors, Icons, Currencies & Languages)](#17-catalogs-colors-icons-currencies--languages)
+18. [Home](#18-home)
+19. [Activity Logs](#19-activity-logs)
+20. [Transactions (History)](#20-transactions-history)
+21. [Error Catalog](#21-error-catalog)
 
 ---
 
@@ -61,7 +65,7 @@ Endpoint-level specification for the **Fortis Libertas** REST API (Next.js Route
 | Web | Better Auth session cookie |
 | Mobile | `Authorization: Bearer <session_token>` |
 
-Every `/api/v1/*` endpoint requires authentication. See [Error Catalog](#17-error-catalog) for `401` / `403` behavior.
+Every `/api/v1/*` endpoint requires authentication. See [Error Catalog](#21-error-catalog) for `401` / `403` behavior.
 
 ### 1.3 Roles (Minimum Role Column)
 
@@ -110,6 +114,14 @@ Filter parameters are listed per endpoint. Multi-value filters accept comma-sepa
 ### 1.7 Field Notation
 
 Request tables use: **Required** = `Yes` / `No` / `Cond.` (conditional, see notes). Types follow the [data type mapping](./README.md#data-type-mapping).
+
+### 1.8 Currency Conversion
+
+- Amounts (`price`, `total_amount`, `amount`) are stored and returned in the **original currency** the user spent (`currency`, a code from the `Currency` catalog).
+- Every response that carries an amount also includes `converted`: `{ "amount": decimal string, "currency": string, "rate": decimal string, "rate_date": date }`, expressed in the **caller's profile currency**. It is `null` when the original currency already equals the profile currency, or when no exchange rate is available (the request never fails because of it).
+- Clients show `converted` first and the original amount after it, in a muted style.
+- `rate` query parameter (on endpoints that return amounts): `payment_date` (default) converts with the rate of the payment date; `current` uses the latest rate.
+- Rates come from an external provider (Frankfurter, ECB reference rates) and are cached in `Exchange_Rate`. Rates of past dates are definitive; today's rate is refreshed.
 
 ---
 
@@ -182,8 +194,9 @@ Operations on the authenticated user's own data: `User`, `Profile`, `Session`, a
 | `birth_date` | date \| null | |
 | `phone` | string \| null | |
 | `phone_verified_at` | datetime \| null | Read-only. |
-| `currency` | string | ISO 4217, 3 uppercase letters. |
-| `language` | string | BCP 47 tag. |
+| `currency` | string | Code from the `Currency` catalog (`EUR`, `USD`, `GBP`, `BRL`). |
+| `language` | string | Code from the `Language` catalog (`en`, `pt-PT`). |
+| `primary_bank_account_id` | uuid \| null | Bank account shown first on the home screen. `null` when unset, when the account was deleted or when the user left it. |
 | `created_at` | datetime | |
 | `updated_at` | datetime | |
 
@@ -201,8 +214,9 @@ Operations on the authenticated user's own data: `User`, `Profile`, `Session`, a
 | :--- | :--- | :-: | :--- | :--- |
 | `birth_date` | date \| null | No | Not in the future | |
 | `phone` | string \| null | No | ≤ 20 chars, E.164 recommended | Changing it resets `phone_verified_at` to `null`. |
-| `currency` | string | No | `^[A-Z]{3}$` | Default `EUR`. |
-| `language` | string | No | ≤ 254 chars, BCP 47 | Default `pt-PT`. |
+| `currency` | string | No | Code in the `Currency` catalog | Default `EUR`. `422` if unknown. |
+| `language` | string | No | Code in the `Language` catalog | Default `pt-PT`. `422` if unknown. |
+| `primary_bank_account_id` | uuid \| null | No | Bank account the caller belongs to | `422` (`/primary_bank_account_id`) if not a member or deleted. `null` clears it. Per user: other members keep their own choice. |
 
 ### 3.6 Session Representation
 
@@ -234,7 +248,7 @@ Operations on the authenticated user's own data: `User`, `Profile`, `Session`, a
 
 ### 3.8 Business Rules
 
-- `DELETE /me` returns `409 LAST_OWNER` if the user is the only `owner` of a dashboard that still has other active members. Transfer ownership first (see [9.3](#93-business-rules)).
+- `DELETE /me` returns `409 LAST_OWNER` if the user is the only `owner` of a dashboard or bank account that still has other active members. Transfer ownership first (see [9.3](#93-business-rules) and [6.4](#64-business-rules)).
 - `DELETE /me` sets `User.deleted_at` and physically removes all `Session` rows for the user.
 
 ---
@@ -283,6 +297,17 @@ Notifications are created server-side only. There is no public `POST`.
 `GET /me/notifications/unread-count` → `{ "data": { "unread": 3 } }`
 `POST /me/notifications/read-all` → `{ "data": { "updated": 3 } }`
 
+### 4.5 Notification Types
+
+Created in the same database transaction as the change that triggers them, so a rolled-back change never notifies anyone.
+
+| `type` | Sent to | `data` |
+| :--- | :--- | :--- |
+| `dashboard.member_added` | The user added to (or re-added to) a dashboard | `{ dashboard_id, role, added_by }` |
+| `bank_account.member_added` | The user added to (or re-added to) a bank account | `{ bank_account_id, role, added_by }` |
+
+`added_by` is the `user_id` of the owner who made the request.
+
 ---
 
 ## 5. Bank Accounts
@@ -307,7 +332,9 @@ Bank accounts are independent of dashboards and shared between users through `Ba
 | :--- | :--- | :--- |
 | `bank_account_id` | uuid | |
 | `name` | string | ≤ 50 chars. |
-| `initial_balance` | decimal string | `decimal(10,2)`. |
+| `initial_balance` | decimal string | `decimal(10,2)`, in the account currency. |
+| `currency` | string | Currency code of the account (`EUR`, `USD`, `GBP`, `BRL`). |
+| `balance` | decimal string | Derived, in the account currency. See [5.5](#55-business-rules). |
 | `frozen_at` | datetime \| null | |
 | `role` | enum | Derived: the caller's role (`owner`, `editor`, `viewer`). |
 | `created_at` | datetime | |
@@ -319,6 +346,7 @@ Bank accounts are independent of dashboards and shared between users through `Ba
 | :--- | :--- | :-: | :--- | :--- |
 | `name` | string | `POST`: Yes | 1–50 chars | |
 | `initial_balance` | decimal string | `POST`: Yes | `^-?\d{1,8}(\.\d{1,2})?$` | Stored as `decimal(10,2)`. |
+| `currency` | string | No | Supported currency code | `POST` only; defaults to the caller's profile currency. It cannot be changed afterwards (`422` if sent on `PATCH`). |
 
 ### 5.4 Query Parameters (`GET /bank-accounts`)
 
@@ -332,7 +360,8 @@ Bank accounts are independent of dashboards and shared between users through `Ba
 ### 5.5 Business Rules
 
 - `POST` inserts `Bank_Account` and `Bank_Account__User (role = 'owner')` in one transaction.
-- `DELETE` returns `409 HAS_ACTIVE_CARDS` while any non-deleted `Card` references the account (mirrors `RESTRICT` on `Card.bank_id`). Membership rows are removed physically (mirrors `CASCADE`).
+- `DELETE` returns `409 HAS_ACTIVE_CARDS` while any non-deleted `Card` references the account (mirrors `RESTRICT` on `Card.bank_id`). Membership rows are kept (soft-deleted memberships stay as they are), but a deleted account is no longer found.
+- `balance` is `initial_balance` plus the effect of the non-deleted financial records with status `paid` or `settled` whose payment method points to a card of this account, from any dashboard. `Record_Type.kind` decides the sign (`income` adds, `expense` subtracts, `neutral` is ignored) and each amount is converted to the account currency (see 1.8). Records of a soft-deleted dashboard keep counting; records paid without a card affect no account.
 - `freeze` / `unfreeze` are idempotent and return the updated resource.
 
 ---
@@ -375,6 +404,7 @@ Manages `Bank_Account__User`. Scope: **bank account**.
 
 - The account must always keep at least one `owner`. Demoting or removing the last owner returns `409 LAST_OWNER`.
 - Adding an existing member returns `409 ALREADY_MEMBER`.
+- Removing a member is a soft delete (`deleted_at`). Membership checks ignore removed rows, and `POST` for a user whose membership was removed **reactivates** that row (clears `deleted_at`, applies the new `role`) because `(bank_id, user_id)` is the primary key.
 - Removing a member who still owns non-deleted cards on this account returns `409 MEMBER_HAS_CARDS` (mirrors `RESTRICT` on `Card.user_id`).
 - Any member may remove themselves (subject to the rules above).
 
@@ -390,7 +420,7 @@ Cards belong to a bank account (`bank_id`) and a user (`user_id`). Scope: **bank
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `GET` | `/cards` | List cards owned by the caller (across bank accounts) | `session` | `200` | `401`, `422` |
 | `GET` | `/bank-accounts/{bank_account_id}/cards` | List cards of a bank account | `viewer` | `200` | `401`, `404` |
-| `POST` | `/bank-accounts/{bank_account_id}/cards` | Create a card | `editor` | `201` | `401`, `404`, `409`, `422` |
+| `POST` | `/bank-accounts/{bank_account_id}/cards` | Create a card | `editor` | `201` | `401`, `403`, `404`, `422` |
 | `GET` | `/cards/{card_id}` | Get a card | `viewer` on its bank account | `200` | `401`, `404` |
 | `PATCH` | `/cards/{card_id}` | Update a card | card owner or bank account `owner` | `200` | `401`, `404`, `422` |
 | `DELETE` | `/cards/{card_id}` | Soft-delete a card | card owner or bank account `owner` | `204` | `401`, `404` |
@@ -437,7 +467,8 @@ Cards belong to a bank account (`bank_id`) and a user (`user_id`). Scope: **bank
 ### 7.5 Business Rules
 
 - `DELETE` also sets `card_id = NULL` on every `Payment_Method` that references the card, in the same transaction (mirrors `SET NULL`).
-- `PATCH` cannot change `bank_id`. To move a card, delete and recreate it.
+- `PATCH` cannot change `bank_id` or `user_id`. To move a card, delete and recreate it.
+- `POST` has no `409`: a frozen bank account still accepts cards (`frozen_at` is informational, see [1.6](#16-inactive--frozen-states)). `user_id` must be an active member of the bank account (`422` on `/user_id`).
 
 ---
 
@@ -455,6 +486,7 @@ A dashboard is the multi-tenant workspace that contains record types, categories
 | `PATCH` | `/dashboards/{dashboard_id}` | Rename, activate, or deactivate | `owner` | `200` | `401`, `404`, `422` |
 | `DELETE` | `/dashboards/{dashboard_id}` | Soft-delete a dashboard | `owner` | `204` | `401`, `404` |
 | `POST` | `/dashboards/{dashboard_id}/restore` | Restore a soft-deleted dashboard | `owner` | `200` | `401`, `404`, `409` |
+| `GET` | `/dashboards/{dashboard_id}/balance` | Balance of the dashboard: `{ balance, currency }`. Net of its paid or settled records (`income` adds, `expense` subtracts, `neutral` ignored), converted into `?currency=` (default `Profile.currency`; `422` if unsupported) | `viewer` | `200` | `401`, `404`, `422` |
 
 ### 8.2 Representation
 
@@ -546,6 +578,11 @@ All paths are relative to `/dashboards/{dashboard_id}`.
 | `dashboard_id` | uuid | |
 | `name` | string | ≤ 50 chars. Unique per dashboard. |
 | `description` | string \| null | |
+| `color_id` | uuid | FK to `Color`. Unique per dashboard among record types. |
+| `color` | object | `{ color_id, name, code_color }`. Read-only. |
+| `icon_id` | uuid | FK to `Icon`. |
+| `icon` | object | `{ icon_id, name, code_icon }`. Read-only. |
+| `kind` | enum | `income`, `expense` or `neutral`: what records of this type do to a balance. |
 | `created_at` | datetime | |
 | `updated_at` | datetime | |
 
@@ -555,10 +592,18 @@ All paths are relative to `/dashboards/{dashboard_id}`.
 | :--- | :--- | :-: | :--- | :--- |
 | `name` | string | `POST`: Yes | 1–50 chars | `409 NAME_ALREADY_EXISTS` on `(dashboard_id, name)` conflict. |
 | `description` | string \| null | No | | |
+| `color_id` | uuid | `POST`: Yes | Existing, non-reserved color | `409 COLOR_IN_USE` if another record type of the dashboard already uses it; `422` if the color is reserved. |
+| `icon_id` | uuid | `POST`: Yes | Existing icon | |
+| `kind` | enum | No | `income`, `expense`, `neutral` | `POST` only; defaults to `neutral`. It cannot be changed afterwards (`422` if sent on `PATCH`), so past balances stay valid. |
 
 ### 10.4 Business Rules
 
-- `DELETE` returns `409 IN_USE` while any non-deleted `Financial_Record` references the record type (mirrors `RESTRICT`).
+- `DELETE` returns `409 IN_USE` while any non-deleted `Financial_Record` or `Installment_Plan` references the record type (mirrors `RESTRICT`). Its `Record_Type__Category` rows are removed physically.
+- The categories available for a record type are managed from the category side (see [Categories](#11-categories)). `GET /categories?record_type_id=` lists them.
+- A color is exclusive to one record type per dashboard (`UNIQUE (dashboard_id, color_id)`). Soft-deleted record types keep holding their color.
+- Two colors are reserved (`Color.is_reserved`) for the seeded `Income` and `Expenses` record types. They cannot be assigned to any other record type or to a category, and the colors of `Income` and `Expenses` can only be changed to one of the reserved colors.
+- Setting the `color_id` of `Income` or `Expenses` to the reserved color the other one holds **swaps** the two colors in one transaction (README, Open Item 11). Both record types get an `updated` activity log entry; the partner's entry has `metadata.swapped_with`.
+- Creating a dashboard seeds `Income` (`income`) and `Expenses` (`expense`) with the reserved colors and `Investment` (`neutral`) with a free non-reserved color, each with a default icon.
 - List query: `q` (matches `name`), `sort` = `name` (default), `created_at`.
 
 ---
@@ -580,6 +625,10 @@ Groups financial records within a dashboard and can be linked to tags. Scope: **
 | `PUT` | `/categories/{category_id}/tags` | Replace the full set of linked tags | `editor` | `200` | `401`, `404`, `422` |
 | `POST` | `/categories/{category_id}/tags/{tag_id}` | Link one tag (idempotent) | `editor` | `204` | `401`, `404` |
 | `DELETE` | `/categories/{category_id}/tags/{tag_id}` | Unlink one tag | `editor` | `204` | `401`, `404` |
+| `GET` | `/categories/{category_id}/record-types` | List record types the category is linked to | `viewer` | `200` | `401`, `404` |
+| `PUT` | `/categories/{category_id}/record-types` | Replace the full set of record types | `editor` | `200` | `401`, `404`, `409`, `422` |
+| `POST` | `/categories/{category_id}/record-types/{record_type_id}` | Link one record type (idempotent) | `editor` | `204` | `401`, `404` |
+| `DELETE` | `/categories/{category_id}/record-types/{record_type_id}` | Unlink one record type | `editor` | `204` | `401`, `404`, `409`, `422` |
 
 All paths are relative to `/dashboards/{dashboard_id}`.
 
@@ -591,7 +640,12 @@ All paths are relative to `/dashboards/{dashboard_id}`.
 | `dashboard_id` | uuid | |
 | `name` | string | ≤ 50 chars. Unique per dashboard. |
 | `description` | string \| null | |
+| `color_id` | uuid | FK to `Color`. Unique per dashboard among categories. |
+| `color` | object | `{ color_id, name, code_color }`. Read-only. |
+| `icon_id` | uuid | FK to `Icon`. |
+| `icon` | object | `{ icon_id, name, code_icon }`. Read-only. |
 | `tags` | array of [Tag](#122-representation) | Only with `include=tags`. |
+| `record_types` | array | `{ record_type_id, name, color, icon }`. Always included. |
 | `created_at` | datetime | |
 | `updated_at` | datetime | |
 
@@ -603,7 +657,16 @@ All paths are relative to `/dashboards/{dashboard_id}`.
 | :--- | :--- | :-: | :--- | :--- |
 | `name` | string | `POST`: Yes | 1–50 chars | |
 | `description` | string \| null | No | | |
+| `record_type_ids` | uuid[] | `POST`: Yes | 1–50 items, distinct, same dashboard | Record types the category can be used with. Creates `Record_Type__Category` rows. On `PATCH` use the `/record-types` endpoints. |
+| `color_id` | uuid | `POST`: Yes | Existing, non-reserved color | `409 COLOR_IN_USE` if another category of the dashboard already uses it; `422` if the color is reserved. |
+| `icon_id` | uuid | `POST`: Yes | Existing icon | |
 | `tag_ids` | uuid[] | No | ≤ 50 items, tags of the same dashboard | `POST` only. Creates `Tag__Category` rows. |
+
+`PUT /categories/{category_id}/record-types`
+
+| Field | Type | Required | Constraints | Notes |
+| :--- | :--- | :-: | :--- | :--- |
+| `record_type_ids` | uuid[] | Yes | 1–50 items, distinct, same dashboard | A category must stay linked to at least one record type (`422` otherwise). |
 
 `PUT /categories/{category_id}/tags`
 
@@ -613,9 +676,12 @@ All paths are relative to `/dashboards/{dashboard_id}`.
 
 ### 11.4 Business Rules
 
-- List query: `q` (matches `name`), `tag_id` (categories linked to that tag), `include=tags`, `sort` = `name` (default), `created_at`.
-- `DELETE` returns `409 IN_USE` while any non-deleted `Financial_Record` references the category (mirrors `RESTRICT`). Its `Tag__Category` rows are removed physically.
+- List query: `q` (matches `name`), `tag_id` (categories linked to that tag), `record_type_id` (categories usable with that record type), `include=tags`, `sort` = `name` (default), `created_at`.
+- `DELETE` returns `409 IN_USE` while any non-deleted `Financial_Record` or `Installment_Plan` references the category (mirrors `RESTRICT`). Its `Tag__Category` and `Record_Type__Category` rows are removed physically.
 - Tag links are junction rows: `PUT` computes the difference and inserts/deletes in one transaction.
+- Record type links work the same way. A link cannot be removed (`409 IN_USE`) while a non-deleted `Financial_Record` or `Installment_Plan` uses that `(record_type_id, category_id)` pair, and a category cannot be left without any record type.
+- Record types of other dashboards, or soft-deleted ones, are rejected with `422`.
+- A color is exclusive to one category per dashboard (`UNIQUE (dashboard_id, color_id)`), independently of the record types. Soft-deleted categories keep holding their color, so the palette size caps the number of categories per dashboard (see `README.md`, Open Item 10).
 
 ---
 
@@ -696,11 +762,12 @@ All paths are relative to `/dashboards/{dashboard_id}`.
 | :--- | :--- | :-: | :--- | :--- |
 | `name` | string | `POST`: Yes | 1–50 chars | `409 NAME_ALREADY_EXISTS` on the unique constraint (README, Open Item 3). |
 | `description` | string | No | | Defaults to `""`. |
-| `card_id` | uuid \| null | No | Non-deleted card owned by the caller | `null` for non-card methods (e.g. cash). |
+| `card_id` | uuid \| null | No | Non-deleted card owned by the payment method's creator | `null` for non-card methods (e.g. cash). `422` on `/card_id` otherwise. When an owner edits another member's method, the card must belong to that creator. |
 
 ### 13.4 Business Rules
 
-- `user_id` is set from the session on `POST` and cannot be changed.
+- `user_id` is set from the session on `POST` and cannot be changed (unknown keys are rejected).
+- Names are unique per dashboard (`idx_payment_method_dashboard_name`), including soft-deleted rows.
 - `403 FORBIDDEN` is returned to an `editor` who tries to modify a payment method created by someone else.
 - `DELETE` returns `409 IN_USE` while any non-deleted `Financial_Record` references it (mirrors `RESTRICT`).
 - List query: `q` (matches `name`), `mine` (boolean, `user_id` = caller), `card_id`, `sort` = `name` (default), `created_at`.
@@ -709,7 +776,7 @@ All paths are relative to `/dashboards/{dashboard_id}`.
 
 ## 14. Installment Plans
 
-Multi-installment financing plans that can group several financial records. Scope: **dashboard**[cite: 2]. Base path: `/dashboards/{dashboard_id}/installment-plans`[cite: 2].
+Multi-installment financing plans that can group several financial records. Scope: **dashboard**. Base path: `/dashboards/{dashboard_id}/installment-plans`.
 
 ### 14.1 Endpoints
 
@@ -721,8 +788,9 @@ Multi-installment financing plans that can group several financial records. Scop
 | `PATCH` | `/installment-plans/{installment_plan_id}` | Update a plan | `editor` | `200` | `401`, `404`, `422` |
 | `DELETE` | `/installment-plans/{installment_plan_id}` | Soft-delete a plan | `editor` | `204` | `401`, `404`, `409` |
 | `GET` | `/installment-plans/{installment_plan_id}/financial-records` | List records of the plan | `viewer` | `200` | `401`, `404` |
+| `PUT` | `/installment-plans/{installment_plan_id}/tags` | Replace the full set of tags | `editor` | `200` | `401`, `404`, `422` |
 
-All paths are relative to `/dashboards/{dashboard_id}`[cite: 2].
+All paths are relative to `/dashboards/{dashboard_id}`.
 
 ### 14.2 Representation
 
@@ -731,9 +799,14 @@ All paths are relative to `/dashboards/{dashboard_id}`[cite: 2].
 | `installment_plan_id` | uuid | |
 | `dashboard_id` | uuid | |
 | `register_by_id` | uuid | Creator. Read-only. |
-| `name` | string | ≤ 255 chars. |
+| `name` | string | ≤ 50 chars. |
 | `description` | string \| null | |
-| `total_amount` | decimal string | `decimal(10,2)`. |
+| `category_id` | uuid | Inherited by the records of the plan. |
+| `record_type_id` | uuid | Always the dashboard's `Expenses` type. Set by the server; read-only. |
+| `currency` | string | Code from the `Currency` catalog. |
+| `tags` | array | `{ tag_id, name }`. |
+| `total_amount` | decimal string | `decimal(10,2)`, in `currency`. |
+| `converted` | object \| null | See [1.8](#18-currency-conversion). Applies to `total_amount`. |
 | `total_installments` | integer | |
 | `due_date` | date | Final due date of the whole plan. |
 | `status` | enum | `cancelled`, `pending`, `paid`, `late`. |
@@ -746,8 +819,11 @@ All paths are relative to `/dashboards/{dashboard_id}`[cite: 2].
 
 | Field | Type | Required | Constraints | Notes |
 | :--- | :--- | :-: | :--- | :--- |
-| `name` | string | `POST`: Yes | 1–255 chars | |
+| `name` | string | `POST`: Yes | 1–50 chars | |
 | `description` | string \| null | No | | |
+| `category_id` | uuid | `POST`: Yes | Same dashboard, non-deleted | Must be linked to the `Expenses` record type (`422` otherwise). |
+| `currency` | string | No | Code in the `Currency` catalog | Defaults to the caller's `Profile.currency`. |
+| `tag_ids` | uuid[] | No | ≤ 50 items, distinct, same dashboard | `POST` only; on `PATCH` use `PUT .../tags`. |
 | `total_amount` | decimal string | `POST`: Yes | `> 0`, `^\d{1,8}(\.\d{1,2})?$` | |
 | `total_installments` | integer | `POST`: Yes | ≥ 1 | |
 | `due_date` | date | `POST`: Yes | `YYYY-MM-DD` | |
@@ -755,9 +831,14 @@ All paths are relative to `/dashboards/{dashboard_id}`[cite: 2].
 
 ### 14.4 Business Rules
 
-- List query: `status` (multi-value), `due_from`, `due_to` (dates), `sort` = `due_date` (default), `total_amount`, `created_at`[cite: 2]. (Consider adding `q` to match `name` and `description` here as well).
-- `PATCH` rejects `total_installments` lower than the number of linked non-deleted records (`422 VALIDATION_ERROR`)[cite: 2].
-- `DELETE` returns `409 IN_USE` while records are linked[cite: 2]. Use `DELETE ...?detach_records=true` to set `installment_plan_id = NULL` on those records (mirrors `SET NULL`) and soft-delete the plan in one transaction[cite: 2]. Detaching is explicit because it changes financial history[cite: 2].
+- List query: `status` (multi-value), `due_from`, `due_to` (dates), `sort` = `due_date` (default), `total_amount`, `created_at`. (Consider adding `q` to match `name` and `description` here as well).
+- `PATCH` rejects `total_installments` lower than the number of linked non-deleted records (`422 VALIDATION_ERROR`).
+- `record_type_id` is not accepted in the body (unknown key, `422`): the server sets it to the dashboard's `Expenses` type. The records created for the plan inherit its record type, category and tags.
+- The `Expenses` record type is the dashboard's non-deleted `expense` type that uses a reserved color, so renaming it does not matter. `422` on `/category_id` if the category is not linked to it.
+- Names are not unique: two plans can share a name (`POST` has no `409`).
+- `GET` filters: `status` accepts repeated (`?status=pending&status=late`) or comma-separated values.
+- Changing `category_id` or `currency` on a plan does not rewrite the records already linked to it.
+- `DELETE` returns `409 IN_USE` while records are linked. Use `DELETE ...?detach_records=true` to set `installment_plan_id = NULL` on those records (mirrors `SET NULL`) and soft-delete the plan in one transaction. Detaching is explicit because it changes financial history.
 
 ---
 
@@ -794,7 +875,8 @@ All paths are relative to `/dashboards/{dashboard_id}`.
 | `name` | string | ≤ 50 chars. |
 | `description` | string \| null | |
 | `price` | decimal string | `decimal(10,2)`. Always positive; the sign of the movement comes from the record type. |
-| `currency` | string | ISO 4217, 3 uppercase letters. |
+| `currency` | string | Original currency of `price`. Code from the `Currency` catalog. |
+| `converted` | object \| null | `price` in the caller's profile currency. See [1.8](#18-currency-conversion). |
 | `payment_date` | datetime | Date the payment was made or is due. |
 | `status` | enum | `active`, `settled`, `cancelled`, `pending`, `paid`, `late`. |
 | `tags` | array of Tag | Always included as `{ tag_id, name }`. Full tag objects are not embedded. |
@@ -806,14 +888,14 @@ All paths are relative to `/dashboards/{dashboard_id}`.
 
 | Field | Type | Required | Constraints | Notes |
 | :--- | :--- | :-: | :--- | :--- |
-| `record_type_id` | uuid | `POST`: Yes | Same dashboard, non-deleted | |
-| `category_id` | uuid | `POST`: Yes | Same dashboard, non-deleted | |
+| `record_type_id` | uuid | `POST`: Cond. | Same dashboard, non-deleted | Required unless `installment_plan_id` is set. In a plan it is the plan's record type: if sent, it must match (`422`). |
+| `category_id` | uuid | `POST`: Cond. | Same dashboard, non-deleted | Required unless `installment_plan_id` is set. Must be linked to `record_type_id` (`422` otherwise). In a plan it is the plan's category: if sent, it must match (`422`). On `PATCH`, the resulting pair must still be valid. |
 | `payment_method_id` | uuid | `POST`: Yes | Same dashboard, non-deleted | |
-| `installment_plan_id` | uuid \| null | No | Same dashboard, non-deleted | `null` for one-off transactions. |
+| `installment_plan_id` | uuid \| null | No | Same dashboard, non-deleted | `null` for one-off transactions. A record of a plan inherits the plan's record type and category, and the plan's tags are added to its own (`tag_ids`) when it is created or attached with `PATCH`; later changes to the plan's tags do not propagate. A cancelled plan returns `409 PLAN_CANCELLED`. |
 | `name` | string | `POST`: Yes | 1–50 chars | |
 | `description` | string \| null | No | | |
 | `price` | decimal string | `POST`: Yes | `> 0`, `^\d{1,8}(\.\d{1,2})?$` | |
-| `currency` | string | No | `^[A-Z]{3}$` | Defaults to the caller's `Profile.currency`. |
+| `currency` | string | No | Code in the `Currency` catalog | Defaults to the caller's `Profile.currency`. `422` if unknown. |
 | `payment_date` | datetime | `POST`: Yes | ISO 8601 | |
 | `status` | enum | `POST`: Yes | See representation | No database default (README, Open Item 7). |
 | `tag_ids` | uuid[] | No | ≤ 50 items, distinct, same dashboard | `POST` only; on `PATCH` use the `/tags` endpoints. |
@@ -910,7 +992,8 @@ Read-only aggregations computed from `Financial_Record`. They have no table of t
 | `payment_date_from` | datetime | Yes | Inclusive. |
 | `payment_date_to` | datetime | Yes | Inclusive. Maximum range: 366 days. |
 | `group_by` | enum | No | `record_type` (default), `category`, `tag`, `payment_method`, `month`. |
-| `currency` | string | No | Only records in this currency are summed. Defaults to the caller's `Profile.currency`. |
+| `currency` | string | No | Currency of the result. Records in other currencies are converted (see [1.8](#18-currency-conversion)). Defaults to the caller's `Profile.currency`. |
+| `rate` | enum | No | `payment_date` (default) or `current`. |
 | `status` | enum (multi) | No | Defaults to all statuses except `cancelled`. |
 
 ### 16.3 Response
@@ -930,7 +1013,224 @@ Read-only aggregations computed from `Financial_Record`. They have no table of t
 
 ---
 
-## 17. Error Catalog
+## 17. Catalogs (Colors, Icons, Currencies & Languages)
+
+Global read-only catalogs, seeded when the database is created. Colors identify record types and categories; icons are Material Symbols names that each client (Android, web) renders on its own; currencies and languages are the values accepted by the profile and by amounts. Scope: **session** (any authenticated user). Base paths: `/colors`, `/icons`, `/currencies`, `/languages`, `/exchange-rates`.
+
+### 17.1 Endpoints
+
+| Method | Path | Description | Min. Role | Success | Errors |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/colors` | List colors | `session` | `200` | `401`, `404`, `422` |
+| `GET` | `/icons` | List icons | `session` | `200` | `401`, `422` |
+| `GET` | `/currencies` | List currencies | `session` | `200` | `401` |
+| `GET` | `/languages` | List languages | `session` | `200` | `401` |
+| `GET` | `/exchange-rates` | Get the rate between two currencies | `session` | `200` | `401`, `422`, `502` |
+
+### 17.2 Representation
+
+Color
+
+| Field | Type | Notes |
+| :--- | :--- | :--- |
+| `color_id` | uuid | |
+| `name` | string | |
+| `code_color` | string | Hex color, `#RRGGBB`. |
+| `is_reserved` | boolean | `true` for the two colors reserved for `Income` and `Expenses`. |
+| `in_use` | boolean | Only with `dashboard_id` and `scope`. |
+
+Icon
+
+| Field | Type | Notes |
+| :--- | :--- | :--- |
+| `icon_id` | uuid | |
+| `name` | string | |
+| `code_icon` | string | Material Symbols name, `snake_case` (e.g., `shopping_cart`). |
+
+Currency
+
+| Field | Type | Notes |
+| :--- | :--- | :--- |
+| `currency_id` | uuid | |
+| `code` | string | ISO 4217 (`EUR`, `USD`, `GBP`, `BRL`). This is the value used in requests. |
+| `name` | string | |
+| `symbol` | string | |
+
+Language
+
+| Field | Type | Notes |
+| :--- | :--- | :--- |
+| `language_id` | uuid | |
+| `code` | string | BCP 47 (`en`, `pt-PT`). This is the value used in requests. |
+| `name` | string | |
+
+Exchange rate (`GET /exchange-rates?base=USD&quote=EUR&date=2026-10-30`)
+
+| Field | Type | Notes |
+| :--- | :--- | :--- |
+| `base` | string | Query, required. Currency code. |
+| `quote` | string | Query, required. Currency code, different from `base`. |
+| `date` | date | Query, optional. Defaults to today; cannot be in the future. |
+| `rate` | decimal string | Response. Units of `quote` per one `base`. |
+| `rate_date` | date | Response. Date of the rate actually used. |
+
+`502 EXCHANGE_RATE_UNAVAILABLE` if the rate is not cached and the provider cannot be reached. This is the only endpoint that fails for this reason.
+
+### 17.3 Query Parameters
+
+| Parameter | Applies to | Notes |
+| :--- | :--- | :--- |
+| `q` | both | Matches `name`. |
+| `is_reserved` | colors | `true` or `false`. |
+| `dashboard_id` + `scope` | colors | `scope` = `record_type` or `category`. Adds `in_use`: `true` when that dashboard already has a record type (or category) holding the color. The caller must be a member of the dashboard (`404` otherwise); both parameters are required together (`422`). |
+| `sort` | both | `name` (default). |
+
+Both lists are paginated like every other list; use `per_page=100` to load a catalog in one request.
+
+---
+
+## 18. Home
+
+Aggregated read model for the app's home screen. It has no table of its own and reuses the data of other resources. Scope: **dashboard**.
+
+### 18.1 Endpoints
+
+| Method | Path | Description | Min. Role | Success | Errors |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/dashboards/{dashboard_id}/home` | Home screen summary | `viewer` | `200` | `401`, `404`, `422` |
+
+### 18.2 Query Parameters
+
+| Parameter | Type | Required | Notes |
+| :--- | :--- | :-: | :--- |
+| `month` | string | No | `YYYY-MM`. Defaults to the current month. |
+| `currency` | string | No | Defaults to the caller's `Profile.currency`. |
+
+### 18.3 Response
+
+| Field | Type | Notes |
+| :--- | :--- | :--- |
+| `dashboard` | object | `{ dashboard_id, name, is_active }`. |
+| `period` | object | `{ "from": datetime, "to": datetime }` for the selected month. |
+| `currency` | string | Currency in which `balance` and `totals` are expressed. Records are converted. |
+| `balance` | decimal string | Same value as `GET /dashboards/{dashboard_id}/balance`. |
+| `totals` | array | One item per record type: `{ record_type_id, name, color, icon, total, count }`. Excludes `cancelled` records. |
+| `recent_records` | array | The 5 most recent [Financial Records](#152-representation) by `payment_date`. |
+| `upcoming_installments` | array | [Installment Plans](#142-representation) with status `pending` or `late` and `due_date` in the next 30 days. |
+| `unread_notifications` | integer | Unread notifications of the caller. |
+
+> The contents above are a proposal. Adjust the fields to match the home screen of the Android app before implementing.
+
+### 18.4 Business Rules
+
+- Each part reuses the query of its own endpoint, so `balance` always equals `GET /balance` and `totals` always equals `GET /reports/summary?group_by=record_type` for the same month and currency.
+- `totals` lists every record type of the dashboard, including those without records in the month (`total: "0.00"`, `count: 0`), so the app always shows the same rows. Each item also carries `kind`.
+- `recent_records` only includes records with `payment_date` up to now and status other than `cancelled`: a record scheduled for a future date is not "recent".
+- `upcoming_installments` includes `pending` plans with `due_date` in the next 30 days **and** every `late` plan (a late plan is already past its due date), ordered by `due_date`.
+
+---
+
+## 19. Activity Logs
+
+Read-only audit trail of who did what. Entries are written by the server in the same transaction as the change and cannot be created, edited or deleted through the API.
+
+### 19.1 Endpoints
+
+| Method | Path | Description | Min. Role | Success | Errors |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/dashboards/{dashboard_id}/activity-logs` | Events of a dashboard | `owner` | `200` | `401`, `404`, `422` |
+| `GET` | `/bank-accounts/{bank_account_id}/activity-logs` | Events of a bank account | `owner` | `200` | `401`, `404`, `422` |
+| `GET` | `/me/activity-logs` | Account events of the caller (sign-in, password, 2FA) | `session` | `200` | `401`, `422` |
+
+### 19.2 Representation
+
+| Field | Type | Notes |
+| :--- | :--- | :--- |
+| `activity_log_id` | uuid | |
+| `user` | object | `{ user_id, user_name, full_name, image }` of who performed the action. |
+| `scope` | enum | `account`, `dashboard`, `bank_account`. |
+| `dashboard_id` | uuid \| null | |
+| `bank_account_id` | uuid \| null | |
+| `entity_type` | string | E.g., `financial_record`, `category`, `member`, `session`. |
+| `entity_id` | uuid \| null | |
+| `action` | string | E.g., `created`, `updated`, `deleted`, `restored`, `member_added`, `sign_in`. |
+| `metadata` | object \| null | Names of the changed fields and context. Never secrets or card data. |
+| `ip_address` | string \| null | Only in `GET /me/activity-logs`. |
+| `user_agent` | string \| null | Only in `GET /me/activity-logs`. |
+| `created_at` | datetime | |
+
+### 19.3 Query Parameters
+
+| Parameter | Type | Notes |
+| :--- | :--- | :--- |
+| `action` | string (multi) | |
+| `entity_type` | string | |
+| `user_id` | uuid | Not available on `/me/activity-logs`. |
+| `created_from`, `created_to` | datetime | Inclusive. |
+| `sort` | enum | `-created_at` (default), `created_at`. |
+
+### 19.4 Business Rules
+
+- Dashboard and bank account logs are visible only to the `owner`. Non-members receive `404`.
+- Logged events: create, update, delete and restore of dashboards and of their resources; member changes; bank account and card changes (including freeze and unfreeze); and, at account level, sign-in, sign-out, password change, 2FA changes and profile updates.
+- `ip_address` and `user_agent` are returned only to the user who performed the action.
+- Log entries survive the soft delete of the resource they describe.
+
+---
+
+## 20. Transactions (History)
+
+Financial history of the whole dashboard: movements of financial records, installment plans and, in the future, savings, debts and goals. It is a read-only model written by the server. Who did what is in [Activity Logs](#19-activity-logs). Scope: **dashboard**.
+
+### 20.1 Endpoints
+
+| Method | Path | Description | Min. Role | Success | Errors |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/dashboards/{dashboard_id}/transactions` | List the history of the dashboard | `viewer` | `200` | `401`, `404`, `422` |
+
+### 20.2 Representation
+
+| Field | Type | Notes |
+| :--- | :--- | :--- |
+| `transaction_id` | uuid | |
+| `dashboard_id` | uuid | |
+| `user` | object | `{ user_id, user_name, full_name, image }` of who registered the movement. |
+| `record_type` | object | `{ record_type_id, name, color, icon }`. |
+| `source_type` | string | `financial_record` or `installment_plan` (more in the future). |
+| `source_id` | uuid | Identifier of the source row. |
+| `name` | string | Snapshot of the source's name. |
+| `amount` | decimal string | Original currency. |
+| `currency` | string | Code from the `Currency` catalog. |
+| `converted` | object \| null | See [1.8](#18-currency-conversion). |
+| `occurred_at` | datetime | |
+| `deleted_at` | datetime \| null | Set when the source was soft-deleted. |
+| `created_at` | datetime | |
+| `updated_at` | datetime | |
+
+### 20.3 Query Parameters
+
+| Parameter | Type | Notes |
+| :--- | :--- | :--- |
+| `source_type` | string (multi) | |
+| `record_type_id` | uuid | |
+| `user_id` | uuid | |
+| `occurred_from`, `occurred_to` | datetime | Inclusive. |
+| `deleted` | boolean | `true` → only entries whose source was deleted; `false` → only the others. Omitted → all entries (the frontend can filter on `deleted_at`). |
+| `rate` | enum | `payment_date` (default) or `current`. |
+| `sort` | enum | `-occurred_at` (default), `occurred_at`. |
+
+### 20.4 Business Rules
+
+- There are no write endpoints. Every create, update and soft delete of a source row also writes its entry in the same database transaction: an update refreshes the snapshot, a soft delete sets `deleted_at`.
+- `source_id` has no foreign key, so entries never block the deletion of their source, and the history keeps the entries of deleted sources.
+- There is one entry per source (unique `source_type` + `source_id`). For a `financial_record`, `amount` is its `price` and `occurred_at` its `payment_date`; for an `installment_plan`, `amount` is its `total_amount` and `occurred_at` its `due_date` at `00:00:00Z`.
+- `user` is who registered the source and never changes on updates.
+- Entries of rows saved before the history existed are created with `bun run db:backfill:transactions`.
+- Entries are removed only when the dashboard is purged.
+
+---
+
+## 21. Error Catalog
 
 Errors use `application/problem+json` ([RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)).
 
@@ -972,9 +1272,11 @@ Errors use `application/problem+json` ([RFC 9457](https://www.rfc-editor.org/rfc
 | `409` | `CURRENT_SESSION` | Attempt to revoke the current session through `/me/sessions/{session_id}`. |
 | `409` | `NOT_DELETED` | Restore requested for a resource that is not deleted. |
 | `409` | `RESTORE_WINDOW_EXPIRED` | The 30-day restore window has passed. |
+| `409` | `COLOR_IN_USE` | The color is already used by another record type (or category) of the dashboard. |
 | `422` | `VALIDATION_ERROR` | Body or query validation failed, unknown keys, or cross-dashboard foreign keys. |
 | `429` | `RATE_LIMITED` | Too many requests; includes `Retry-After`. |
 | `500` | `INTERNAL_ERROR` | Unexpected error. The response never contains stack traces or SQL. |
+| `502` | `EXCHANGE_RATE_UNAVAILABLE` | `GET /exchange-rates` only: the rate is not cached and the provider is unreachable. |
 
 ### Permission Summary
 
@@ -988,6 +1290,10 @@ Errors use `application/problem+json` ([RFC 9457](https://www.rfc-editor.org/rfc
 | Installment plans | read | create, update, delete | all |
 | Financial records and record tags | read | create, update, delete | all |
 | Reports | read | read | read |
+| Colors, icons, currencies, languages, exchange rates | read | read | read |
+| Home | read | read | read |
+| Activity logs (dashboard, bank account) | – | – | read |
+| Transactions (history) | read | read | read |
 | Bank account | read | update name / initial balance | delete, freeze, unfreeze |
 | Bank account members | read | read | add, change role, remove |
 | Cards | read | create | all (plus card owner: update, delete, freeze) |

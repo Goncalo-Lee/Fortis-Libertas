@@ -1,0 +1,23 @@
+meta {
+  name: Payment methods - list empty
+  type: http
+  seq: 297
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("empty", function () { expect(res.body.data.length).to.equal(0); });
+}

@@ -6,12 +6,12 @@ import { softDelete, timestamps } from "../columns";
 
 export const card = mysqlTable("card", {
     id: uuidBinary("card_id").primaryKey(),
-    bankId: uuidBinary("bank_id"),
-    userId: uuidBinary("user_id"),
+    bankId: uuidBinary("bank_id").notNull(),
+    userId: uuidBinary("user_id").notNull(),
     cardholderName: t.varchar("cardholder_name", { length: 50 }).notNull(),
     typeCard: t.mysqlEnum("type_card", ["credit", "debit"]).notNull(),
     cardNumber: t.char("card_number", { length: 16 }),
-    expiryDate: t.date("expiry_date"),
+    expiryDate: t.date("expiry_date", { mode: "string" }),
     cvv: t.char("cvv", { length: 3 }),
     frozenAt: t.timestamp("frozen_at"),
     ...softDelete,

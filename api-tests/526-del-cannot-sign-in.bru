@@ -1,0 +1,19 @@
+meta {
+  name: Delete me - sessions endpoint rejects deleted user
+  type: http
+  seq: 526
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me/sessions
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token3}}
+}
+
+assert {
+  res.status: eq 401
+}

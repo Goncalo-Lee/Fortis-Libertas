@@ -1,0 +1,23 @@
+meta {
+  name: Categories - put empty record types
+  type: http
+  seq: 180
+}
+
+put {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories/{{linkedId}}/record-types
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "record_type_ids": [] }
+}
+
+assert {
+  res.status: eq 422
+}

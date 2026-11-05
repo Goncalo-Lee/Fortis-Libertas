@@ -1,0 +1,27 @@
+meta {
+  name: Primary account - clear with null
+  type: http
+  seq: 292
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/me/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "primary_bank_account_id": null }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("null", function () { expect(res.body.data.primary_bank_account_id).to.equal(null); });
+}

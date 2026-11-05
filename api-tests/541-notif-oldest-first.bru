@@ -1,0 +1,20 @@
+meta {
+  name: Notifications - oldest first
+  type: http
+  seq: 541
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me/notifications?sort=created_at&per_page=5
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.meta.per_page: eq 5
+}

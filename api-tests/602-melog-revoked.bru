@@ -1,0 +1,20 @@
+meta {
+  name: My activity log - revoked sessions (tests 509 and 514)
+  type: http
+  seq: 602
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me/activity-logs?action=session_revoked,sessions_revoked
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.meta.total: gte 2
+}

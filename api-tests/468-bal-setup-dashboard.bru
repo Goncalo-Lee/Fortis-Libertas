@@ -1,0 +1,27 @@
+meta {
+  name: Balances - setup dashboard
+  type: http
+  seq: 468
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"name": "Balance dashboard"}
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("fbDash", res.body.data.dashboard_id);
+}
+
+assert {
+  res.status: eq 201
+}

@@ -1,0 +1,25 @@
+meta {
+  name: Financial records - setup record types
+  type: http
+  seq: 384
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/record-types
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:post-response {
+  const by = (n) => res.body.data.find((r) => r.name === n).record_type_id;
+  bru.setVar("frRt", by("Expenses"));
+  bru.setVar("frRtIncome", by("Income"));
+}
+
+assert {
+  res.status: eq 200
+}

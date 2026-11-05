@@ -1,0 +1,27 @@
+meta {
+  name: Installment plans - create with income-only category
+  type: http
+  seq: 341
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Bad", "category_id": "{{ipCatIncomeId}}", "total_amount": "10", "total_installments": 1, "due_date": "2027-01-01" }
+}
+
+assert {
+  res.status: eq 422
+}
+
+tests {
+  test("points at category_id", function () { expect(res.body.errors.map((e) => e.pointer)).to.include("/category_id"); });
+}

@@ -1,0 +1,25 @@
+meta {
+  name: Notifications - only unread
+  type: http
+  seq: 539
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me/notifications?unread=true
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("all unread", function () {
+    res.body.data.forEach((n) => expect(n.read_at).to.equal(null));
+  });
+}

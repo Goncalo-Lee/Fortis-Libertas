@@ -1,0 +1,24 @@
+meta {
+  name: Financial records - create category not linked to record type
+  type: http
+  seq: 399
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"record_type_id": "{{frRt}}", "category_id": "{{frCatIncome}}", "payment_method_id": "{{frPm}}", "name": "Laptop", "price": "100.50", "payment_date": "2026-10-12T18:20:00.000Z", "status": "paid"}
+}
+
+assert {
+  res.status: eq 422
+  res.body.code: eq VALIDATION_ERROR
+}

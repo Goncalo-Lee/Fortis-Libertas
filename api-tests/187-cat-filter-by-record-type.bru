@@ -1,0 +1,24 @@
+meta {
+  name: Categories - filter by record type
+  type: http
+  seq: 187
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories?record_type_id={{catRtIncome}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.meta.total: eq 1
+}
+
+tests {
+  test("only the linked category", function () { expect(res.body.data[0].name).to.equal("Linked"); });
+}

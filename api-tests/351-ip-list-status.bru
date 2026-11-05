@@ -1,0 +1,23 @@
+meta {
+  name: Installment plans - list status filter
+  type: http
+  seq: 351
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans?status=late
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("one", function () { expect(res.body.data.length).to.equal(1); });
+}

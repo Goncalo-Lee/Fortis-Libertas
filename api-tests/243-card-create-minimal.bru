@@ -1,0 +1,31 @@
+meta {
+  name: Cards - create without number
+  type: http
+  seq: 243
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{cardBaId}}/cards
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "cardholder_name": "Cash-like", "type_card": "credit" }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("cardId2", res.body.data.card_id);
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("null last4", function () { expect(res.body.data.card_number_last4).to.equal(null); });
+}

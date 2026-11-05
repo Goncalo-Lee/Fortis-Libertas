@@ -1,0 +1,35 @@
+meta {
+  name: Home - October 2026 matches the report
+  type: http
+  seq: 607
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/home?month=2026-10
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.period.from: matches ^2026-10-01T00:00:00\.000Z$
+  res.body.data.period.to: matches ^2026-10-31T23:59:59\.999Z$
+}
+
+tests {
+  test("totals: same numbers as the summary report (test 485)", function () {
+    const totals = res.body.data.totals.map((t) => t.total).sort();
+    expect(totals).to.include("1000.00");
+    expect(totals).to.include("280.50");
+  });
+  test("each total has color and icon", function () {
+    res.body.data.totals.forEach((t) => {
+      expect(t.color).to.have.property("code_color");
+      expect(t.icon).to.have.property("code_icon");
+    });
+  });
+}

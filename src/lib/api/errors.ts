@@ -1,3 +1,4 @@
+import { runWithRequestContext } from "./request-context";
 import { ZodError } from "zod";
 
 // Centralized error codes with consistent HTTP status mapping
@@ -19,8 +20,10 @@ export type ErrorCode =
   | "CURRENT_SESSION"          // 409 - Conflict: operation affects current session
   | "NOT_DELETED"              // 409 - Conflict: dashboard is not delete
   | "RESTORE_WINDOW_EXPIRED"   // 409 - Conflict: restore window expired
+  | "COLOR_IN_USE"             // 409 - Conflict: color already used in this dashboard
   | "VALIDATION_ERROR"         // 422 - Schema validation failed
   | "RATE_LIMITED"             // 429 - Too many requests
+  | "EXCHANGE_RATE_UNAVAILABLE" // 502 - Exchange rate provider unavailable
   | "INTERNAL_ERROR";          // 500 - Unexpected server error
 
 
@@ -51,8 +54,10 @@ const STATUS: StatusType = {
   CURRENT_SESSION: 409,
   NOT_DELETED: 409,
   RESTORE_WINDOW_EXPIRED: 409,
+  COLOR_IN_USE: 409,
   VALIDATION_ERROR: 422,
   RATE_LIMITED: 429,
+  EXCHANGE_RATE_UNAVAILABLE: 502,
   INTERNAL_ERROR: 500,
 };
 
@@ -136,7 +141,8 @@ export function withErrors<Req extends Request, Ctx>(
 ) {
   return async (request: Req, ctx: Ctx): Promise<Response> => {
     try {
-      return await handler(request, ctx);
+      // Each request gets its own context (who, IP, user agent), read later by the activity log.
+      return await runWithRequestContext(request, () => handler(request, ctx));
     } catch (error) {
       return toProblem(error); // Convert any thrown error to proper HTTP response
     }

@@ -1,0 +1,28 @@
+meta {
+  name: Me - second user sets user_name
+  type: http
+  seq: 499
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/me
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  { "user_name": "{{userName2}}" }
+}
+
+script:pre-request {
+  bru.setVar("userName2", `api2_${Date.now()}`);
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.user_name: eq {{userName2}}
+}

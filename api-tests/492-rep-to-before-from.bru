@@ -1,0 +1,19 @@
+meta {
+  name: Reports - to before from
+  type: http
+  seq: 492
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/reports/summary?payment_date_from=2026-10-31T00:00:00.000Z&payment_date_to=2026-10-01T00:00:00.000Z
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 422
+}

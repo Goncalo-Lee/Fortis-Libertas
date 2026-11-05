@@ -1,0 +1,20 @@
+meta {
+  name: Financial records - filter several status
+  type: http
+  seq: 416
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records?status=pending,paid
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.meta.total: eq 5
+}

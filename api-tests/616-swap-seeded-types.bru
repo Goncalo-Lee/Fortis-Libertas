@@ -1,0 +1,39 @@
+meta {
+  name: Color swap - seeded Income and Expenses
+  type: http
+  seq: 616
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{swapDash}}/record-types
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:post-response {
+  if (res.status === 200) {
+    const income = res.body.data.find((t) => t.kind === "income");
+    const expenses = res.body.data.find((t) => t.kind === "expense");
+    const neutral = res.body.data.find((t) => t.kind === "neutral");
+    bru.setVar("incomeRt", income.record_type_id);
+    bru.setVar("expensesRt", expenses.record_type_id);
+    bru.setVar("neutralRt", neutral.record_type_id);
+    bru.setVar("incomeColor", income.color_id);
+    bru.setVar("expensesColor", expenses.color_id);
+    bru.setVar("neutralColor", neutral.color_id);
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Income and Expenses use the reserved colors", function () {
+    ["income", "expense"].forEach((k) => expect(res.body.data.find((t) => t.kind === k).color.is_reserved).to.equal(true));
+  });
+}

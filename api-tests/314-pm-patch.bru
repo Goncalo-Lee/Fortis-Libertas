@@ -1,0 +1,27 @@
+meta {
+  name: Payment methods - patch
+  type: http
+  seq: 314
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods/{{pmId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Visa Gold", "description": "" }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("updated", function () { expect(res.body.data.name).to.equal("Visa Gold"); });
+}

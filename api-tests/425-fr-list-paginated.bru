@@ -1,0 +1,21 @@
+meta {
+  name: Financial records - pagination
+  type: http
+  seq: 425
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records?page=1&per_page=2
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.length: eq 2
+  res.body.meta.total: eq 5
+}

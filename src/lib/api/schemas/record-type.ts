@@ -9,6 +9,9 @@ const name = z.string().trim().min(1).max(50);
 // The combination below ensures it accepts undefined (if omitted) or null/empty string if provided.
 const description = z.string().trim().max(5000).nullable();
 
+// Catalog ids are lowercased to match the ids stored in the database.
+const uuid = z.guid().transform((v) => v.toLowerCase());
+
 /**
  * Schema for creating a new RecordType.
  * - Uses strictObject to reject any extra keys not defined in the schema.
@@ -18,6 +21,10 @@ const description = z.string().trim().max(5000).nullable();
 export const createRecordTypeSchema = z.strictObject({
   name,
   description: description.optional(),
+  color_id: uuid,
+  icon_id: uuid,
+  // Set at creation only: changing it later would rewrite the balance history.
+  kind: z.enum(["income", "expense", "neutral"]).optional(),
 });
 
 /**
@@ -28,7 +35,7 @@ export const createRecordTypeSchema = z.strictObject({
  *   This prevents no-op updates like PATCH {} which might be valid technically but useless logically.
  */
 export const updateRecordTypeSchema = z
-  .strictObject({ name, description })
+  .strictObject({ name, description, color_id: uuid, icon_id: uuid })
   .partial()
   .refine((v) => Object.keys(v).length > 0, { message: "At least one field is required." });
 

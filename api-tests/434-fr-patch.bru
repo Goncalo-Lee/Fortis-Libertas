@@ -1,0 +1,25 @@
+meta {
+  name: Financial records - update
+  type: http
+  seq: 434
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records/{{frId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"name": "Laptop Pro", "price": "120", "status": "pending"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.name: eq Laptop Pro
+  res.body.data.price: matches ^120\.00$
+}

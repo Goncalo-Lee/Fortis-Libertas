@@ -1,0 +1,20 @@
+meta {
+  name: Sessions - revoke current is rejected
+  type: http
+  seq: 507
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/me/sessions/{{sessionCurrent2}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 409
+  res.body.code: eq CURRENT_SESSION
+}

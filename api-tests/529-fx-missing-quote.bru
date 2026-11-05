@@ -1,0 +1,20 @@
+meta {
+  name: Exchange rates - quote is required
+  type: http
+  seq: 529
+}
+
+get {
+  url: {{baseUrl}}/api/v1/exchange-rates?base=USD
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 422
+  res.body.errors[0].pointer: eq /quote
+}

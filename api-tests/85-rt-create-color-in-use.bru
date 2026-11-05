@@ -1,0 +1,24 @@
+meta {
+  name: Record types - color held by a deleted type
+  type: http
+  seq: 85
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{rtDashboardId}}/record-types
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "UsesSavingsColor", "color_id": "{{color1}}", "icon_id": "{{icon1}}" }
+}
+
+assert {
+  res.status: eq 409
+  res.body.code: eq COLOR_IN_USE
+}

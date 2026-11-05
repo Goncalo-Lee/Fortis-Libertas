@@ -1,0 +1,19 @@
+meta {
+  name: Balances - non-member gets 404
+  type: http
+  seq: 481
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/balance
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 404
+}

@@ -1,0 +1,15 @@
+meta {
+  name: Exchange rates - no token
+  type: http
+  seq: 534
+}
+
+get {
+  url: {{baseUrl}}/api/v1/exchange-rates?base=USD&quote=EUR
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 401
+}

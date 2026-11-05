@@ -1,55 +1,49 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { getPaymentMethodsByDashboardId } from "@/db/queries/payment-methods/read";
-import { createPaymentMethod } from "@/db/queries/payment-methods/write";
-import { ApiError } from "@/lib/api/errors";
+import type { NextRequest } from "next/server";
+import { createPaymentMethod, listPaymentMethods } from "@/db/queries/payment-methods";
+import { requireDashboardRole } from "@/lib/api/access";
+import { parseJson } from "@/lib/api/body";
+import { ApiError, withErrors } from "@/lib/api/errors";
+import { parseUuid } from "@/lib/api/ids";
+import { parsePagination } from "@/lib/api/pagination";
+import { created, paginated } from "@/lib/api/responses";
+import { createPaymentMethodSchema, listPaymentMethodsQuery } from "@/lib/api/schemas/payment-method";
+import { serializePaymentMethod } from "@/lib/api/serializers/payment-method";
 
-interface RouteContext {
-    params: Promise<{ dashboard_id: string }>;
-}
+export const runtime = "nodejs";
 
-export async function GET(request: NextRequest, context: RouteContext) {
-    try {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
+type Ctx = { params: Promise<{ dashboard_id: string }> };
 
-        const { dashboard_id } = await context.params;
-        const methods = await getPaymentMethodsByDashboardId(dashboard_id);
+export const GET = withErrors(async (request: NextRequest, { params }: Ctx) => {
+  const dashboardId = parseUuid((await params).dashboard_id);
+  const { session } = await requireDashboardRole(request, dashboardId, "viewer");
 
-        return NextResponse.json({
-            data: methods,
-            meta: { page: 1, per_page: methods.length, total: methods.length, total_pages: 1 }
-        }, { status: 200 });
-    } catch (error) {
-        // Fazemos console.error para veres exatamente o que falhou no terminal do servidor
-        console.error("Erro no GET /payment-methods:", error);
-        return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
-    }
-}
+  const { searchParams } = request.nextUrl;
+  const { page, perPage, offset } = parsePagination(searchParams);
+  const { q, mine, card_id, sort } = listPaymentMethodsQuery.parse(Object.fromEntries(searchParams));
 
-export async function POST(request: NextRequest, context: RouteContext) {
-    try {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user?.id) return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
+  const { rows, total } = await listPaymentMethods(dashboardId, {
+    q,
+    userId: mine ? session.user.id : undefined,
+    cardId: card_id,
+    sort,
+    limit: perPage,
+    offset,
+  });
 
-        const { dashboard_id } = await context.params;
-        const body = await request.json();
+  return paginated(rows.map(serializePaymentMethod), { page, perPage, total });
+});
 
-        const created = await createPaymentMethod(dashboard_id, session.user.id, {
-            name: body.name,
-            description: body.description ?? null,
-            cardId: body.card_id ?? null,
-        });
+export const POST = withErrors(async (request: NextRequest, { params }: Ctx) => {
+  const dashboardId = parseUuid((await params).dashboard_id);
+  const { session } = await requireDashboardRole(request, dashboardId, "editor");
+  const input = await parseJson(request, createPaymentMethodSchema);
 
-        return NextResponse.json(
-            { data: created },
-            { status: 201, headers: { Location: `/api/v1/dashboards/${dashboard_id}/payment-methods/${created?.id}` } }
-        );
-    } catch (error) {
-        if (error instanceof ApiError && error.code === "NAME_ALREADY_EXISTS") {
-            return NextResponse.json({ code: "NAME_ALREADY_EXISTS", status: 409 }, { status: 409 });
-        }
-        console.error("Erro no POST /payment-methods:", error);
-        return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
-    }
-}
+  const row = await createPaymentMethod(dashboardId, session.user.id, {
+    name: input.name,
+    description: input.description,
+    cardId: input.card_id,
+  });
+  if (!row) throw new ApiError("INTERNAL_ERROR");
+
+  return created(serializePaymentMethod(row), `/api/v1/dashboards/${dashboardId}/payment-methods/${row.id}`);
+});

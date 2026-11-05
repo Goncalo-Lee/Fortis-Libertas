@@ -1,26 +1,31 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { getCardsByUserId } from "@/db/queries/cards/read";
+import type { NextRequest } from "next/server";
+import { listCards } from "@/db/queries/cards";
+import { requireSession } from "@/lib/api/auth";
+import { withErrors } from "@/lib/api/errors";
+import { parsePagination } from "@/lib/api/pagination";
+import { paginated } from "@/lib/api/responses";
+import { listCardsQuery } from "@/lib/api/schemas/card";
+import { serializeCard } from "@/lib/api/serializers/card";
 
-export async function GET(request: NextRequest) {
-    try {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user?.id) {
-            return NextResponse.json({ code: "UNAUTHENTICATED", status: 401 }, { status: 401 });
-        }
+export const runtime = "nodejs";
 
-        const { searchParams } = new URL(request.url);
-        const bankId = searchParams.get("bank_id") ?? undefined;
-        const typeCard = (searchParams.get("type_card") as "credit" | "debit") ?? undefined;
+/** GET /cards: cards owned by the caller, across bank accounts. */
+export const GET = withErrors(async (request: NextRequest) => {
+  const session = await requireSession(request);
 
-        const cards = await getCardsByUserId(session.user.id, { bankId, typeCard });
+  const { searchParams } = request.nextUrl;
+  const { page, perPage, offset } = parsePagination(searchParams);
+  const { bank_id, type_card, frozen, sort } = listCardsQuery.parse(Object.fromEntries(searchParams));
 
-        return NextResponse.json({
-            data: cards,
-            meta: { page: 1, per_page: cards.length, total: cards.length, total_pages: 1 }
-        }, { status: 200 });
+  const { rows, total } = await listCards(session.user.id, {
+    mine: true,
+    bankId: bank_id,
+    typeCard: type_card,
+    frozen,
+    sort,
+    limit: perPage,
+    offset,
+  });
 
-    } catch (error) {
-        return NextResponse.json({ code: "INTERNAL_ERROR", status: 500 }, { status: 500 });
-    }
-}
+  return paginated(rows.map(serializeCard), { page, perPage, total });
+});

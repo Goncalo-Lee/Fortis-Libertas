@@ -1,0 +1,27 @@
+meta {
+  name: Financial records - setup tag a
+  type: http
+  seq: 387
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/tags
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"name": "tech"}
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("frTagA", res.body.data.tag_id);
+}
+
+assert {
+  res.status: eq 201
+}

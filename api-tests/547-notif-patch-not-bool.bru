@@ -1,0 +1,23 @@
+meta {
+  name: Notifications - read must be boolean
+  type: http
+  seq: 547
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/me/notifications/{{notificationId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  { "read": "yes" }
+}
+
+assert {
+  res.status: eq 422
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Cards - viewer cannot delete
+  type: http
+  seq: 274
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/cards/{{cardId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 403
+}

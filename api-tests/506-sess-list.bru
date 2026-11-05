@@ -1,0 +1,41 @@
+meta {
+  name: Sessions - list
+  type: http
+  seq: 506
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me/sessions
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+script:post-response {
+  if (res.status === 200) {
+    const current = res.body.data.find((s) => s.is_current);
+    const other = res.body.data.find((s) => !s.is_current);
+    if (current) bru.setVar("sessionCurrent2", current.session_id);
+    if (other) bru.setVar("sessionOther2", other.session_id);
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isArray
+}
+
+tests {
+  test("exactly one session is the current one", function () {
+    expect(res.body.data.filter((s) => s.is_current)).to.have.length(1);
+  });
+  test("has the other device", function () {
+    expect(res.body.data.length).to.be.at.least(2);
+  });
+  test("never returns the token", function () {
+    expect(res.body.data[0]).to.not.have.property("token");
+  });
+}

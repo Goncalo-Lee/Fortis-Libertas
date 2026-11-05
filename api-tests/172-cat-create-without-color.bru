@@ -1,0 +1,29 @@
+meta {
+  name: Categories - create without color
+  type: http
+  seq: 172
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "NoColor", "icon_id": "{{icon1}}", "record_type_ids": ["{{catRtExpenses}}"] }
+}
+
+assert {
+  res.status: eq 422
+}
+
+tests {
+  test("points at color_id", function () {
+    expect(res.body.errors.map((e) => e.pointer)).to.include("/color_id");
+  });
+}

@@ -1,0 +1,27 @@
+meta {
+  name: Financial records - create income record
+  type: http
+  seq: 412
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"record_type_id": "{{frRtIncome}}", "category_id": "{{frCatIncome}}", "payment_method_id": "{{frPm}}", "name": "Refund", "price": "100.50", "payment_date": "2026-10-12T18:20:00.000Z", "status": "paid"}
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("frId5", res.body.data.financial_record_id);
+}
+
+assert {
+  res.status: eq 201
+}

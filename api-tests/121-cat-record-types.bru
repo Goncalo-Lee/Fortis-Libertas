@@ -1,0 +1,28 @@
+meta {
+  name: Categories - load the dashboard record types
+  type: http
+  seq: 121
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/record-types
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:post-response {
+  if (res.status === 200) {
+    const by = (n) => res.body.data.find((r) => r.name === n).record_type_id;
+    bru.setVar("catRtExpenses", by("Expenses"));
+    bru.setVar("catRtIncome", by("Income"));
+    bru.setVar("catRtInvestment", by("Investment"));
+  }
+}
+
+assert {
+  res.status: eq 200
+}

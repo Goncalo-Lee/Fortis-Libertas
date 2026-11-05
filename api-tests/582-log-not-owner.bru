@@ -1,0 +1,22 @@
+meta {
+  name: Activity logs - only owners can read
+  type: http
+  seq: 582
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/activity-logs
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+
+tests {
+  test("403 for a member who is not owner, 404 for a non-member", function () {
+    expect([403, 404]).to.include(res.status);
+  });
+}

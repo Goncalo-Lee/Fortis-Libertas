@@ -1,0 +1,27 @@
+meta {
+  name: Installment plans - patch
+  type: http
+  seq: 363
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans/{{ipId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Laptop Pro", "description": "Work laptop", "status": "paid", "total_amount": "1500.50", "due_date": "2028-01-31" }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("updated", function () { const d = res.body.data; expect(d.name).to.equal("Laptop Pro"); expect(d.status).to.equal("paid"); expect(d.total_amount).to.equal("1500.50"); expect(d.due_date).to.equal("2028-01-31"); });
+}

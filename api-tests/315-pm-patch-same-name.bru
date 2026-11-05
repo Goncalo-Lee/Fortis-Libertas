@@ -1,0 +1,23 @@
+meta {
+  name: Payment methods - patch same name is fine
+  type: http
+  seq: 315
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods/{{pmId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Visa Gold" }
+}
+
+assert {
+  res.status: eq 200
+}

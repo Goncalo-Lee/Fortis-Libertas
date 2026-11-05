@@ -1,0 +1,30 @@
+meta {
+  name: Record types - color and icon are required
+  type: http
+  seq: 87
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{rtDashboardId}}/record-types
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "NoColor" }
+}
+
+assert {
+  res.status: eq 422
+}
+
+tests {
+  test("points at color_id and icon_id", function () {
+    const pointers = res.body.errors.map((e) => e.pointer).sort();
+    expect(pointers).to.deep.equal(["/color_id", "/icon_id"]);
+  });
+}

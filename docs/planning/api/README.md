@@ -215,10 +215,21 @@ Every table in the [data dictionary](../db/data-dictionary.md) is accounted for 
 | `Category` | CRUD | `/api/v1/dashboards/{dashboard_id}/categories` | |
 | `Tag` | CRUD | `/api/v1/dashboards/{dashboard_id}/tags` | |
 | `Tag__Category` | Link management | `/api/v1/dashboards/{dashboard_id}/categories/{category_id}/tags` | Hard delete. |
+| `Record_Type__Category` | Link management | `/api/v1/dashboards/{dashboard_id}/categories/{category_id}/record-types` | Hard delete. A link in use cannot be removed. |
 | `Payment_Method` | CRUD | `/api/v1/dashboards/{dashboard_id}/payment-methods` | |
 | `Installment_Plan` | CRUD | `/api/v1/dashboards/{dashboard_id}/installment-plans` | |
 | `Financial_Record` | CRUD + filtering | `/api/v1/dashboards/{dashboard_id}/financial-records` | Central transactional resource. |
 | `Tag__Financial_Record` | Link management | `/api/v1/dashboards/{dashboard_id}/financial-records/{financial_record_id}/tags` | Hard delete. |
+| `Color` | List (read-only) | `/api/v1/colors` | Global catalog seeded with the database. |
+| `Icon` | List (read-only) | `/api/v1/icons` | Global catalog. `code_icon` is a Material Symbols name. |
+| `Transaction` | List (read-only) | `/api/v1/dashboards/{dashboard_id}/transactions` | Financial history; written server-side only. See Open Item 9. |
+| `Language` | List (read-only) | `/api/v1/languages` | Global catalog (`en`, `pt-PT`). |
+| `Currency` | List (read-only) | `/api/v1/currencies` | Global catalog (`EUR`, `USD`, `GBP`, `BRL`). |
+| `Exchange_Rate` | Read a rate | `/api/v1/exchange-rates` | Cache of the external provider; also used internally for `converted`. |
+| `Tag__Installment_Plan` | Link management | `/api/v1/dashboards/{dashboard_id}/installment-plans/{installment_plan_id}/tags` | Hard delete. |
+| `Activity_Log` | List (read-only) | `/api/v1/dashboards/{dashboard_id}/activity-logs`, `/api/v1/bank-accounts/{bank_account_id}/activity-logs`, `/api/v1/me/activity-logs` | Written server-side only; append-only. |
+
+`GET /api/v1/dashboards/{dashboard_id}/home` is a read-only aggregate for the home screen and has no table of its own.
 
 ---
 
@@ -248,6 +259,14 @@ Inconsistencies found while deriving the API from the database documentation. Ea
 | 6 | `data-dictionary.md` | `Card.card_number` (`char(16)`) and `Card.cvv` (`char(3)`) are stored as plain text. Retaining a CVV after authorization is prohibited by PCI DSS. | API never returns `cvv` or the full `card_number`. Recommend storing only the last four digits (or a processor token) and dropping `cvv`. |
 | 7 | `data-dictionary.md` | `Financial_Record.status` has no default value. | `status` is required on create. |
 | 8 | `model-er.md` | Referential rules (`CASCADE`, `RESTRICT`, `SET NULL`) describe physical deletes, but most tables use soft delete. | The API emulates `RESTRICT` with `409 IN_USE` and `SET NULL` by explicit updates inside the delete transaction. Physical `CASCADE` applies only to purge jobs. |
+| 9 | `data-dictionary.md` | `Transaction` points to its source with `source_type` + `source_id`, so the database cannot validate the source (no FK). | Integrity is the code's job: every write to a source row also writes its `Transaction` in the same database transaction. Soft-deleting a source sets `Transaction.deleted_at`, and the frontend filters those entries. |
+| 10 | `data-dictionary.md` | `UNIQUE (dashboard_id, color_id)` on `Record_Type` and `Category` caps the categories of a dashboard at the palette size, and soft-deleted rows keep their color. | Seed a palette larger than the expected number of categories, or exclude soft-deleted rows from the index (see Open Item 4). |
+| 11 | `data-dictionary.md` | The two reserved colors can be exchanged between `Income` and `Expenses`, but with a unique `(dashboard_id, color_id)` a plain swap fails halfway. | Implemented: `PATCH /record-types/{id}` with the other reserved color swaps both in one transaction (partner -> free temporary color, current -> partner's color, partner -> current's old color), locking both rows first. |
+| 12 | `data-dictionary.md` | `Icon.code_icon` is a Material Symbols name, and Compose cannot look up an icon by name at runtime. | The Android client needs a static name-to-icon map (or the Material Symbols font). |
+| 13 | `data-dictionary.md` | The event list and the retention of `Activity_Log` are not defined. | Append-only, no purge in v1. |
+| 14 | `data-dictionary.md` | Exchange rates depend on an external API (Frankfurter, ECB reference rates, published on working days). | Rates are cached in `Exchange_Rate`. For non-working days the previous working day is used. When no rate is available, `converted` is `null` and the request still succeeds. |
+| 15 | `data-dictionary.md` | `Profile`, `Financial_Record` and `Installment_Plan` move from text codes (`currency`, `language`) to the foreign keys `currency_id` / `language_id`. | Seed `Currency` and `Language` first and backfill existing rows by code. The API still exposes the codes (`EUR`, `pt-PT`). |
+| 16 | `data-dictionary.md` | The pair `(record_type_id, category_id)` of `Financial_Record` and `Installment_Plan` should exist in `Record_Type__Category`, but a composite foreign key would be blocked by soft-deleted records when a link is removed. | The API validates the pair (`422`) and refuses to remove a link that a non-deleted record or plan uses (`409 IN_USE`). Purge jobs must clean up soft-deleted records first. |
 
 ---
 

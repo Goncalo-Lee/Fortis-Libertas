@@ -1,0 +1,27 @@
+meta {
+  name: Payment methods - create with unknown card
+  type: http
+  seq: 303
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Ghost", "card_id": "00000000-0000-7000-8000-000000000000" }
+}
+
+assert {
+  res.status: eq 422
+}
+
+tests {
+  test("points at card_id", function () { expect(res.body.errors.map((e) => e.pointer)).to.include("/card_id"); });
+}

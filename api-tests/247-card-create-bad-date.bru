@@ -1,0 +1,23 @@
+meta {
+  name: Cards - create bad date
+  type: http
+  seq: 247
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{cardBaId}}/cards
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "cardholder_name": "X", "type_card": "debit", "expiry_date": "2030-13-45" }
+}
+
+assert {
+  res.status: eq 422
+}

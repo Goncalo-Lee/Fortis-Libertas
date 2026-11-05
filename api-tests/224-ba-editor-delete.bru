@@ -1,0 +1,19 @@
+meta {
+  name: Bank accounts - editor cannot delete
+  type: http
+  seq: 224
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{baId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 403
+}

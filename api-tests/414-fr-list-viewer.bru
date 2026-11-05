@@ -1,0 +1,19 @@
+meta {
+  name: Financial records - viewer lists
+  type: http
+  seq: 414
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 200
+}

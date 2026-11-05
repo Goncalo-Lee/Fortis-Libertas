@@ -1,11 +1,14 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth} from "better-auth";
 import {admin, bearer, twoFactor} from "better-auth/plugins";
-import { db } from "@/db";
+import { db } from "../db";
 import * as schema from "../db/schema";
-import { generateId } from "@/db/types";
+import { generateId } from "../db/types";
+import { getDefaultProfileCatalogIds } from "../db/queries/catalogs";
 import {nextCookies} from "better-auth/next-js";
 import nodemailer from "nodemailer";
+import { onAccountUpdated, onSessionCreated, onSessionDeleted, onUserUpdated } from "./auth-activity";
+import {error} from "better-auth/api";
 import ResetPasswordEmail from "@/emails/reset-password";
 import { render } from "@react-email/render";
 import {user} from "../db/schema";
@@ -128,11 +131,26 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (createdUser) => {
+          // Currency and language are required: new profiles start with the defaults (EUR, pt-PT).
+          const { currencyId, languageId } = await getDefaultProfileCatalogIds()
           await db.insert(schema.profile).values({
             userId: createdUser.id,
+            currencyId,
+            languageId,
           })
         }
       },
+      // 2FA switched on/off -> activity log (see auth-activity.ts).
+      update: { after: (user, ctx) => onUserUpdated(user, ctx) },
+    },
+    // Sign-up, sign-in and sign-out -> activity log.
+    session: {
+      create: { after: (session, ctx) => onSessionCreated(session, ctx) },
+      delete: { after: (session, ctx) => onSessionDeleted(session, ctx) },
+    },
+    // Password change or reset -> activity log.
+    account: {
+      update: { after: (account, ctx) => onAccountUpdated(account, ctx) },
     },
   },
   appName: "FortisLibertas",

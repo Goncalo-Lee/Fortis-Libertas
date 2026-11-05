@@ -39,5 +39,4 @@ async function seedAdmin() {
         process.exit(1);
     }
 }
-
 seedAdmin();

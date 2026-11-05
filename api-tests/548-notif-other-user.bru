@@ -1,0 +1,23 @@
+meta {
+  name: Notifications - another user's notification is 404
+  type: http
+  seq: 548
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/me/notifications/{{notificationId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "read": true }
+}
+
+assert {
+  res.status: eq 404
+}

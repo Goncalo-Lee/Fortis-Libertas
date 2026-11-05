@@ -1,0 +1,20 @@
+meta {
+  name: Catalogs - dashboard_id without scope
+  type: http
+  seq: 29
+}
+
+get {
+  url: {{baseUrl}}/api/v1/colors?dashboard_id=00000000-0000-7000-8000-000000000001
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 422
+  res.body.code: eq VALIDATION_ERROR
+}

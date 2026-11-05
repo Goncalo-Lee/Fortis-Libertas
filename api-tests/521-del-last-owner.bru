@@ -1,0 +1,20 @@
+meta {
+  name: Delete me - last owner of a shared dashboard
+  type: http
+  seq: 521
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token3}}
+}
+
+assert {
+  res.status: eq 409
+  res.body.code: eq LAST_OWNER
+}

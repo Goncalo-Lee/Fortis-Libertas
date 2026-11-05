@@ -1,0 +1,27 @@
+meta {
+  name: Cards - create invalid Luhn
+  type: http
+  seq: 244
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{cardBaId}}/cards
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "cardholder_name": "X", "type_card": "debit", "card_number": "4539578763621487" }
+}
+
+assert {
+  res.status: eq 422
+}
+
+tests {
+  test("points at card_number", function () { expect(res.body.errors.map((e) => e.pointer)).to.include("/card_number"); });
+}

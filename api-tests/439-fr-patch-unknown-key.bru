@@ -1,0 +1,23 @@
+meta {
+  name: Financial records - update unknown key
+  type: http
+  seq: 439
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records/{{frId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"tag_ids": []}
+}
+
+assert {
+  res.status: eq 422
+}

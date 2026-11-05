@@ -1,0 +1,27 @@
+meta {
+  name: Reports - by record type (default)
+  type: http
+  seq: 485
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/reports/summary?payment_date_from=2026-10-01T00:00:00.000Z&payment_date_to=2026-10-31T23:59:59.999Z
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.total: matches ^1280\.50$
+  res.body.data.groups.length: eq 2
+  res.body.data.groups[0].total: matches ^1000\.00$
+  res.body.data.groups[0].count: eq 1
+  res.body.data.groups[1].total: matches ^280\.50$
+  res.body.data.groups[1].count: eq 2
+  res.body.data.currency: isString
+  res.body.data.period.from: matches ^2026-10-01T00:00:00\.000Z$
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Installment plans - delete bad detach flag
+  type: http
+  seq: 378
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans/{{ipId}}?detach_records=maybe
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 422
+}

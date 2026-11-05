@@ -1,0 +1,27 @@
+meta {
+  name: Transactions - creating a plan writes an entry
+  type: http
+  seq: 566
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "History-Plan", "category_id": "{{ipCatId}}", "total_amount": "600.00", "total_installments": 6, "due_date": "2027-06-30" }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("histPlan", res.body.data.installment_plan_id);
+}
+
+assert {
+  res.status: eq 201
+}

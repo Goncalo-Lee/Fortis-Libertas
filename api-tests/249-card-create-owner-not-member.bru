@@ -1,0 +1,27 @@
+meta {
+  name: Cards - create with non-member owner
+  type: http
+  seq: 249
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{cardBaId}}/cards
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "cardholder_name": "X", "type_card": "debit", "user_id": "00000000-0000-7000-8000-000000000000" }
+}
+
+assert {
+  res.status: eq 422
+}
+
+tests {
+  test("points at user_id", function () { expect(res.body.errors.map((e) => e.pointer)).to.include("/user_id"); });
+}

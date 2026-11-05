@@ -1,0 +1,27 @@
+meta {
+  name: Installment plans - replace tags with one
+  type: http
+  seq: 371
+}
+
+put {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans/{{ipId}}/tags
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "tag_ids": ["{{ipTagB}}"] }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("gift", function () { expect(res.body.data.tags.map((x) => x.name)).to.deep.equal(["gift"]); });
+}

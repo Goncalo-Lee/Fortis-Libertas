@@ -1,0 +1,24 @@
+meta {
+  name: Financial records - plan record with other record type
+  type: http
+  seq: 463
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"payment_method_id": "{{frPm}}", "name": "Plan rec", "price": "10", "payment_date": "2026-10-12T18:20:00.000Z", "status": "paid", "installment_plan_id": "{{frPlan}}", "record_type_id": "{{frRtIncome}}"}
+}
+
+assert {
+  res.status: eq 422
+  res.body.errors[0].pointer: eq /record_type_id
+}

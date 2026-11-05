@@ -1,0 +1,23 @@
+meta {
+  name: Payment methods - patch set card
+  type: http
+  seq: 318
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods/{{pmId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "card_id": "{{pmCardId}}" }
+}
+
+assert {
+  res.status: eq 200
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Installment plans - patch income-only category
+  type: http
+  seq: 365
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans/{{ipId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "category_id": "{{ipCatIncomeId}}" }
+}
+
+assert {
+  res.status: eq 422
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Cards - viewer cannot freeze
+  type: http
+  seq: 267
+}
+
+post {
+  url: {{baseUrl}}/api/v1/cards/{{cardId}}/freeze
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 403
+}

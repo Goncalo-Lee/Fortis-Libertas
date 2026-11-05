@@ -1,0 +1,33 @@
+meta {
+  name: Financial records - create
+  type: http
+  seq: 395
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"record_type_id": "{{frRt}}", "category_id": "{{frCat}}", "payment_method_id": "{{frPm}}", "name": "Laptop", "price": "100.50", "payment_date": "2026-10-12T18:20:00.000Z", "status": "paid", "tag_ids": ["{{frTagA}}"]}
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("frId", res.body.data.financial_record_id);
+}
+
+assert {
+  res.status: eq 201
+  res.headers.location: isString
+  res.body.data.name: eq Laptop
+  res.body.data.price: matches ^100\.50$
+  res.body.data.status: eq paid
+  res.body.data.tags.length: eq 1
+  res.body.data.installment_plan_id: isNull
+}

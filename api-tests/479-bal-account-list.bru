@@ -1,0 +1,20 @@
+meta {
+  name: Balances - bank account balance in list
+  type: http
+  seq: 479
+}
+
+get {
+  url: {{baseUrl}}/api/v1/bank-accounts?q=Balance account
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data[0].balance: matches ^849\.50$
+}

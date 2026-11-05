@@ -1,0 +1,38 @@
+meta {
+  name: My activity log - list
+  type: http
+  seq: 600
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me/activity-logs?per_page=100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.meta.total: gte 1
+}
+
+tests {
+  test("only account events of the caller", function () {
+    res.body.data.forEach((x) => {
+      expect(x.scope).to.equal("account");
+      expect(x.user.user_id).to.equal(bru.getVar("userId"));
+    });
+  });
+  test("device data is shown to its owner", function () {
+    expect(res.body.data[0]).to.have.property("ip_address");
+    expect(res.body.data[0]).to.have.property("user_agent");
+  });
+  test("has the sign-in and the PATCH /me of the earlier tests", function () {
+    const keys = res.body.data.map((x) => `${x.entity_type}.${x.action}`);
+    expect(keys).to.include("session.sign_in");
+    expect(keys).to.include("user.updated");
+  });
+}

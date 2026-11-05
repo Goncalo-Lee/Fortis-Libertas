@@ -1,0 +1,23 @@
+meta {
+  name: Installment plans - list status multi
+  type: http
+  seq: 352
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans?status=late&status=pending
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("two", function () { expect(res.body.data.length).to.equal(2); });
+}

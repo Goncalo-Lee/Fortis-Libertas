@@ -1,0 +1,20 @@
+meta {
+  name: Financial records - search by name
+  type: http
+  seq: 422
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records?q=Laptop
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.meta.total: eq 1
+}

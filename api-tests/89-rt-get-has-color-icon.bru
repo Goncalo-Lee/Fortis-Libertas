@@ -1,0 +1,27 @@
+meta {
+  name: Record types - response carries color and icon
+  type: http
+  seq: 89
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{rtDashboardId}}/record-types/{{incomeTypeId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.color.name: eq Income Green
+}
+
+tests {
+  test("has nested color and icon", function () {
+    expect(res.body.data.color_id).to.equal(res.body.data.color.color_id);
+    expect(res.body.data.icon.code_icon).to.be.a("string");
+  });
+}

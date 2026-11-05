@@ -1,0 +1,27 @@
+meta {
+  name: Primary account - other patch keeps primary
+  type: http
+  seq: 289
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/me/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "language": "pt-PT" }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("kept", function () { expect(res.body.data.primary_bank_account_id).to.equal(bru.getVar("primBaId")); });
+}

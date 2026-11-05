@@ -45,6 +45,13 @@ export const updateProfileSchema = z
       .string()
       .max(254)
       .regex(/^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/, "Must be a BCP 47 tag, e.g. pt-PT."),
+
+    // Bank account shown first on the home screen; null clears it.
+    // Membership is checked in the query layer (422 on the field).
+    primary_bank_account_id: z
+      .guid()
+      .transform((v) => v.toLowerCase())
+      .nullable(),
   })
   // Make all fields optional for partial updates
   .partial()

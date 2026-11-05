@@ -1,0 +1,23 @@
+meta {
+  name: Installment plans - tags on unknown plan
+  type: http
+  seq: 375
+}
+
+put {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans/00000000-0000-7000-8000-000000000000/tags
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "tag_ids": [] }
+}
+
+assert {
+  res.status: eq 404
+}

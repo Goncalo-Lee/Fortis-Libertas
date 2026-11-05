@@ -1,0 +1,23 @@
+meta {
+  name: Payment methods - create empty name
+  type: http
+  seq: 301
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "" }
+}
+
+assert {
+  res.status: eq 422
+}

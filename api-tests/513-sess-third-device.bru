@@ -1,0 +1,23 @@
+meta {
+  name: Sessions - sign in again on a third device
+  type: http
+  seq: 513
+}
+
+post {
+  url: {{baseUrl}}/api/auth/sign-in/email
+  body: json
+  auth: none
+}
+
+body:json {
+  { "email": "{{email2}}", "password": "{{process.env.TEST_PASSWORD}}" }
+}
+
+script:post-response {
+  bru.setVar("token2c", res.getHeader("set-auth-token"));
+}
+
+assert {
+  res.status: eq 200
+}

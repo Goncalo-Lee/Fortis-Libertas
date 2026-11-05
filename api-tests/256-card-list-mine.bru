@@ -1,0 +1,23 @@
+meta {
+  name: Cards - list my cards
+  type: http
+  seq: 256
+}
+
+get {
+  url: {{baseUrl}}/api/v1/cards?bank_id={{cardBaId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("mine", function () { expect(res.body.data.length).to.equal(2); });
+}

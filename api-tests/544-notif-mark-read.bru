@@ -1,0 +1,24 @@
+meta {
+  name: Notifications - mark as read
+  type: http
+  seq: 544
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/me/notifications/{{notificationId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  { "read": true }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.read_at: isString
+}

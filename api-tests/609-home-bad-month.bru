@@ -1,0 +1,20 @@
+meta {
+  name: Home - bad month
+  type: http
+  seq: 609
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/home?month=2026-13
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 422
+  res.body.errors[0].pointer: eq /month
+}

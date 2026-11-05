@@ -1,0 +1,27 @@
+meta {
+  name: Balances - setup card
+  type: http
+  seq: 472
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{fbBa}}/cards
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"cardholder_name": "Balance Card", "type_card": "debit", "card_number": "4111111111111111"}
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("fbCard", res.body.data.card_id);
+}
+
+assert {
+  res.status: eq 201
+}

@@ -70,6 +70,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -95,7 +103,20 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"
-import { GripVerticalIcon, CircleCheckIcon, LoaderIcon, EllipsisVerticalIcon, Columns3Icon, ChevronDownIcon, PlusIcon, ChevronsLeftIcon, ChevronLeftIcon, ChevronRightIcon, ChevronsRightIcon, TrendingUpIcon } from "lucide-react"
+import {
+  GripVerticalIcon,
+  CircleCheckIcon,
+  LoaderIcon,
+  EllipsisVerticalIcon,
+  Columns3Icon,
+  ChevronDownIcon,
+  PlusIcon,
+  ChevronsLeftIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronsRightIcon,
+  TrendingUpIcon,
+} from "lucide-react"
 
 const features = tableFeatures({
   columnFilteringFeature,
@@ -113,7 +134,6 @@ const columnHelper = createColumnHelper<
     z.infer<typeof schema>
 >()
 
-// SCHEMA TOTALMENTE RENOMEADO
 export const schema = z.object({
   id: z.number(),
   username: z.string(),
@@ -194,7 +214,7 @@ const columns = columnHelper.columns([
       const username = row.original.username.toLowerCase()
       const fullName = row.original.fullName.toLowerCase()
       return username.includes(search) || fullName.includes(search)
-    }
+    },
   }),
   columnHelper.accessor("fullName", {
     header: "Nome completo",
@@ -222,9 +242,15 @@ const columns = columnHelper.columns([
   columnHelper.accessor("blocked", {
     header: "Bloqueado",
     cell: ({ row }) => (
-        <span className={row.original.blocked === "Sim" ? "text-destructive font-medium" : "text-muted-foreground"}>
-          {row.original.blocked}
-        </span>
+        <span
+            className={
+              row.original.blocked === "Sim"
+                  ? "text-destructive font-medium"
+                  : "text-muted-foreground"
+            }
+        >
+        {row.original.blocked}
+      </span>
     ),
   }),
   columnHelper.accessor("accountStatus", {
@@ -232,7 +258,10 @@ const columns = columnHelper.columns([
     cell: ({ row }) => {
       const estado = row.original.accountStatus
       return (
-          <Badge variant="outline" className="px-2 py-0.5 font-normal text-muted-foreground">
+          <Badge
+              variant="outline"
+              className="px-2 py-0.5 font-normal text-muted-foreground"
+          >
             {estado === "Ativo" && (
                 <CircleCheckIcon className="mr-1.5 size-3.5 fill-green-500 text-background dark:fill-green-400" />
             )}
@@ -251,6 +280,7 @@ const columns = columnHelper.columns([
     id: "actions",
     cell: () => (
         <DropdownMenu>
+          {/* CORREÇÃO AQUI */}
           <DropdownMenuTrigger
               render={
                 <Button
@@ -309,7 +339,8 @@ export function DataTable({
 }) {
   const [data, setData] = React.useState(() => initialData)
   const [rowSelection, setRowSelection] = React.useState({})
-  const [columnVisibility, setColumnVisibility] = React.useState<ColumnVisibilityState>({})
+  const [columnVisibility, setColumnVisibility] =
+      React.useState<ColumnVisibilityState>({})
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [pagination, setPagination] = React.useState({
@@ -318,6 +349,16 @@ export function DataTable({
   })
 
   const [searchTerm, setSearchTerm] = React.useState("")
+
+  // Estados do Modal de Novo Utilizador
+  const [isAddUserOpen, setIsAddUserOpen] = React.useState(false)
+  const [formData, setFormData] = React.useState({
+    fullName: "",
+    username: "",
+    email: "",
+    role: "User",
+    accountStatus: "Ativo",
+  })
 
   const sortableId = React.useId()
   const sensors = useSensors(
@@ -360,6 +401,31 @@ export function DataTable({
     }
   }
 
+  const handleAddUser = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const newUser = {
+      id: data.length > 0 ? Math.max(...data.map((u) => u.id)) + 1 : 1,
+      fullName: formData.fullName,
+      username: formData.username,
+      email: formData.email,
+      role: formData.role,
+      accountStatus: formData.accountStatus,
+      blocked: formData.accountStatus === "Inativo" ? "Sim" : "Não",
+    }
+
+    setData([newUser, ...data])
+    setIsAddUserOpen(false)
+    setFormData({
+      fullName: "",
+      username: "",
+      email: "",
+      role: "User",
+      accountStatus: "Ativo",
+    })
+    toast.success("Utilizador adicionado com sucesso!")
+  }
+
   return (
       <Tabs
           defaultValue="outline"
@@ -382,20 +448,19 @@ export function DataTable({
           </TabsList>
 
           <div className="ml-auto flex items-center gap-2">
-
-            {/* Input filtrando pela coluna correta 'username' */}
             <Input
                 placeholder="Procurar utilizador..."
                 value={searchTerm}
                 onChange={(event) => {
-                  const value = event.target.value;
-                  setSearchTerm(value);
-                  table.getColumn("username")?.setFilterValue(value);
+                  const value = event.target.value
+                  setSearchTerm(value)
+                  table.getColumn("username")?.setFilterValue(value)
                 }}
                 className="h-8 w-[150px] lg:w-[250px]"
             />
 
             <DropdownMenu>
+              {/* CORREÇÃO AQUI */}
               <DropdownMenuTrigger
                   render={<Button variant="outline" size="sm" />}
               >
@@ -427,12 +492,130 @@ export function DataTable({
                     })}
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="outline" size="sm" className="">
-              <PlusIcon />
+
+            {/* BOTÃO ISOLADO QUE CONTROLA O DIALOG */}
+            <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => setIsAddUserOpen(true)}
+            >
+              <PlusIcon className="h-4 w-4" />
               <span className="hidden lg:inline">Adicionar utilizador</span>
             </Button>
+
+            {/* DIALOG CONTROLADO APENAS PELO ESTADO (SEM TRIGGER A BLOQUEAR) */}
+            <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+              <DialogContent className="sm:max-w-[425px] font-poppins">
+                <DialogHeader>
+                  <DialogTitle>Novo Utilizador</DialogTitle>
+                  <DialogDescription>
+                    Cria uma nova conta manualmente. Clica em guardar quando terminares.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <form onSubmit={handleAddUser} className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="add-fullName" className="text-xs">
+                      Nome Completo
+                    </Label>
+                    <Input
+                        id="add-fullName"
+                        required
+                        value={formData.fullName}
+                        onChange={(e) =>
+                            setFormData({ ...formData, fullName: e.target.value })
+                        }
+                        placeholder="Ex: João Silva"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="add-username" className="text-xs">
+                      Nome de Utilizador
+                    </Label>
+                    <Input
+                        id="add-username"
+                        required
+                        value={formData.username}
+                        onChange={(e) =>
+                            setFormData({ ...formData, username: e.target.value })
+                        }
+                        placeholder="Ex: joaosilva99"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="add-email" className="text-xs">
+                      Email
+                    </Label>
+                    <Input
+                        id="add-email"
+                        type="email"
+                        required
+                        value={formData.email}
+                        onChange={(e) =>
+                            setFormData({ ...formData, email: e.target.value })
+                        }
+                        placeholder="Ex: joao@exemplo.com"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="add-role" className="text-xs">
+                        Cargo
+                      </Label>
+                      <select
+                          id="add-role"
+                          className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          value={formData.role}
+                          onChange={(e) =>
+                              setFormData({ ...formData, role: e.target.value })
+                          }
+                      >
+                        <option value="User">User</option>
+                        <option value="Admin">Admin</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="add-accountStatus" className="text-xs">
+                        Estado
+                      </Label>
+                      <select
+                          id="add-accountStatus"
+                          className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          value={formData.accountStatus}
+                          onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                accountStatus: e.target.value,
+                              })
+                          }
+                      >
+                        <option value="Ativo">Ativo</option>
+                        <option value="Pendente">Pendente</option>
+                        <option value="Inativo">Inativo</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <DialogFooter className="pt-4">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsAddUserOpen(false)}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button type="submit">Guardar Utilizador</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
+
         <TabsContent
             value="outline"
             className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
@@ -485,6 +668,7 @@ export function DataTable({
               </Table>
             </DndContext>
           </div>
+
           <div className="flex items-center justify-between px-4">
             <div className="hidden flex-1 text-sm text-muted-foreground lg:flex">
               {table.getFilteredSelectedRowModel().rows.length} de{" "}
@@ -567,6 +751,7 @@ export function DataTable({
             </div>
           </div>
         </TabsContent>
+
         <TabsContent
             value="past-performance"
             className="flex flex-col px-4 lg:px-6"
@@ -610,6 +795,7 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
   const isMobile = useIsMobile()
   return (
       <Drawer swipeDirection={isMobile ? "down" : "right"}>
+        {/* CORREÇÃO AQUI */}
         <DrawerTrigger
             render={
               <Button
@@ -673,7 +859,8 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
                   <Separator />
                   <div className="grid gap-2">
                     <div className="flex gap-2 leading-none font-medium">
-                      Atividade subiu 5.2% este mês <TrendingUpIcon className="size-4" />
+                      Atividade subiu 5.2% este mês{" "}
+                      <TrendingUpIcon className="size-4" />
                     </div>
                     <div className="text-muted-foreground">
                       Gráfico representativo da atividade do utilizador nos últimos 6 meses.
@@ -753,7 +940,10 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
           </div>
           <DrawerFooter>
             <Button>Guardar Alterações</Button>
-            <DrawerClose render={<Button variant="outline" />}>Cancelar</DrawerClose>
+            {/* CORREÇÃO AQUI */}
+            <DrawerClose render={<Button variant="outline" />}>
+              Cancelar
+            </DrawerClose>
           </DrawerFooter>
         </DrawerContent>
       </Drawer>

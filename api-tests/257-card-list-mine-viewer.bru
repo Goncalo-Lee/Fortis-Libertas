@@ -1,0 +1,23 @@
+meta {
+  name: Cards - viewer owns none
+  type: http
+  seq: 257
+}
+
+get {
+  url: {{baseUrl}}/api/v1/cards
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("none", function () { expect(res.body.data.length).to.equal(0); });
+}

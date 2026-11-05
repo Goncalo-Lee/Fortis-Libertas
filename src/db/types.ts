@@ -45,6 +45,18 @@ export const generateId = (): string => {
 
 
 
+// Prefix MySQL uses for binary values inside JSON (JSON_OBJECT / JSON_ARRAYAGG), which is how
+// Better Auth joins return ids. Kept while the joins may be used; with `joins: false` it is not produced.
+const JSON_BINARY_PREFIX = "base64:type254:";
+
+// 16 bytes -> "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx". Throws instead of returning a wrong id.
+const bytesToUuid = (bytes: Uint8Array): string => {
+  if (bytes.length !== 16) {
+    throw new Error(`Invalid binary UUID: expected 16 bytes, got ${bytes.length}.`);
+  }
+  return uuidStringify(bytes);
+};
+
 export const uuidBinary = customType<{
   data: string;
   driverData: Buffer;
@@ -53,67 +65,34 @@ export const uuidBinary = customType<{
     return "binary(16)";
   },
 
+  // A value that is not a UUID is a bug in the caller (routes validate ids with `parseUuid`), so it fails
+  // loudly instead of being replaced by a zero UUID that would silently match or write the wrong row.
   toDriver(value: string): Buffer {
-    // 1. THE SAFETY NET: Prevents the app from crashing on bad data
-    if (typeof value === "string" && value.startsWith("base64:type254:")) {
-      const base64Part = value.substring("base64:type254:".length);
-      return Buffer.from(base64Part, "base64");
+    if (typeof value === "string" && value.startsWith(JSON_BINARY_PREFIX)) {
+      const bytes = Buffer.from(value.slice(JSON_BINARY_PREFIX.length), "base64");
+      if (bytes.length !== 16) throw new Error(`Invalid binary UUID: expected 16 bytes, got ${bytes.length}.`);
+      return bytes;
     }
 
-    if (!uuidValidate(value)) {
-      console.warn(`[WARNING] Invalid UUID received: "${value}". Falling back to zero-UUID.`);
-      return Buffer.from(uuidParse("00000000-0000-0000-0000-000000000000"));
+    if (typeof value !== "string" || !uuidValidate(value)) {
+      throw new Error(`Invalid UUID: ${JSON.stringify(value)}.`);
     }
 
-    // 2. THE HAPPY PATH: Wraps the Uint8Array securely in a Buffer
     return Buffer.from(uuidParse(value));
   },
 
+  // Same rule when reading: an unreadable value is an error, not an empty string.
   fromDriver(value: unknown): string {
-    if (!value) {
-      return "";
-    }
-
-    // Se o MySQL nos devolver um Buffer, lemos os bytes diretamente
-    // para uma string hexadecimal e formatamos com hífens manualmente,
-    // garantindo 0 crashes!
-    if (Buffer.isBuffer(value)) {
-      if (value.length === 16) {
-        const hex = value.toString("hex");
-        // Formata: 8-4-4-4-12
-        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
-      }
-      return "";
-    }
+    if (value instanceof Uint8Array) return bytesToUuid(value); // Buffer is a Uint8Array
 
     if (typeof value === "string") {
-      if (value.startsWith("base64:type254:")) {
-        const base64Part = value.substring("base64:type254:".length);
-        const buf = Buffer.from(base64Part, "base64");
-        if (buf.length === 16) {
-          const hex = buf.toString("hex");
-          return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
-        }
-        return "";
+      if (value.startsWith(JSON_BINARY_PREFIX)) {
+        return bytesToUuid(Buffer.from(value.slice(JSON_BINARY_PREFIX.length), "base64"));
       }
-
-      if (uuidValidate(value)) {
-        return value;
-      }
-      return "";
+      if (uuidValidate(value)) return value.toLowerCase();
     }
 
-    try {
-      const arr = value as Uint8Array;
-      if (arr.length === 16) {
-        const hex = Buffer.from(arr).toString("hex");
-        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
-      }
-    } catch (e) {
-      // Ignora
-    }
-
-    return "";
+    throw new Error(`Invalid UUID value from the database: ${JSON.stringify(value)}.`);
   },
 });
 

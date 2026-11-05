@@ -1,0 +1,23 @@
+meta {
+  name: Bank accounts - list
+  type: http
+  seq: 206
+}
+
+get {
+  url: {{baseUrl}}/api/v1/bank-accounts
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("has accounts", function () { expect(res.body.data.length).to.be.at.least(2); expect(res.body.meta.total).to.be.at.least(2); });
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Financial records - list
+  type: http
+  seq: 413
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.meta.total: eq 5
+  res.body.data[0].converted: isDefined
+}

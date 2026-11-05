@@ -1,0 +1,19 @@
+meta {
+  name: Transactions - delete the record
+  type: http
+  seq: 562
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/financial-records/{{histRec}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 204
+}

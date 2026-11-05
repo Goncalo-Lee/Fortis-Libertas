@@ -1,0 +1,27 @@
+meta {
+  name: Financial records - setup dashboard
+  type: http
+  seq: 382
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"name": "Records dashboard"}
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("frDashId", res.body.data.dashboard_id);
+}
+
+assert {
+  res.status: eq 201
+}

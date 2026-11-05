@@ -1,0 +1,23 @@
+meta {
+  name: Activity logs - rename the tag
+  type: http
+  seq: 576
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/tags/{{logTag}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Log-Renamed" }
+}
+
+assert {
+  res.status: eq 200
+}

@@ -6,6 +6,9 @@
  */
 export type CreateRecordTypeInput = {
   name: string;
+  color_id: string;
+  icon_id: string;
+  kind?: "income" | "expense" | "neutral";
   description?: string | null;
 };
 
@@ -18,5 +21,7 @@ export type CreateRecordTypeInput = {
  */
 export type UpdateRecordTypeInput = {
   name?: string;
+  color_id?: string;
+  icon_id?: string;
   description?: string | null;
 };

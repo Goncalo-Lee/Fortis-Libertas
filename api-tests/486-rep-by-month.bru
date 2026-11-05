@@ -1,0 +1,23 @@
+meta {
+  name: Reports - by month
+  type: http
+  seq: 486
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/reports/summary?payment_date_from=2026-10-01T00:00:00.000Z&payment_date_to=2026-10-31T23:59:59.999Z&group_by=month
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.groups.length: eq 1
+  res.body.data.groups[0].key: matches ^2026-10$
+  res.body.data.groups[0].total: matches ^1280\.50$
+  res.body.data.groups[0].count: eq 3
+}

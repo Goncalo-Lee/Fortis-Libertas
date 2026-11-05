@@ -1,0 +1,23 @@
+meta {
+  name: Installment plans - tags duplicate ids
+  type: http
+  seq: 374
+}
+
+put {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans/{{ipId}}/tags
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "tag_ids": ["{{ipTagA}}", "{{ipTagA}}"] }
+}
+
+assert {
+  res.status: eq 422
+}

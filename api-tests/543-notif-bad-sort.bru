@@ -1,0 +1,19 @@
+meta {
+  name: Notifications - bad sort
+  type: http
+  seq: 543
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me/notifications?sort=type
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 422
+}
