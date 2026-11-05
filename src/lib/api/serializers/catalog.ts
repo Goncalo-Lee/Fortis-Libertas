@@ -9,6 +9,8 @@ export function serializeColor(row: ColorRow) {
     color_id: row.id,
     name: row.name,
     code_color: row.codeColor,
+    // The two colors of Income and Expenses: other record types and categories cannot use them.
+    is_reserved: row.isReserved,
   };
 }
 

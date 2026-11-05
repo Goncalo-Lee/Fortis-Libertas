@@ -19,7 +19,7 @@ export function serializeTransaction(row: TransactionRow, converted: Converted |
     record_type: {
       record_type_id: row.recordType.id,
       name: row.recordType.name,
-      color: { color_id: row.color.id, name: row.color.name, code_color: row.color.codeColor },
+      color: { color_id: row.color.id, name: row.color.name, code_color: row.color.codeColor, is_reserved: row.color.isReserved },
       icon: { icon_id: row.icon.id, name: row.icon.name, code_icon: row.icon.codeIcon },
     },
     source_type: row.sourceType,

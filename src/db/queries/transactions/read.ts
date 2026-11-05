@@ -45,7 +45,7 @@ export async function listTransactions(dashboardId: string, f: ListTransactionsF
         updatedAt: history.updatedAt,
         user: { id: user.id, userName: user.username, fullName: user.name, image: user.image },
         recordType: { id: recordType.id, name: recordType.name },
-        color: { id: color.id, name: color.name, codeColor: color.codeColor },
+        color: { id: color.id, name: color.name, codeColor: color.codeColor, isReserved: color.isReserved },
         icon: { id: icon.id, name: icon.name, codeIcon: icon.codeIcon },
       })
       .from(history)
