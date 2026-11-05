@@ -9,7 +9,7 @@ import { syncFinancialRecordTransaction, syncInstallmentPlanTransaction } from "
  *
  * Safe to run more than once: it only picks sources without an entry, and the sync is an upsert anyway.
  *
- *   npm run db:backfill:transactions
+ *   bun run db:backfill:transactions
  */
 async function backfillTransactions() {
   console.log("🌱 Backfilling the transaction history...");
