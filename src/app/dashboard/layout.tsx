@@ -7,7 +7,7 @@ import { ProfileProvider } from "@/contexts/ProfileContext";
 import { DashboardProvider } from "@/contexts/DashboardContext";
 import { FinancialProvider } from "@/contexts/FinancialContext";
 import { UserSidebar } from "@/components/user-sidebar";
-import {NotificationProvider} from "@/contexts/NotificationContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
 
@@ -24,35 +24,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <DashboardProvider>
                 <FinancialProvider>
                     <NotificationProvider>
-                    <SidebarProvider
-                        className="h-svh"
-                        style={
-                            {
-                                "--sidebar-width": "calc(var(--spacing) * 65)",
-                                "--header-height": "calc(var(--spacing) * 12)",
-                            } as React.CSSProperties
-                        }
-                    >
-                        <UserSidebar
-                            variant="inset"
-                            className="font-poppins"
-                            role={session.user.role}
-                            user={{
-                                name: session.user.name,
-                                email: session.user.email,
-                                avatar: session.user.image,
-                            }}
-                        />
-                        <SidebarInset className="flex flex-col min-h-0">
-                            <SiteHeader />
-                            <main className="flex-1 min-h-0 overflow-hidden">
-                                {children}
-                            </main>
-                        </SidebarInset>
-                    </SidebarProvider>
-
-                    {/* 2. Adicionado aqui, envolvendo a Sidebar e a App */}
-                    </NotificationProvider>
                         <SidebarProvider
                             className="h-svh"
                             style={
@@ -62,14 +33,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
                                 } as React.CSSProperties
                             }
                         >
-                            <AppSidebar
+                            <UserSidebar
                                 variant="inset"
                                 className="font-poppins"
                                 role={session.user.role}
                                 user={{
                                     name: session.user.name,
                                     email: session.user.email,
-                                    avatar: session.user.image || "",
+                                    avatar: session.user.image || "", // Mantive o fallback para string vazia
                                 }}
                             />
                             <SidebarInset className="flex flex-col min-h-0">
@@ -80,7 +51,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
                             </SidebarInset>
                         </SidebarProvider>
                     </NotificationProvider>
-
                 </FinancialProvider>
             </DashboardProvider>
         </ProfileProvider>

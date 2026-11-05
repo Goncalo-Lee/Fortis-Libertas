@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
-import {auth} from "@/lib/auth";
-import {user} from "@/db/schema";
-import {db} from "@/db";
+import { auth } from "@/lib/auth";
+import { user } from "@/db/schema";
+import { db } from "@/db";
 
 async function seedAdmin() {
     console.log("🌱 Starting Admin seed...");
@@ -10,7 +10,7 @@ async function seedAdmin() {
         const response = await auth.api.signUpEmail({
             body: {
                 email: "admin@fortislibertas.com",
-                password: "SuperSecurePassword123!",
+                password: "Password!",
                 name: "Administrator",
             },
         });
@@ -20,16 +20,16 @@ async function seedAdmin() {
             process.exit(1);
         }
 
-        const userId = response.user.id;
+        const currentUserId = response.user.id;
 
-        // Promote to admin and verify email in a single database call
+        // Promove a admin e verifica o email (bypassa a necessidade de ir ao email clicar no link)
         await db
             .update(user)
             .set({
                 role: "admin",
-                emailVerified: new Date() // Bypasses the verification requirement
+                emailVerified: new Date()
             })
-            .where(eq(user.id, userId));
+            .where(eq(user.id, currentUserId));
 
         console.log("✅ Admin successfully created, promoted, and verified!");
         process.exit(0);
@@ -39,4 +39,5 @@ async function seedAdmin() {
         process.exit(1);
     }
 }
+
 seedAdmin();

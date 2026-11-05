@@ -8,9 +8,11 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import {LayoutDashboardIcon } from "lucide-react"
+import { LayoutDashboardIcon } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+// Importa o hook do contexto que metemos no Layout!
+import { useNotifications } from "@/contexts/NotificationContext"
 
 export function NavMain({
                             items,
@@ -21,31 +23,16 @@ export function NavMain({
         icon?: React.ReactNode
     }[]
 }) {
-  const pathname = usePathname()
     const pathname = usePathname()
     const isDashboardActive = pathname === "/dashboard"
 
-  return (
-      <SidebarGroup>
-        <SidebarGroupContent className="flex flex-col gap-2">
-          <SidebarMenu>
-            <SidebarMenuItem className="flex items-center gap-2">
-              <SidebarMenuButton
-                  tooltip="Dashboard"
-                  isActive={pathname === "/dashboard"}
-                  render={<Link href="/dashboard" />}
-              >
-                <LayoutDashboardIcon />
-                <span>Dashboard</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-          <SidebarMenu>
-            {items.map((item) => {
-              const isActive = pathname === item.url
+    // Vamos buscar o unreadCount ao contexto (que faz o fetch à API nova)
+    const { unreadCount } = useNotifications()
+
     return (
         <SidebarGroup>
             <SidebarGroupContent className="flex flex-col gap-2">
+                {/* 1. Botão Fixo do Dashboard */}
                 <SidebarMenu>
                     <SidebarMenuItem className="flex items-center gap-2">
                         <SidebarMenuButton
@@ -64,29 +51,12 @@ export function NavMain({
                     </SidebarMenuItem>
                 </SidebarMenu>
 
+                {/* 2. Itens Dinâmicos gerados pelo Map */}
                 <SidebarMenu>
                     {items.map((item) => {
-                        const isActive =
-                            pathname === item.url || pathname.startsWith(`${item.url}/`)
+                        const isActive = pathname === item.url || pathname.startsWith(`${item.url}/`)
                         const isNotifications = item.url.includes("notifications")
 
-              return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                        tooltip={item.title}
-                        render={<Link href={item.url} />}
-                        isActive={isActive}
-                    >
-                      {item.icon}
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-              )
-            })}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-  )
                         return (
                             <SidebarMenuItem key={item.title}>
                                 <SidebarMenuButton

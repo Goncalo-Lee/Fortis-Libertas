@@ -21,7 +21,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             });
             if (res.ok) {
                 const body = await res.json();
-                setUnreadCount(body.data?.unread_count ?? 0);
+                // A nova API devolve { "data": { "unread": X } }
+                setUnreadCount(body.data?.unread ?? 0);
             }
         } catch (err) {
             console.error("Falha ao sincronizar notificações:", err);
@@ -29,12 +30,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }, []);
 
     const markAllAsRead = React.useCallback(async () => {
-        // Atualização otimista na interface
+        // Atualização otimista na interface (coloca a 0 imediatamente)
         setUnreadCount(0);
         try {
-            const res = await fetch("/api/v1/me/notifications/unread-count", {
-                method: "PATCH",
+            // A nova API usa POST para read-all
+            const res = await fetch("/api/v1/me/notifications/read-all", {
+                method: "POST",
             });
+
+            // Se falhar no servidor, voltamos a buscar a contagem real
             if (!res.ok) {
                 refreshCount();
             }

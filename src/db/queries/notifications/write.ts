@@ -32,16 +32,17 @@ export async function createNotification(
  * @returns `true` if the notification exists and belongs to the user, `false` otherwise (-> 404)
  */
 export async function setNotificationRead(userId: string, notificationId: string, read: boolean) {
-  const mine = and(eq(notifications.id, notificationId), eq(notifications.userId, userId));
+    const mine = and(eq(notifications.id, notificationId), eq(notifications.userId, userId));
 
-  const [existing] = await db.select({ id: notifications.id }).from(notifications).where(mine).limit(1);
-  if (!existing) return false;
-  if (read) {
-    await db.update(notifications).set({ readAt: new Date() }).where(and(mine, isNull(notifications.readAt)));
-  } else {
-    await db.update(notifications).set({ readAt: null }).where(mine);
-  }
-  return true;
+    const [existing] = await db.select({id: notifications.id}).from(notifications).where(mine).limit(1);
+    if (!existing) return false;
+    if (read) {
+        await db.update(notifications).set({readAt: new Date()}).where(and(mine, isNull(notifications.readAt)));
+    } else {
+        await db.update(notifications).set({readAt: null}).where(mine);
+    }
+    return true;
+}
 /** Marks every unread notification of the user as read. @returns how many changed */
 export async function markAllNotificationsRead(userId: string) {
   const [result] = await db

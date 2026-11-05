@@ -20,6 +20,8 @@ import {
   CalendarArrowDownIcon, ClipboardMinusIcon, PiggyBankIcon,
   FileOutputIcon, BellIcon, ArrowLeftRightIcon
 } from "lucide-react"
+import {SidebarSearchTrigger} from "@/components/SidebarSearchTrigger";
+import ChatToggleDialog from "@/components/chat-toggle-dialog";
 
 const navMain = [
   { title: "Rendimentos", url: "/dashboard/incomes", icon: <BadgeEuroIcon /> },
@@ -39,8 +41,6 @@ const documents = [
 
 const navSecondary = [
   { title: "Configurações", url: "/dashboard/configurations", icon: <Settings2Icon /> },
-  { title: "Ajuda/Chatbot", url: "#", icon: <CircleHelpIcon /> },
-  { title: "Pesquisar", url: "#", icon: <SearchIcon /> },
 ]
 
 interface UserSidebarProps extends React.ComponentProps<typeof Sidebar> {
@@ -77,6 +77,10 @@ export function UserSidebar({ user, ...props }: UserSidebarProps) {
           <NavMain items={navMain} />
           <NavDocuments items={documents} />
           <NavSecondary items={navSecondary} className="mt-auto" />
+
+          <ChatToggleDialog />
+          <SidebarSearchTrigger />
+
         </SidebarContent>
         <SidebarFooter>
           <NavUser user={userData} />
