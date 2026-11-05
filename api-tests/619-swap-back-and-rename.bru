@@ -1,0 +1,25 @@
+meta {
+  name: Color swap - swap back and rename in the same PATCH
+  type: http
+  seq: 619
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{swapDash}}/record-types/{{incomeRt}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "color_id": "{{incomeColor}}", "name": "Receitas" }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.color_id: eq {{incomeColor}}
+  res.body.data.name: eq Receitas
+}

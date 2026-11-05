@@ -602,6 +602,7 @@ All paths are relative to `/dashboards/{dashboard_id}`.
 - The categories available for a record type are managed from the category side (see [Categories](#11-categories)). `GET /categories?record_type_id=` lists them.
 - A color is exclusive to one record type per dashboard (`UNIQUE (dashboard_id, color_id)`). Soft-deleted record types keep holding their color.
 - Two colors are reserved (`Color.is_reserved`) for the seeded `Income` and `Expenses` record types. They cannot be assigned to any other record type or to a category, and the colors of `Income` and `Expenses` can only be changed to one of the reserved colors.
+- Setting the `color_id` of `Income` or `Expenses` to the reserved color the other one holds **swaps** the two colors in one transaction (README, Open Item 11). Both record types get an `updated` activity log entry; the partner's entry has `metadata.swapped_with`.
 - Creating a dashboard seeds `Income` (`income`) and `Expenses` (`expense`) with the reserved colors and `Investment` (`neutral`) with a free non-reserved color, each with a default icon.
 - List query: `q` (matches `name`), `sort` = `name` (default), `created_at`.
 

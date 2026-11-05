@@ -1,0 +1,28 @@
+meta {
+  name: Color swap - both types are in the activity log
+  type: http
+  seq: 623
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{swapDash}}/activity-logs?entity_type=record_type&action=updated
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("two swaps -> four entries, the partner's marked with swapped_with", function () {
+    expect(res.body.data).to.have.length(4);
+    const partner = res.body.data.filter((x) => x.metadata && x.metadata.swapped_with);
+    expect(partner).to.have.length(2);
+    partner.forEach((x) => expect(x.entity_id).to.equal(bru.getVar("expensesRt")));
+  });
+}
