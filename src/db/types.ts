@@ -23,6 +23,20 @@ export const generateId = (): string => {
   return uuid7();
 };
 
+
+
+// Prefix MySQL uses for binary values inside JSON (JSON_OBJECT / JSON_ARRAYAGG), which is how
+// Better Auth joins return ids. Kept while the joins may be used; with `joins: false` it is not produced.
+const JSON_BINARY_PREFIX = "base64:type254:";
+
+// 16 bytes -> "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx". Throws instead of returning a wrong id.
+const bytesToUuid = (bytes: Uint8Array): string => {
+  if (bytes.length !== 16) {
+    throw new Error(`Invalid binary UUID: expected 16 bytes, got ${bytes.length}.`);
+  }
+  return uuidStringify(bytes);
+};
+
 /**
  * Custom Drizzle MySQL column type for 16-byte binary UUIDs (`binary(16)`).
  *
@@ -42,21 +56,6 @@ export const generateId = (): string => {
  * });
  * ```
  */
-
-
-
-// Prefix MySQL uses for binary values inside JSON (JSON_OBJECT / JSON_ARRAYAGG), which is how
-// Better Auth joins return ids. Kept while the joins may be used; with `joins: false` it is not produced.
-const JSON_BINARY_PREFIX = "base64:type254:";
-
-// 16 bytes -> "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx". Throws instead of returning a wrong id.
-const bytesToUuid = (bytes: Uint8Array): string => {
-  if (bytes.length !== 16) {
-    throw new Error(`Invalid binary UUID: expected 16 bytes, got ${bytes.length}.`);
-  }
-  return uuidStringify(bytes);
-};
-
 export const uuidBinary = customType<{
   data: string;
   driverData: Buffer;

@@ -59,7 +59,7 @@ Full instructions in [docs/documentation/setup.md](docs/documentation/setup.md).
 | ↳ [API](docs/planning/api/README.md) | Planned endpoints |
 | ↳ [UI](docs/planning/ui/README.md) | Wireframes and design system |
 | ↳ [UX](docs/planning/ux/README.md) | Sitemap and user flows |
-| [Documentation](docs/documentation/setup.md) | Setup, architecture, decisions |
+| [Documentation](docs/README.md) | Setup, API guide, architecture, decisions |
 | [Roadmap](docs/roadmap/README.md) | What comes next |
 
 ## 🗺️ Roadmap

@@ -56,11 +56,28 @@ Set the following passwords in the .env file:
 - BETTER_AUTH_SECRET
 - BETTER_AUTH_URL
 - ALLOWED_DEV_ORIGINS (optional)
+- MAIL_* (SMTP server used for verification and password reset emails)
+- EXCHANGE_RATE_API_URL and EXCHANGE_RATE_TIMEOUT_MS (the defaults in `.env-example` work)
 
 ## 4. Start the database
 
 ```bash
 docker compose up -d
+```
+
+## 5. Create the tables and load the catalogs
+
+```bash
+bun run db:push            # creates/updates the tables from src/db/schema
+bun run db:seed:catalogs   # colors, icons, currencies and languages
+```
+
+The catalogs are required: creating a dashboard picks its default colors and icons from them.
+
+If the database already had financial records or installment plans from before the history existed, fill it once:
+
+```bash
+bun run db:backfill:transactions
 ```
 
 ## 6. Start the development server
@@ -82,7 +99,10 @@ The app runs at <http://localhost:3000>.
 | `bun run db:push`         | push schema changes directly to the database |
 | `bun run db:migrate`      | run pending migrations                       |
 | `bun run db:generate`     | generate new migrations                      |
-| `bun run star`            | run production build                         |
+| `bun run start`           | run production build                         |
+| `bun run db:seed:catalogs` | load colors, icons, currencies and languages |
+| `bun run db:backfill:transactions` | create missing history entries (one-off) |
+| `bun run api:test`        | run the Bruno API tests (dev server running) |
 
 ## Troubleshooting
 
@@ -90,3 +110,5 @@ The app runs at <http://localhost:3000>.
   still fails, add `%USERPROFILE%\.bun\bin` to your PATH.
 - **Database connection refused:** check that the container is running
   (`docker compose ps`) and that the values in `.env` match `docker-compose.yml`.
+- **`502 EXCHANGE_RATE_UNAVAILABLE`:** Frankfurter did not answer and the rate was not cached yet. Open
+  `https://api.frankfurter.dev/v1/latest` in the browser; if it fails too, the provider is down, try again later.
