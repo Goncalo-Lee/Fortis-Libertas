@@ -24,6 +24,7 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
     const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
     const [recordTypes, setRecordTypes] = useState<any[]>([]);
     const [financialRecords, setFinancialRecords] = useState<any[]>([]);
+    const [installmentPlans, setInstallmentPlans] = useState<any[]>([]);
     const [globalColors, setGlobalColors] = useState<any[]>([]);
     const [globalIcons, setGlobalIcons] = useState<any[]>([]);
     const [dashboardBalance, setDashboardBalance] = useState<number | null>(null);
@@ -45,7 +46,7 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
             try {
                 const [
                     banksData, catsData, tagsData, paysData,
-                    typesData, recordsData, balanceData,
+                    typesData, recordsData, plansData, balanceData,
                     colorsData, iconsData
                 ] = await Promise.all([
                     safeFetch('/api/v1/bank-accounts?per_page=100'),
@@ -54,6 +55,7 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
                     safeFetch(`/api/v1/dashboards/${dashId}/payment-methods?per_page=100`),
                     safeFetch(`/api/v1/dashboards/${dashId}/record-types?per_page=100`),
                     safeFetch(`/api/v1/dashboards/${dashId}/financial-records?per_page=100`),
+                    safeFetch(`/api/v1/dashboards/${dashId}/installment-plans?per_page=100`),
                     safeFetch(`/api/v1/dashboards/${dashId}/balance`),
                     safeFetch('/api/v1/colors?per_page=100'),
                     safeFetch('/api/v1/icons?per_page=100')
@@ -82,6 +84,7 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
                 });
 
                 setFinancialRecords(enrichedRecords);
+                setInstallmentPlans(plansData?.data || []);
                 setBankAccounts(banksData?.data || []);
                 setCategories(catsData?.data || []);
                 setTags(tagsData?.data || []);
@@ -149,7 +152,7 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
 
     return (
         <FinancialContext.Provider value={{
-            balance, bankAccounts, categories, tags, paymentMethods, recordTypes, financialRecords,
+            balance, bankAccounts, categories, tags, paymentMethods, recordTypes, financialRecords, installmentPlans,
             globalColors, globalIcons, loading, error, refresh, addFinancialRecord
         }}>
             {children}

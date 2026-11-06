@@ -25,7 +25,6 @@ const navMain = [
   { title: "Rendimentos", url: "/dashboard/incomes", icon: <BadgeEuroIcon /> },
   { title: "Despesas", url: "/dashboard/expenses", icon: <MinusCircleIcon /> },
   { title: "Metas Financeiras", url: "/dashboard/financial-goals", icon: <CalendarArrowDownIcon /> },
-  { title: "Dívidas", url: "/dashboard/financial-debts", icon: <ClipboardMinusIcon /> },
   { title: "Fundo de emergência", url: "/dashboard/money-pillow", icon: <ShieldCheckIcon /> },
   { title: "Notificações", url: "/dashboard/notifications", icon: <BellIcon /> },
 ]

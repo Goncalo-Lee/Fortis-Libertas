@@ -6,12 +6,12 @@ import { Plus, Calendar, TrendingUp, PieChart, History, Trash2, ArrowUpRight, Ch
 import { toast } from "sonner"
 import { useFinancial } from "@/contexts/FinancialContext"
 import { useDashboard } from "@/contexts/DashboardContext"
-import { CreateCategoryModal } from "@/components/CreateCategoryModal" // <-- O NOVO MODAL
+import { CreateCategoryModal } from "@/components/CreateCategoryModal"
 import { DynamicIcon } from "@/components/DynamicIcon"
 
 export default function IncomesPage() {
     const { activeDashboard } = useDashboard()
-    const { financialRecords, recordTypes, categories, paymentMethods, refresh, addFinancialRecord } = useFinancial()
+    const { financialRecords, recordTypes, categories, paymentMethods, installmentPlans, refresh, addFinancialRecord } = useFinancial()
 
     const [isAdding, setIsAdding] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -21,9 +21,11 @@ export default function IncomesPage() {
     const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0])
     const [newCategoryId, setNewCategoryId] = useState("")
     const [newPaymentMethodId, setNewPaymentMethodId] = useState("")
+    const [newInstallmentPlanId, setNewInstallmentPlanId] = useState("") // NOVO: Associação a Meta/Objetivo
 
     // Estado do Modal
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
+    const [tempCategory, setTempCategory] = useState<any>(null)
 
     // IDENTIFICAR TIPO INCOME
     const incomeType = useMemo(() => {
@@ -37,30 +39,47 @@ export default function IncomesPage() {
 
     // FILTRAR APENAS CATEGORIAS VÁLIDAS PARA RECEITA
     const availableCategories = useMemo(() => {
-        if (!categories) return []
-        return categories.filter((c: any) => {
-            const rts = c.record_types || c.recordTypes;
-            if (rts && Array.isArray(rts) && rts.length > 0) {
-                return rts.some((rt: any) => (rt.record_type_id || rt.id) === incomeTypeId || rt.kind === "income")
+        let list = categories ? [...categories] : [];
+
+        if (tempCategory && !list.some((c: any) => (c.category_id || c.id) === tempCategory.id)) {
+            list.push(tempCategory);
+        }
+
+        return list.filter((c: any) => {
+            // Se for a categoria temporária que acabámos de criar, deixamos passar
+            if (tempCategory && (c.category_id || c.id) === tempCategory.id) return true;
+
+            const rts = c.record_types || c.recordTypes || [];
+            if (rts.length > 0) {
+                // Filtro estrito: Apenas se tiver 'income' ou 'neutral'
+                return rts.some((rt: any) => rt.kind === "income" || rt.kind === "neutral")
             }
-            return true // Mostra as criadas de fresco
+            return false
         })
-    }, [categories, incomeTypeId])
+    }, [categories, tempCategory])
+
+    // APENAS METAS PARA ASSOCIAR A RECEITAS (Exclui dívidas que começam com [DEBT])
+    const availableGoals = useMemo(() => {
+        if (!installmentPlans) return []
+        return installmentPlans.filter((p: any) => {
+            const isDebt = p.description && p.description.startsWith("[DEBT]")
+            return !isDebt && p.status !== "paid" && p.status !== "cancelled"
+        })
+    }, [installmentPlans])
 
     // ==========================================
-    // 1. FILTRAR E MAPEAR RENDIMENTOS (100% DINÂMICO DA BD)
+    // 1. FILTRAR E MAPEAR RENDIMENTOS
     // ==========================================
     const incomes = useMemo(() => {
         if (!financialRecords || !recordTypes) return []
 
         return financialRecords.filter((record: any) => {
             const rtId = record.record_type_id || record.recordTypeId;
-            return rtId === incomeTypeId; // Apenas Receitas
+            return rtId === incomeTypeId;
         }).map((record: any) => {
             const catId = record.category_id || record.categoryId;
             const catObj = categories.find((c: any) => (c.category_id || c.id) === catId);
 
-            // Buscar Cor e Icone (com fallback para verde genérico se não tiver)
             const colorHex = catObj?.color?.codeColor || catObj?.color?.code_color || catObj?.color?.hex_code || "#10b981";
             const iconCode = catObj?.icon?.codeIcon || catObj?.icon?.code_icon || catObj?.icon?.name || "category";
 
@@ -74,6 +93,7 @@ export default function IncomesPage() {
                 colorHex,
                 iconCode,
                 date: record.payment_date || record.paymentDate,
+                installmentPlanId: record.installment_plan_id || record.installmentPlanId
             }
         }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [financialRecords, recordTypes, categories, incomeTypeId])
@@ -81,7 +101,7 @@ export default function IncomesPage() {
     const totalIncome = incomes.reduce((acc: number, curr: any) => acc + curr.amount, 0)
 
     // ==========================================
-    // 2. AGRUPAR RENDIMENTOS POR CATEGORIA (O NOVO "FONTES")
+    // 2. AGRUPAR RENDIMENTOS POR CATEGORIA
     // ==========================================
     const incomeSources = useMemo(() => {
         const sources: Record<string, any> = {};
@@ -118,12 +138,13 @@ export default function IncomesPage() {
                 recordTypeId: incomeTypeId,
                 categoryId: newCategoryId,
                 paymentMethodId: newPaymentMethodId,
-                paymentDate: new Date(newDate).toISOString()
+                paymentDate: new Date(newDate).toISOString(),
+                installmentPlanId: newInstallmentPlanId || null // <--- O CAMPO EXTRA QUE ENVIA A LIGAÇÃO À META!
             })
-            toast.success(`Ganho adicionado!`)
+            toast.success(`Ganho adicionado com sucesso!`)
             setNewTitle(""); setNewAmount(""); setNewDescription("");
             setNewDate(new Date().toISOString().split('T')[0]);
-            setNewCategoryId(""); setNewPaymentMethodId("");
+            setNewCategoryId(""); setNewPaymentMethodId(""); setNewInstallmentPlanId("");
             setIsAdding(false)
         } catch (error: any) {
             toast.error(error.message || "Ocorreu um erro ao gravar a receita.")
@@ -159,14 +180,22 @@ export default function IncomesPage() {
     return (
         <div className="h-full w-full overflow-y-auto p-4 md:p-6 space-y-6 font-poppins">
 
-            {/* NOVO MODAL */}
             <CreateCategoryModal
                 isOpen={isCategoryModalOpen}
                 onClose={() => setIsCategoryModalOpen(false)}
                 recordTypeId={incomeTypeId}
-                onSuccess={(newId) => setNewCategoryId(newId)}
+                typeLabel="Receita"
+                onSuccess={(id, name, kind) => {
+                    const newCat = { 
+                        id, 
+                        category_id: id, 
+                        name, 
+                        record_types: [{ kind: kind || "income" }] 
+                    };
+                    setTempCategory(newCat);
+                    setNewCategoryId(id);
+                }}
             />
-
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">Rendimentos e Ganhos</h1>
@@ -186,7 +215,7 @@ export default function IncomesPage() {
                         <form onSubmit={handleAddIncome} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3 items-end">
                             <div className="flex flex-col gap-1 md:col-span-2">
                                 <label className="text-xs font-medium text-muted-foreground">Descrição / Título</label>
-                                <input type="text" placeholder="Ex: Salário, Venda de Carro..." value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-sm" required />
+                                <input type="text" placeholder="Ex: Salário, Projeto Extra..." value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-sm" required />
                             </div>
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs font-medium text-muted-foreground">Valor (€)</label>
@@ -197,7 +226,6 @@ export default function IncomesPage() {
                                 <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-sm" required />
                             </div>
 
-                            {/* CAMPO DA CATEGORIA TOTALMENTE LIMPO E LIGADO AO MODAL */}
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs font-medium text-muted-foreground">Categoria</label>
                                 <div className="flex gap-1 h-9">
@@ -232,7 +260,19 @@ export default function IncomesPage() {
                                 </select>
                             </div>
 
-                            <div className="flex flex-col gap-1 md:col-span-4">
+                            {/* NOVO CAMPO: ASSOCIAR A UMA META */}
+                            <div className="flex flex-col gap-1 md:col-span-2">
+                                <label className="text-xs font-medium text-muted-foreground">Associar a Objetivo / Meta (Opcional)</label>
+                                <select value={newInstallmentPlanId} onChange={(e) => setNewInstallmentPlanId(e.target.value)} className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs">
+                                    <option value="">Nenhum (Receita normal)</option>
+                                    {availableGoals.map((g: any) => {
+                                        const gId = g.installment_plan_id || g.id
+                                        return <option key={gId} value={gId}>🎯 {g.name}</option>
+                                    })}
+                                </select>
+                            </div>
+
+                            <div className="flex flex-col gap-1 md:col-span-2">
                                 <label className="text-xs font-medium text-muted-foreground">Notas Adicionais (Opcional)</label>
                                 <input type="text" placeholder="Detalhes extra..." value={newDescription} onChange={(e) => setNewDescription(e.target.value)} className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-sm" />
                             </div>
@@ -284,8 +324,6 @@ export default function IncomesPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-                {/* 100% DINÂMICO - LÊ A BASE DE DADOS */}
                 <Card className="lg:col-span-5 flex flex-col py-4 shadow-sm">
                     <CardHeader className="pb-3">
                         <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -299,7 +337,6 @@ export default function IncomesPage() {
                         ) : incomeSources.map((source: any, idx: number) => (
                             <div key={idx} className="flex items-center justify-between p-3 rounded-xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 shadow-sm">
                                 <div className="flex items-center gap-3">
-                                    {/* APLICA A COR EXATA EM HEX E O ICON DA BASE DE DADOS */}
                                     <div className="p-2 rounded-lg" style={{ backgroundColor: `${source.colorHex}25`, color: source.colorHex }}>
                                         <DynamicIcon name={source.iconCode} className="w-4 h-4" />
                                     </div>
@@ -313,7 +350,6 @@ export default function IncomesPage() {
                     </CardContent>
                 </Card>
 
-                {/* HISTÓRICO DINÂMICO */}
                 <Card className="lg:col-span-7 flex flex-col py-4 shadow-sm">
                     <CardHeader className="pb-3 flex flex-row items-center justify-between">
                         <div>
@@ -327,7 +363,6 @@ export default function IncomesPage() {
                         ) : incomes.map((item: any) => (
                             <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                 <div className="flex items-center gap-3">
-                                    {/* APLICA A COR E ÍCONE NO HISTÓRICO TAMBÉM */}
                                     <div className="p-2 rounded-md" style={{ backgroundColor: `${item.colorHex}25`, color: item.colorHex }}>
                                         <DynamicIcon name={item.iconCode} className="w-4 h-4" />
                                     </div>
@@ -337,10 +372,13 @@ export default function IncomesPage() {
                                             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-sm" style={{ backgroundColor: `${item.colorHex}15`, color: item.colorHex }}>
                                                 {item.categoryName}
                                             </span>
+                                            {item.installmentPlanId && (
+                                                <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-sm font-medium">🎯 Associado a Meta</span>
+                                            )}
                                         </p>
                                         <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                                             <Calendar className="w-3 h-3" /> {item.date ? new Date(item.date).toLocaleDateString("pt-PT") : "Sem data"}
-                                            {item.description && <span className="ml-1 truncate max-w-[120px] sm:max-w-[200px]">- {item.description}</span>}
+                                            {item.description && <span className="ml-1 truncate max-w-[120px] sm:max-w-[200px]">{item.description}</span>}
                                         </p>
                                     </div>
                                 </div>

@@ -32,7 +32,7 @@ type ExpenseNature = "essential" | "subscription" | "spontaneous"
 
 export default function ExpensesPage() {
     const { activeDashboard } = useDashboard()
-    const { financialRecords, recordTypes, categories, paymentMethods, tags, addFinancialRecord, refresh } = useFinancial()
+    const { financialRecords, recordTypes, categories, paymentMethods, tags, installmentPlans, addFinancialRecord, refresh } = useFinancial()
 
     const [viewMode, setViewMode] = useState<"monthly" | "annual">("monthly")
 
@@ -46,9 +46,11 @@ export default function ExpensesPage() {
     const [newCategoryId, setNewCategoryId] = useState("")
     const [newPaymentMethodId, setNewPaymentMethodId] = useState("")
     const [newNature, setNewNature] = useState<ExpenseNature>("spontaneous")
+    const [newInstallmentPlanId, setNewInstallmentPlanId] = useState("") // NOVO: Dropdown de Meta/Dívida
 
     // Controlo do Modal de Categoria
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
+    const [tempCategory, setTempCategory] = useState<any>(null)
 
     // IDENTIFICAR TIPO EXPENSE
     const expenseType = useMemo(() => {
@@ -62,18 +64,47 @@ export default function ExpensesPage() {
 
     // FILTRAR APENAS CATEGORIAS VÁLIDAS PARA DESPESA
     const availableCategories = useMemo(() => {
-        if (!categories) return []
-        return categories.filter((c: any) => {
-            const rts = c.record_types || c.recordTypes;
-            if (rts && Array.isArray(rts) && rts.length > 0) {
-                return rts.some((rt: any) => (rt.record_type_id || rt.id) === expenseTypeId || rt.kind === "expense")
+        let list = categories ? [...categories] : [];
+
+        if (tempCategory && !list.some((c: any) => (c.category_id || c.id) === tempCategory.id)) {
+            list.push(tempCategory);
+        }
+
+        return list.filter((c: any) => {
+            // Se for a categoria temporária que acabámos de criar, deixamos passar
+            if (tempCategory && (c.category_id || c.id) === tempCategory.id) return true;
+
+            const rts = c.record_types || c.recordTypes || [];
+            if (rts.length > 0) {
+                // Filtro estrito: Apenas se tiver 'expense' ou 'neutral'
+                return rts.some((rt: any) => rt.kind === "expense" || rt.kind === "neutral")
             }
-            return true
+            return false 
         })
-    }, [categories, expenseTypeId])
+    }, [categories, tempCategory])
 
     // ==========================================
-    // 1. FILTRAR E CLASSIFICAR DESPESAS REAIS (100% DINÂMICO)
+    // SEPARAR METAS E DÍVIDAS ATIVAS PARA O DROPDOWN
+    // ==========================================
+    const activeGoals = useMemo(() => {
+        if (!installmentPlans) return []
+        return installmentPlans.filter((p: any) =>
+            (!p.description || !p.description.startsWith("[DEBT]")) &&
+            p.status !== "paid" && p.status !== "cancelled"
+        )
+    }, [installmentPlans])
+
+    const activeDebts = useMemo(() => {
+        if (!installmentPlans) return []
+        return installmentPlans.filter((p: any) =>
+            p.description?.startsWith("[DEBT]") &&
+            p.status !== "paid" && p.status !== "cancelled"
+        )
+    }, [installmentPlans])
+
+
+    // ==========================================
+    // 1. FILTRAR E CLASSIFICAR DESPESAS REAIS
     // ==========================================
     const expenses = useMemo(() => {
         if (!financialRecords || !recordTypes) return []
@@ -85,11 +116,9 @@ export default function ExpensesPage() {
             const catId = record.category_id || record.categoryId;
             const catObj = categories.find((c: any) => (c.category_id || c.id) === catId);
 
-            // Cores e Ícones diretamente da BD (Fallback para vermelho base)
             const colorHex = catObj?.color?.codeColor || catObj?.color?.code_color || catObj?.color?.hex_code || "#C62828";
             const iconCode = catObj?.icon?.codeIcon || catObj?.icon?.code_icon || catObj?.icon?.name || "trending_down";
 
-            // LER A TAG PARA SABER A NATUREZA (Útil para os cartões de topo)
             const recordTags = record.tags || []
             let nature: ExpenseNature = "spontaneous"
             if (recordTags.some((t: any) => t.name?.toUpperCase() === "ESSENCIAL")) nature = "essential"
@@ -106,12 +135,13 @@ export default function ExpensesPage() {
                 iconCode,
                 date: record.payment_date || record.paymentDate,
                 nature,
+                installmentPlanId: record.installment_plan_id || record.installmentPlanId
             }
         }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [financialRecords, recordTypes, categories, expenseTypeId])
 
     // ==========================================
-    // 2. AGRUPAR DESPESAS POR CATEGORIA (O NOVO "ESTRUTURA DE GASTOS")
+    // 2. AGRUPAR DESPESAS POR CATEGORIA
     // ==========================================
     const expenseSources = useMemo(() => {
         const sources: Record<string, any> = {};
@@ -184,13 +214,14 @@ export default function ExpensesPage() {
                 categoryId: newCategoryId,
                 paymentMethodId: newPaymentMethodId,
                 paymentDate: new Date(newDate).toISOString(),
-                tagIds: tagId ? [tagId] : []
+                tagIds: tagId ? [tagId] : [],
+                installmentPlanId: newInstallmentPlanId || null // A Magia da Associação
             })
 
-            toast.success(`Despesa adicionada!`)
+            toast.success(`Despesa adicionada com sucesso!`)
             setNewTitle(""); setNewAmount(""); setNewDescription("");
             setNewDate(new Date().toISOString().split('T')[0]);
-            setNewCategoryId(""); setNewPaymentMethodId("");
+            setNewCategoryId(""); setNewPaymentMethodId(""); setNewInstallmentPlanId("");
             setIsAdding(false)
         } catch (error: any) {
             toast.error(error.message || "Erro ao gravar despesa.")
@@ -225,12 +256,21 @@ export default function ExpensesPage() {
     return (
         <div className="h-full w-full overflow-y-auto p-4 md:p-6 space-y-6 font-poppins">
 
-            {/* O MODAL DE CATEGORIA REUTILIZADO */}
             <CreateCategoryModal
                 isOpen={isCategoryModalOpen}
                 onClose={() => setIsCategoryModalOpen(false)}
                 recordTypeId={expenseTypeId}
-                onSuccess={(newId) => setNewCategoryId(newId)}
+                typeLabel="Despesa"
+                onSuccess={(id, name, kind) => {
+                    const newCat = { 
+                        id, 
+                        category_id: id, 
+                        name, 
+                        record_types: [{ kind: kind || "expense" }] 
+                    };
+                    setTempCategory(newCat);
+                    setNewCategoryId(id);
+                }}
             />
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -261,6 +301,37 @@ export default function ExpensesPage() {
                                 <label className="text-xs font-medium text-muted-foreground">O que compraste?</label>
                                 <input type="text" placeholder="Ex: Combustível, Jantar, Luz..." value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-sm" required />
                             </div>
+
+                            {/* NOVO CAMPO: Associação a Metas / Dívidas */}
+                            <div className="flex flex-col gap-1 md:col-span-2">
+                                <label className="text-xs font-medium text-muted-foreground">Associar a Objetivo ou Dívida (Opcional)</label>
+                                <select
+                                    value={newInstallmentPlanId}
+                                    onChange={(e) => setNewInstallmentPlanId(e.target.value)}
+                                    className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs"
+                                >
+                                    <option value="">Nenhum (Gasto normal)</option>
+
+                                    {activeGoals.length > 0 && (
+                                        <optgroup label="🎯 Depositar em Meta / Poupança">
+                                            {activeGoals.map((g: any) => {
+                                                const gId = g.installment_plan_id || g.id
+                                                return <option key={gId} value={gId}>{g.name}</option>
+                                            })}
+                                        </optgroup>
+                                    )}
+
+                                    {activeDebts.length > 0 && (
+                                        <optgroup label="💳 Abater em Crédito / Dívida">
+                                            {activeDebts.map((d: any) => {
+                                                const dId = d.installment_plan_id || d.id
+                                                return <option key={dId} value={dId}>{d.name}</option>
+                                            })}
+                                        </optgroup>
+                                    )}
+                                </select>
+                            </div>
+
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs font-medium text-muted-foreground">Valor (€)</label>
                                 <input type="number" step="0.01" placeholder="0.00" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-sm" required />
@@ -291,11 +362,6 @@ export default function ExpensesPage() {
                                 </div>
                             </div>
 
-                            <div className="flex flex-col gap-1 md:col-span-4">
-                                <label className="text-xs font-medium text-muted-foreground">Notas Adicionais (Opcional)</label>
-                                <input type="text" placeholder="Ex: Compra do mês, Dividido com a Maria..." value={newDescription} onChange={(e) => setNewDescription(e.target.value)} className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-sm" />
-                            </div>
-
                             <div className="flex flex-col gap-1 md:col-span-2">
                                 <label className="text-xs font-medium text-muted-foreground">Pago por</label>
                                 <select value={newPaymentMethodId} onChange={(e) => setNewPaymentMethodId(e.target.value)} className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs" required>
@@ -305,6 +371,11 @@ export default function ExpensesPage() {
                                         return <option key={payId} value={payId}>{p.name}</option>
                                     })}
                                 </select>
+                            </div>
+
+                            <div className="flex flex-col gap-1 md:col-span-2">
+                                <label className="text-xs font-medium text-muted-foreground">Notas Adicionais (Opcional)</label>
+                                <input type="text" placeholder="Ex: Compra do mês, Dividido..." value={newDescription} onChange={(e) => setNewDescription(e.target.value)} className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-sm" />
                             </div>
 
                             <div className="flex flex-col sm:flex-row gap-3 md:col-span-6 mt-2 items-center justify-between border-t border-rose-100 dark:border-rose-900/50 pt-3">
@@ -391,8 +462,6 @@ export default function ExpensesPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-                {/* 100% DINÂMICO - ESTRUTURA DE GASTOS AGRUPADA POR CATEGORIA DA BD */}
                 <Card className="lg:col-span-5 flex flex-col py-4 shadow-sm">
                     <CardHeader className="pb-3">
                         <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -420,7 +489,6 @@ export default function ExpensesPage() {
                     </CardContent>
                 </Card>
 
-                {/* HISTÓRICO 100% DINÂMICO E COLORIDO */}
                 <Card className="lg:col-span-7 flex flex-col py-4 shadow-sm">
                     <CardHeader className="pb-3 flex flex-row items-center justify-between">
                         <div>
@@ -439,17 +507,12 @@ export default function ExpensesPage() {
                             return (
                                 <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
                                     <div className="flex items-center gap-3">
-
-                                        {/* ÍCONE E COR DA CATEGORIA */}
                                         <div className="p-2 rounded-md shrink-0" style={{ backgroundColor: `${item.colorHex}25`, color: item.colorHex }}>
                                             <DynamicIcon name={item.iconCode} className="w-4 h-4" />
                                         </div>
-
                                         <div>
                                             <div className="flex items-center gap-2">
                                                 <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{item.title}</p>
-
-                                                {/* ETIQUETA DA NATUREZA MANTIDA */}
                                                 {item.nature === "spontaneous" ? (
                                                     <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center gap-0.5 border border-rose-200/50 dark:border-rose-900/50">
                                                         <AlertCircle className="w-2.5 h-2.5" /> Espontânea
@@ -463,18 +526,25 @@ export default function ExpensesPage() {
                                                         <Repeat className="w-2.5 h-2.5" /> Subscrição
                                                     </span>
                                                 )}
+
+                                                {/* ETIQUETA VISUAL NO HISTÓRICO SE TIVER META/DÍVIDA ASSOCIADA */}
+                                                {item.installmentPlanId && (
+                                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-sm bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                                        🎯 Foco/Dívida
+                                                    </span>
+                                                )}
                                             </div>
                                             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                                                 <span className="font-medium" style={{ color: item.colorHex }}>{item.categoryName}</span>
                                                 <span>•</span>
                                                 {item.date ? new Date(item.date).toLocaleDateString("pt-PT") : ""}
-                                                {item.description && <span className="ml-1 opacity-70 italic truncate max-w-[120px] sm:max-w-[150px]">- {item.description}</span>}
+                                                {item.description && <span className="ml-1 opacity-70 italic truncate max-w-[120px] sm:max-w-[150px]">{item.description}</span>}
                                             </p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3 shrink-0">
                                         <span className="text-sm sm:text-base font-bold text-rose-600 dark:text-rose-400">
-                                            - € {item.amount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
+                                            € {item.amount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
                                         </span>
                                         <button type="button" onClick={() => handleDelete(item.id)} className="p-1.5 text-slate-400 hover:text-red-500 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer">
                                             <Trash2 className="w-4 h-4" />
