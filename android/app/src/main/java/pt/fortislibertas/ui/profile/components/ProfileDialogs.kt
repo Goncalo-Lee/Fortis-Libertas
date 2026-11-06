@@ -8,8 +8,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.ConfirmDialog
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisPreviews
-import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.ui.profile.ProfileDialog
 
 /**
@@ -68,7 +68,7 @@ fun ProfileDialogs(
 @FortisPreviews
 @Composable
 private fun ProfileDeleteDialogPreview() {
-    FortisLibertasTheme {
+    FortisPreviewTheme {
         ProfileDialogs(dialog = ProfileDialog.Delete, email = "ana@example.com", isWorking = false, onConfirm = {}, onDismiss = {})
     }
 }

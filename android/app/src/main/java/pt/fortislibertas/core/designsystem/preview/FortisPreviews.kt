@@ -6,7 +6,7 @@ import androidx.compose.ui.tooling.preview.Preview
 /**
  * Shows a preview twice: light and dark theme.
  * Works because FortisLibertasTheme follows the system theme (isSystemInDarkTheme) by default,
- * so do not pass darkTheme = ... inside a preview that uses this annotation.
+ * so wrap the content in [FortisPreviewTheme] and do not pass darkTheme = ...
  *
  * Use it on small components.
  */

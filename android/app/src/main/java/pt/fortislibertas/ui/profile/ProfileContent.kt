@@ -18,8 +18,8 @@ import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.EmptyContent
 import pt.fortislibertas.core.designsystem.components.ErrorContent
 import pt.fortislibertas.core.designsystem.components.LoadingContent
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisScreenPreviews
-import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.data.fake.FakeAccountData
 import pt.fortislibertas.data.model.UserProfile
 import pt.fortislibertas.ui.profile.components.ProfileAccountActions
@@ -131,7 +131,7 @@ private fun ProfileBody(
 @FortisScreenPreviews
 @Composable
 private fun ProfileContentPreview() {
-    FortisLibertasTheme {
+    FortisPreviewTheme {
         ProfileContent(
             state = ProfileUiState(
                 isLoading = false,

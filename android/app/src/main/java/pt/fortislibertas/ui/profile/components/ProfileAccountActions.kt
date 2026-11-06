@@ -15,8 +15,8 @@ import androidx.compose.ui.unit.dp
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.ActionRow
 import pt.fortislibertas.core.designsystem.components.ActionTone
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisPreviews
-import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.ui.profile.ProfileDialog
 
 /**
@@ -63,7 +63,7 @@ fun ProfileAccountActions(
 @FortisPreviews
 @Composable
 private fun ProfileAccountActionsPreview() {
-    FortisLibertasTheme {
+    FortisPreviewTheme {
         ProfileAccountActions(onRequestDialog = {})
     }
 }

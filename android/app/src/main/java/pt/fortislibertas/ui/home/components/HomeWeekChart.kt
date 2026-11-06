@@ -10,8 +10,8 @@ import java.util.Locale
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.charts.BarGroup
 import pt.fortislibertas.core.designsystem.components.charts.GroupedBarChart
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisPreviews
-import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.core.designsystem.theme.FortisTheme
 import pt.fortislibertas.core.designsystem.util.MoneyFormatter
 import pt.fortislibertas.data.fake.FakeHomeData
@@ -58,7 +58,7 @@ private fun shortMoney(value: Float, currencyCode: String, locale: Locale): Stri
 @FortisPreviews
 @Composable
 private fun HomeWeekChartPreview() {
-    FortisLibertasTheme {
+    FortisPreviewTheme {
         HomeWeekChart(FakeHomeData.build())
     }
 }

@@ -88,7 +88,8 @@ Comments are written in **English**.
   (it needs a ViewModel).
 - Every reusable component in `core/designsystem/components/` has at least one preview.
 - Use `@FortisPreviews` (components) or `@FortisScreenPreviews` (whole screens, taller) to get
-  light and dark themes in one annotation. Inside them, call `FortisLibertasTheme { }` without `darkTheme`.
+  light and dark themes in one annotation.
+- Wrap the preview content in `FortisPreviewTheme { }` (theme + Surface, so text is readable in dark).
 - Preview data comes from `data/fake/`, never from inline values repeated in many files.
 - Preview functions are `private` and named `<Thing>Preview`.
 

@@ -12,8 +12,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.ActionRow
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisPreviews
-import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 
 /** Shortcuts to other screens: password, banks and cards, dashboards. */
 @Composable
@@ -48,7 +48,7 @@ fun ProfileShortcuts(
 @FortisPreviews
 @Composable
 private fun ProfileShortcutsPreview() {
-    FortisLibertasTheme {
+    FortisPreviewTheme {
         ProfileShortcuts(onOpenPassword = {}, onOpenBanks = {}, onOpenDashboards = {})
     }
 }

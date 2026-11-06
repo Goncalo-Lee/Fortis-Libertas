@@ -17,8 +17,8 @@ import java.math.BigDecimal
 import java.text.NumberFormat
 import java.util.Locale
 import pt.fortislibertas.R
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisPreviews
-import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.core.designsystem.theme.FortisTheme
 import pt.fortislibertas.core.designsystem.util.MoneyFormatter
 
@@ -79,7 +79,7 @@ private fun formatPercent(value: BigDecimal): String {
 @FortisPreviews
 @Composable
 private fun HomeBalanceSummaryPreview() {
-    FortisLibertasTheme {
+    FortisPreviewTheme {
         HomeBalanceSummary(
             balance = BigDecimal("1250.40"),
             change = BigDecimal("100.00"),

@@ -27,8 +27,8 @@ import pt.fortislibertas.core.designsystem.components.FortisTopBar
 import pt.fortislibertas.core.designsystem.components.LoadingContent
 import pt.fortislibertas.core.designsystem.components.TransactionGroup
 import pt.fortislibertas.core.designsystem.components.dayLabel
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisScreenPreviews
-import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.data.fake.FakeTransactionData
 import pt.fortislibertas.data.model.RecordType
 import pt.fortislibertas.data.model.TransactionItem
@@ -141,7 +141,7 @@ fun TransactionsContent(
 @FortisScreenPreviews
 @Composable
 private fun TransactionsContentPreview() {
-    FortisLibertasTheme {
+    FortisPreviewTheme {
         TransactionsContent(
             state = TransactionsUiState(
                 items = FakeTransactionData.build().map { it.item },

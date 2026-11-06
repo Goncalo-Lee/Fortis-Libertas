@@ -15,8 +15,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import pt.fortislibertas.R
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisPreviews
-import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.core.designsystem.theme.FortisTheme
 
 /** Chart legend: ● Income  ● Expenses */
@@ -39,7 +39,7 @@ private fun LegendItem(color: Color, label: String) {
 @FortisPreviews
 @Composable
 private fun HomeChartLegendPreview() {
-    FortisLibertasTheme {
+    FortisPreviewTheme {
         HomeChartLegend()
     }
 }

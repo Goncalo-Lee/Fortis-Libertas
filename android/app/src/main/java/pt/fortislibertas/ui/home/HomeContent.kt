@@ -25,8 +25,8 @@ import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.CardStack
 import pt.fortislibertas.core.designsystem.components.FortisTopBar
 import pt.fortislibertas.core.designsystem.components.colorFromHex
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisScreenPreviews
-import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.data.fake.FakeHomeData
 import pt.fortislibertas.data.model.HomeSummary
 import pt.fortislibertas.data.model.TransactionItem
@@ -125,7 +125,7 @@ fun HomeContent(
 @FortisScreenPreviews
 @Composable
 private fun HomeContentPreview() {
-    FortisLibertasTheme {
+    FortisPreviewTheme {
         HomeContent(
             summary = FakeHomeData.build(),
             userName = "Ana Silva",

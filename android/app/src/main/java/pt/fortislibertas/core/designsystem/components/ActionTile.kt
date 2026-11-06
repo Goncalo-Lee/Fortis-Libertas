@@ -18,9 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisPreviews
 import pt.fortislibertas.core.designsystem.theme.CuriousBlue
-import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 
 /** Big square card with an icon and text (the "+" tiles of the Register screen). */
 @Composable
@@ -55,7 +55,7 @@ fun ActionTile(
 @FortisPreviews
 @Composable
 private fun ActionTilePreview() {
-    FortisLibertasTheme {
+    FortisPreviewTheme {
         ActionTile(
             icon = Icons.Default.Add,
             title = "Nova Transação",

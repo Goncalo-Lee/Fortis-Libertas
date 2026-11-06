@@ -21,8 +21,8 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.TransactionGroup
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisPreviews
-import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.data.fake.FakeHomeData
 import pt.fortislibertas.data.model.TransactionItem
 
@@ -87,7 +87,7 @@ private fun dayTitle(date: LocalDate): String {
 @FortisPreviews
 @Composable
 private fun HomeRecentTransactionsPreview() {
-    FortisLibertasTheme {
+    FortisPreviewTheme {
         HomeRecentTransactions(
             transactions = FakeHomeData.build().recent,
             onSeeAll = {},

@@ -20,8 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisPreviews
-import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 
 /**
  * Dialog with a blurred background. Tapping outside the card closes it.
@@ -71,7 +71,7 @@ fun BlurDialog(
 @FortisPreviews
 @Composable
 private fun BlurDialogPreview() {
-    FortisLibertasTheme {
+    FortisPreviewTheme {
         BlurDialog(
             onDismissRequest = {},
         ) {

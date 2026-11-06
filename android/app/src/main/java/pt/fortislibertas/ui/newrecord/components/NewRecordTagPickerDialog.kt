@@ -41,8 +41,8 @@ import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.BlurDialog
 import pt.fortislibertas.core.designsystem.components.SearchField
 import pt.fortislibertas.core.designsystem.components.SelectableChip
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisPreviews
-import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.data.fake.FakeRecordData
 import pt.fortislibertas.data.model.Category
 import pt.fortislibertas.data.model.Tag
@@ -222,7 +222,7 @@ private fun TagChips(tags: List<Tag>, selection: Set<String>, onToggle: (Tag) ->
 @FortisPreviews
 @Composable
 private fun NewRecordTagPickerDialogPreview() {
-    FortisLibertasTheme {
+    FortisPreviewTheme {
         NewRecordTagPickerDialog(
             tags = FakeRecordData.options().tags,
             category = null,
@@ -238,7 +238,7 @@ private fun NewRecordTagPickerDialogPreview() {
 @FortisPreviews
 @Composable
 private fun TagChipsPreview() {
-    FortisLibertasTheme {
+    FortisPreviewTheme {
         TagChips(
             tags = FakeRecordData.options().tags,
             selection = setOf("tag-lunch", "tag-work"),

@@ -11,8 +11,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import java.time.LocalTime
 import pt.fortislibertas.R
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisPreviews
-import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 
 /** "Good afternoon," + first name, based on the phone's time. */
 @Composable
@@ -40,7 +40,7 @@ fun HomeGreetingHeader(fullName: String?, modifier: Modifier = Modifier) {
 @FortisPreviews
 @Composable
 private fun HomeGreetingHeaderPreview() {
-    FortisLibertasTheme {
+    FortisPreviewTheme {
         HomeGreetingHeader(fullName = "Ana Silva")
     }
 }

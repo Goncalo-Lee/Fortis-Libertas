@@ -17,8 +17,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.SearchField
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisPreviews
-import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 
 /** Search field with the filter button; the badge shows how many filters are active. */
 @Composable
@@ -58,7 +58,7 @@ fun TransactionsSearchBar(
 @FortisPreviews
 @Composable
 private fun TransactionsSearchBarPreview() {
-    FortisLibertasTheme {
+    FortisPreviewTheme {
         TransactionsSearchBar(query = "", activeFilterCount = 2, onQueryChange = {}, onOpenFilter = {})
     }
 }

@@ -16,8 +16,8 @@ import androidx.compose.ui.unit.dp
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.FortisCard
 import pt.fortislibertas.core.designsystem.components.LabeledValue
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisPreviews
-import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.core.designsystem.util.MoneyFormatter
 import pt.fortislibertas.data.fake.FakeAccountData
 import pt.fortislibertas.data.model.UserProfile
@@ -55,7 +55,7 @@ fun ProfileAccountDetailsCard(profile: UserProfile) {
 @FortisPreviews
 @Composable
 private fun ProfileAccountDetailsCardPreview() {
-    FortisLibertasTheme {
+    FortisPreviewTheme {
         ProfileAccountDetailsCard(profile = FakeAccountData.profiles.values.first())
     }
 }

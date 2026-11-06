@@ -10,8 +10,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.SelectableChip
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisPreviews
-import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.data.model.RecordType
 
 /** All · Income · Expenses · Investments (only one at a time). */
@@ -44,7 +44,7 @@ fun TransactionsTypeChips(
 @FortisPreviews
 @Composable
 private fun TransactionsTypeChipsPreview() {
-    FortisLibertasTheme {
+    FortisPreviewTheme {
         TransactionsTypeChips(selected = null, onSelect = {})
     }
 }
