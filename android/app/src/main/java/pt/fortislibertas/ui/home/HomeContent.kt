@@ -20,12 +20,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.CardStack
 import pt.fortislibertas.core.designsystem.components.FortisTopBar
 import pt.fortislibertas.core.designsystem.components.colorFromHex
+import pt.fortislibertas.core.designsystem.preview.FortisScreenPreviews
 import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.data.fake.FakeHomeData
 import pt.fortislibertas.data.model.HomeSummary
@@ -122,10 +122,10 @@ fun HomeContent(
 
 // ── Previews ────────────────────────────────────────────
 
-@Preview(showBackground = true, heightDp = 1300)
+@FortisScreenPreviews
 @Composable
 private fun HomeContentPreview() {
-    FortisLibertasTheme(darkTheme = false) {
+    FortisLibertasTheme {
         HomeContent(
             summary = FakeHomeData.build(),
             userName = "Ana Silva",

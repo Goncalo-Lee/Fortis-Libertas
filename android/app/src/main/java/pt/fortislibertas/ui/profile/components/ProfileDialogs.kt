@@ -6,9 +6,9 @@ import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.ConfirmDialog
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
 import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.ui.profile.ProfileDialog
 
@@ -65,7 +65,7 @@ fun ProfileDialogs(
     }
 }
 
-@Preview(showBackground = true)
+@FortisPreviews
 @Composable
 private fun ProfileDeleteDialogPreview() {
     FortisLibertasTheme {

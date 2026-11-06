@@ -15,12 +15,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
 import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 
 /**
@@ -68,7 +68,7 @@ fun BlurDialog(
     }
 }
 
-@Preview(showBackground = true)
+@FortisPreviews
 @Composable
 private fun BlurDialogPreview() {
     FortisLibertasTheme {

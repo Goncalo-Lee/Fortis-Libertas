@@ -2,7 +2,6 @@ package pt.fortislibertas.ui.home.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import java.math.BigDecimal
 import java.text.NumberFormat
 import java.time.format.TextStyle
@@ -11,6 +10,7 @@ import java.util.Locale
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.charts.BarGroup
 import pt.fortislibertas.core.designsystem.components.charts.GroupedBarChart
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
 import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.core.designsystem.theme.FortisTheme
 import pt.fortislibertas.core.designsystem.util.MoneyFormatter
@@ -55,7 +55,7 @@ private fun shortMoney(value: Float, currencyCode: String, locale: Locale): Stri
     return nf.format(value)
 }
 
-@Preview(showBackground = true)
+@FortisPreviews
 @Composable
 private fun HomeWeekChartPreview() {
     FortisLibertasTheme {

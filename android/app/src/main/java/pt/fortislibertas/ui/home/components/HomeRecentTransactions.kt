@@ -15,13 +15,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.TransactionGroup
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
 import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.data.fake.FakeHomeData
 import pt.fortislibertas.data.model.TransactionItem
@@ -84,7 +84,7 @@ private fun dayTitle(date: LocalDate): String {
     }
 }
 
-@Preview(showBackground = true)
+@FortisPreviews
 @Composable
 private fun HomeRecentTransactionsPreview() {
     FortisLibertasTheme {

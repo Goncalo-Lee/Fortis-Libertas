@@ -13,12 +13,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.EmptyContent
 import pt.fortislibertas.core.designsystem.components.ErrorContent
 import pt.fortislibertas.core.designsystem.components.LoadingContent
+import pt.fortislibertas.core.designsystem.preview.FortisScreenPreviews
 import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.data.fake.FakeAccountData
 import pt.fortislibertas.data.model.UserProfile
@@ -128,32 +128,15 @@ private fun ProfileBody(
 
 // ── Previews ────────────────────────────────────────────
 
-@Preview(showBackground = true, heightDp = 1400)
+@FortisScreenPreviews
 @Composable
 private fun ProfileContentPreview() {
-    FortisLibertasTheme(darkTheme = false) {
+    FortisLibertasTheme {
         ProfileContent(
             state = ProfileUiState(
                 isLoading = false,
                 profile = FakeAccountData.profiles.values.first(),
                 accounts = FakeAccountData.accounts,
-                activeAccountId = FakeAccountData.accounts.first().id,
-            ),
-            contentPadding = PaddingValues(),
-            onRetry = {}, onSignIn = {}, onEditProfile = {}, onSwitchAccount = {},
-            onOpenPassword = {}, onOpenBanks = {}, onOpenDashboards = {}, onRequestDialog = {},
-        )
-    }
-}
-
-@Preview(showBackground = true, heightDp = 1400, backgroundColor = 0xFF171717)
-@Composable
-private fun ProfileContentDarkPreview() {
-    FortisLibertasTheme(darkTheme = true) {
-        ProfileContent(
-            state = ProfileUiState(
-                isLoading = false,
-                profile = FakeAccountData.profiles.values.first(),
                 activeAccountId = FakeAccountData.accounts.first().id,
             ),
             contentPadding = PaddingValues(),

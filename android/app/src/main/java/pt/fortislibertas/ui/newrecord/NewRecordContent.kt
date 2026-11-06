@@ -17,11 +17,11 @@ import androidx.compose.material.icons.outlined.Savings
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.ActionTile
 import pt.fortislibertas.core.designsystem.components.FortisTopBar
+import pt.fortislibertas.core.designsystem.preview.FortisScreenPreviews
 import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 
 /** Fixed part of the Register tab: top bar and the three tiles. Stateless, easy to preview. */
@@ -80,10 +80,10 @@ fun NewRecordContent(
 
 // ── Previews ────────────────────────────────────────────
 
-@Preview(showBackground = true, heightDp = 800)
+@FortisScreenPreviews
 @Composable
 private fun NewRecordContentPreview() {
-    FortisLibertasTheme(darkTheme = false) {
+    FortisLibertasTheme {
         NewRecordContent(
             avatarName = "Ana Silva",
             avatarUrl = null,

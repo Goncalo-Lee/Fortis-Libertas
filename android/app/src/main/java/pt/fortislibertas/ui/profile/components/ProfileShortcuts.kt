@@ -9,10 +9,10 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.ActionRow
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
 import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 
 /** Shortcuts to other screens: password, banks and cards, dashboards. */
@@ -45,7 +45,7 @@ fun ProfileShortcuts(
     }
 }
 
-@Preview(showBackground = true)
+@FortisPreviews
 @Composable
 private fun ProfileShortcutsPreview() {
     FortisLibertasTheme {

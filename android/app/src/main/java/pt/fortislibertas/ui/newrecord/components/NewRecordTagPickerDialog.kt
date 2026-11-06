@@ -36,12 +36,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.BlurDialog
 import pt.fortislibertas.core.designsystem.components.SearchField
 import pt.fortislibertas.core.designsystem.components.SelectableChip
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
 import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.data.fake.FakeRecordData
 import pt.fortislibertas.data.model.Category
@@ -219,7 +219,7 @@ private fun TagChips(tags: List<Tag>, selection: Set<String>, onToggle: (Tag) ->
     }
 }
 
-@Preview(showBackground = true)
+@FortisPreviews
 @Composable
 private fun NewRecordTagPickerDialogPreview() {
     FortisLibertasTheme {
@@ -235,7 +235,7 @@ private fun NewRecordTagPickerDialogPreview() {
     }
 }
 
-@Preview(showBackground = true)
+@FortisPreviews
 @Composable
 private fun TagChipsPreview() {
     FortisLibertasTheme {

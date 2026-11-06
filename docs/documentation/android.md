@@ -26,6 +26,7 @@ android/app/src/main/java/pt/fortislibertas/
 ├── core/designsystem/       Everything visual that is NOT tied to one screen
 │   ├── components/          Reusable composables (cards, dialogs, form fields, charts/)
 │   ├── theme/               Colors, typography, FortisLibertasTheme
+│   ├── preview/             @FortisPreviews and @FortisScreenPreviews (light + dark)
 │   └── util/                Formatters and parsers (money, dates)
 ├── data/                    Everything about getting and saving data
 │   ├── model/               App models used by the UI (no JSON annotations)
@@ -86,7 +87,8 @@ Comments are written in **English**.
 - Every screen has a preview of its `<Feature>Content` (the stateless part), never of `<Feature>Screen`
   (it needs a ViewModel).
 - Every reusable component in `core/designsystem/components/` has at least one preview.
-- Use `@FortisPreviews` to get light and dark themes in one annotation.
+- Use `@FortisPreviews` (components) or `@FortisScreenPreviews` (whole screens, taller) to get
+  light and dark themes in one annotation. Inside them, call `FortisLibertasTheme { }` without `darkTheme`.
 - Preview data comes from `data/fake/`, never from inline values repeated in many files.
 - Preview functions are `private` and named `<Thing>Preview`.
 

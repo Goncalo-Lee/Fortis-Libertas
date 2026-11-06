@@ -20,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.ErrorContent
@@ -28,6 +27,7 @@ import pt.fortislibertas.core.designsystem.components.FortisTopBar
 import pt.fortislibertas.core.designsystem.components.LoadingContent
 import pt.fortislibertas.core.designsystem.components.TransactionGroup
 import pt.fortislibertas.core.designsystem.components.dayLabel
+import pt.fortislibertas.core.designsystem.preview.FortisScreenPreviews
 import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.data.fake.FakeTransactionData
 import pt.fortislibertas.data.model.RecordType
@@ -138,7 +138,7 @@ fun TransactionsContent(
 
 // ── Previews ────────────────────────────────────────────
 
-@Preview(showBackground = true, heightDp = 900)
+@FortisScreenPreviews
 @Composable
 private fun TransactionsContentPreview() {
     FortisLibertasTheme {

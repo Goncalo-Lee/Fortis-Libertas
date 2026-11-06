@@ -17,8 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
 import pt.fortislibertas.core.designsystem.theme.CuriousBlue
 import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 
@@ -52,7 +52,7 @@ fun ActionTile(
     }
 }
 
-@Preview(showBackground = true)
+@FortisPreviews
 @Composable
 private fun ActionTilePreview() {
     FortisLibertasTheme {

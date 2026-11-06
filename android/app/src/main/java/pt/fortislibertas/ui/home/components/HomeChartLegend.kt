@@ -13,9 +13,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import pt.fortislibertas.R
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
 import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.core.designsystem.theme.FortisTheme
 
@@ -36,7 +36,7 @@ private fun LegendItem(color: Color, label: String) {
     }
 }
 
-@Preview(showBackground = true)
+@FortisPreviews
 @Composable
 private fun HomeChartLegendPreview() {
     FortisLibertasTheme {
