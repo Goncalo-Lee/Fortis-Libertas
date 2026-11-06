@@ -3,8 +3,6 @@
     <string name="register_title">Register</string>
     <string name="register_new_record">New financial record</string>
     <string name="register_new_plan">New instalment plan</string>
-    <string name="register_new_savings">New savings</string>
-    <string name="register_savings_soon">Savings are coming soon</string>
     <string name="notifications">Notifications</string>
 
     <!-- Fields -->

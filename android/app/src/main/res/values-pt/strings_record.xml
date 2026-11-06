@@ -3,8 +3,6 @@
     <string name="register_title">Registar</string>
     <string name="register_new_record">Novo registo financeiro</string>
     <string name="register_new_plan">Novo plano de prestações</string>
-    <string name="register_new_savings">Nova poupança</string>
-    <string name="register_savings_soon">As poupanças chegam em breve</string>
     <string name="notifications">Notificações</string>
 
     <!-- Campos -->

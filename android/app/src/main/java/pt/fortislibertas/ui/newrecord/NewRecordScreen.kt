@@ -18,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -26,7 +25,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.launch
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.ErrorContent
 import pt.fortislibertas.core.designsystem.components.LoadingContent
@@ -49,8 +47,6 @@ fun NewRecordScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalContext.current.resources
-    val scope = rememberCoroutineScope()
-    val savingsSoon = stringResource(R.string.register_savings_soon)
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -69,7 +65,6 @@ fun NewRecordScreen(
             onOpenNotifications = onOpenNotifications,
             onNewRecord = { viewModel.openSheet(RegisterSheet.FinancialRecord) },
             onNewPlan = { viewModel.openSheet(RegisterSheet.InstalmentPlan) },
-            onNewSavings = { scope.launch { snackbarHostState.showSnackbar(savingsSoon) } },
         )
         SnackbarHost(
             hostState = snackbarHostState,

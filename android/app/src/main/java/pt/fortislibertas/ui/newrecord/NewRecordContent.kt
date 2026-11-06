@@ -13,7 +13,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.PostAdd
-import androidx.compose.material.icons.outlined.Savings
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -33,7 +32,6 @@ fun NewRecordContent(
     onOpenNotifications: () -> Unit,
     onNewRecord: () -> Unit,
     onNewPlan: () -> Unit,
-    onNewSavings: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -56,10 +54,9 @@ fun NewRecordContent(
         val tiles = listOf(
             Triple(Icons.Outlined.PostAdd, R.string.register_new_record, onNewRecord),
             Triple(Icons.Outlined.CalendarMonth, R.string.register_new_plan, onNewPlan),
-            Triple(Icons.Outlined.Savings, R.string.register_new_savings, onNewSavings),
         )
 
-        // 2-column grid (built by hand: there are only 3 tiles)
+        // 2-column grid (built by hand: there are only 2 tiles)
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             tiles.chunked(2).forEach { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -91,7 +88,6 @@ private fun NewRecordContentPreview() {
             onOpenNotifications = {},
             onNewRecord = {},
             onNewPlan = {},
-            onNewSavings = {},
         )
     }
 }

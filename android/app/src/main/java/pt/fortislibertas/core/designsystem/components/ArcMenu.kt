@@ -21,7 +21,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.PostAdd
-import androidx.compose.material.icons.outlined.Savings
+import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -195,7 +195,7 @@ private fun ArcMenuPreview() {
                 actions = listOf(
                     ArcAction(Icons.Outlined.PostAdd, "Record") {},
                     ArcAction(Icons.Outlined.CalendarMonth, "Plan") {},
-                    ArcAction(Icons.Outlined.Savings, "Savings") {},
+                    ArcAction(Icons.Outlined.Category, "Category") {},
                 ),
                 triggerIcon = Icons.Outlined.Add,
                 triggerLabel = "Add",
