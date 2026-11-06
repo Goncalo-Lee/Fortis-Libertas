@@ -30,16 +30,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import java.math.BigDecimal
+import java.math.RoundingMode
+import kotlin.math.ceil
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.BlurDialog
 import pt.fortislibertas.core.designsystem.components.CollapsibleSection
 import pt.fortislibertas.core.designsystem.components.SelectableChip
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
 import pt.fortislibertas.core.designsystem.util.MoneyFormatter
+import pt.fortislibertas.data.fake.FakeRecordData
 import pt.fortislibertas.data.model.FilterOptions
 import pt.fortislibertas.data.model.TransactionFilter
-import java.math.BigDecimal
-import java.math.RoundingMode
-import kotlin.math.ceil
 
 /**
  * Filter dialog (wireframe image 2) with a blurred background.
@@ -192,3 +195,22 @@ private fun Set<String>.toggle(id: String): Set<String> = if (id in this) this -
 
 /** Slider float → amount with 2 decimals (avoids 12.999999). */
 private fun Float.toMoney(): BigDecimal = BigDecimal(toDouble()).setScale(2, RoundingMode.HALF_UP)
+
+@FortisPreviews
+@Composable
+private fun TransactionsFilterDialogPreview() {
+    val options = FakeRecordData.options()
+    FortisPreviewTheme {
+        TransactionsFilterDialog(
+            options = FilterOptions(
+                categories = options.categories,
+                tags = options.tags,
+                maxAmount = BigDecimal("500.00"),
+            ),
+            current = TransactionFilter(),
+            currency = "EUR",
+            onApply = { _, _, _, _ -> },
+            onDismiss = {},
+        )
+    }
+}
