@@ -1,4 +1,4 @@
-package pt.fortislibertas.ui.newrecord
+package pt.fortislibertas.ui.newrecord.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -54,7 +54,7 @@ import pt.fortislibertas.data.model.RecordType
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun CategoryPickerDialog(
+fun NewRecordCategoryPickerDialog(
     categories: List<Category>,
     colors: List<ColorOption>,
     selectedId: String?,

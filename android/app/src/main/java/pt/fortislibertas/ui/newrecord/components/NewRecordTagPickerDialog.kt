@@ -1,4 +1,4 @@
-package pt.fortislibertas.ui.newrecord
+package pt.fortislibertas.ui.newrecord.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -54,7 +54,7 @@ import pt.fortislibertas.data.model.Tag
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun TagPickerDialog(
+fun NewRecordTagPickerDialog(
     tags: List<Tag>,
     category: Category?,
     initialSelection: Set<String>,
@@ -221,9 +221,9 @@ private fun TagChips(tags: List<Tag>, selection: Set<String>, onToggle: (Tag) ->
 
 @Preview(showBackground = true)
 @Composable
-private fun TagPickerDialogPreview() {
+private fun NewRecordTagPickerDialogPreview() {
     FortisLibertasTheme {
-        TagPickerDialog(
+        NewRecordTagPickerDialog(
             tags = FakeRecordData.options().tags,
             category = null,
             initialSelection = setOf("tag-lunch"),
