@@ -9,8 +9,8 @@ import java.time.format.TextStyle
 import java.util.Currency
 import java.util.Locale
 import pt.fortislibertas.R
-import pt.fortislibertas.core.designsystem.components.BarGroup
-import pt.fortislibertas.core.designsystem.components.GroupedBarChart
+import pt.fortislibertas.core.designsystem.components.charts.BarGroup
+import pt.fortislibertas.core.designsystem.components.charts.GroupedBarChart
 import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.core.designsystem.theme.FortisTheme
 import pt.fortislibertas.core.designsystem.util.MoneyFormatter

@@ -1,4 +1,4 @@
-package pt.fortislibertas.core.designsystem.components
+package pt.fortislibertas.core.designsystem.components.charts
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
