@@ -17,7 +17,7 @@ import {
   FileTextIcon,
   FileChartColumnIcon, CommandIcon, BadgeEuroIcon, MinusCircleIcon,
   CalendarArrowDownIcon, ClipboardMinusIcon, PiggyBankIcon,
-  FileOutputIcon, BellIcon, ArrowLeftRightIcon
+  FileOutputIcon, BellIcon, ArrowLeftRightIcon, ShieldCheck, ShieldCheckIcon
 } from "lucide-react"
 import ChatToggleDialog from "@/components/chat-toggle-dialog";
 
@@ -26,7 +26,7 @@ const navMain = [
   { title: "Despesas", url: "/dashboard/expenses", icon: <MinusCircleIcon /> },
   { title: "Metas Financeiras", url: "/dashboard/financial-goals", icon: <CalendarArrowDownIcon /> },
   { title: "Dívidas", url: "/dashboard/financial-debts", icon: <ClipboardMinusIcon /> },
-  { title: "Pé de meia", url: "/dashboard/money-pillow", icon: <PiggyBankIcon /> },
+  { title: "Fundo de emergência", url: "/dashboard/money-pillow", icon: <ShieldCheckIcon /> },
   { title: "Notificações", url: "/dashboard/notifications", icon: <BellIcon /> },
 ]
 
@@ -36,8 +36,6 @@ const documents = [
   { name: "Faturas", url: "/dashboard/documents/invoices", icon: <FileTextIcon /> },
   { name: "Registo de transações", url: "/dashboard/documents/transactions-log", icon: <ArrowLeftRightIcon /> },
 ]
-
-
 
 interface UserSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user?: {
@@ -64,7 +62,7 @@ export function UserSidebar({ user, ...props }: UserSidebarProps) {
                   render={<a href="/dashboard" />}
               >
                 <CommandIcon className="size-8!" />
-                <span className="text-base font-semibold">Fortis Libertas</span>
+                <span className="text-base font-semibold">FORTIS LIBERTAS</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

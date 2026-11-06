@@ -9,7 +9,6 @@ import {
     CardTitle,
 } from "@/components/ui/card"
 import {
-    PiggyBank,
     ShieldCheck,
     SlidersHorizontal,
     ArrowUpRight,
@@ -29,9 +28,9 @@ import { useFinancial } from "@/contexts/FinancialContext"
 
 type MovementType = "deposit" | "withdrawal"
 
-export default function MoneyPillowPage() {
+export default function EmergencyFundPage() {
     const { activeDashboard } = useDashboard()
-    const { installmentPlans, financialRecords, paymentMethods, recordTypes, categories, tags, refresh, addFinancialRecord } = useFinancial()
+    const { installmentPlans, financialRecords, paymentMethods, recordTypes, categories, tags, refresh } = useFinancial()
 
     // Controlo de painéis
     const [isConfiguring, setIsConfiguring] = useState(false)
@@ -49,59 +48,59 @@ export default function MoneyPillowPage() {
     const [movTag, setMovTag] = useState("Reforço Mensal")
 
     // ==========================================
-    // 1. LOCALIZAR O PLANO DO PÉ DE MEIA NA BD
+    // 1. LOCALIZAR O PLANO DO FUNDO DE EMERGÊNCIA NA BD
     // ==========================================
-    const pillowPlan = useMemo(() => {
+    const emergencyPlan = useMemo(() => {
         if (!installmentPlans) return null
         return installmentPlans.find(
             (p: any) =>
                 p.status !== "cancelled" &&
-                (p.description?.startsWith("[PILLOW]") ||
-                    p.name?.toLowerCase().includes("pé de meia") ||
-                    p.name?.toLowerCase().includes("almofada"))
+                (p.description?.startsWith("[EMERGENCY]") ||
+                    p.description?.startsWith("[PILLOW]") ||
+                    p.name?.toLowerCase().includes("emergência") ||
+                    p.name?.toLowerCase().includes("almofada") ||
+                    p.name?.toLowerCase().includes("pé de meia"))
         ) || null
     }, [installmentPlans])
 
-    // Extrair parâmetros do plano encontrado
-    const { monthlyEssentialCost, targetMonths, idealPillowTarget, pillowPlanId } = useMemo(() => {
-        if (!pillowPlan) {
-            return { monthlyEssentialCost: 750, targetMonths: 6, idealPillowTarget: 4500, pillowPlanId: null }
+    const { monthlyEssentialCost, targetMonths, idealTarget, emergencyPlanId } = useMemo(() => {
+        if (!emergencyPlan) {
+            return { monthlyEssentialCost: 750, targetMonths: 6, idealTarget: 4500, emergencyPlanId: null }
         }
 
-        const planId = pillowPlan.installment_plan_id || pillowPlan.id
-        const months = Number(pillowPlan.total_installments ?? pillowPlan.totalInstallments ?? 6)
-        const total = Number(pillowPlan.total_amount ?? pillowPlan.totalAmount ?? pillowPlan.amount ?? 4500)
+        const planId = emergencyPlan.installment_plan_id || emergencyPlan.id
+        const months = Number(emergencyPlan.total_installments ?? emergencyPlan.totalInstallments ?? 6)
+        const total = Number(emergencyPlan.total_amount ?? emergencyPlan.totalAmount ?? emergencyPlan.amount ?? 4500)
 
         let cost = months > 0 ? Math.round(total / months) : 750
-        if (pillowPlan.description && pillowPlan.description.includes("Custo:")) {
-            const match = pillowPlan.description.match(/Custo:\s*([\d.]+)/)
+        if (emergencyPlan.description && emergencyPlan.description.includes("Custo:")) {
+            const match = emergencyPlan.description.match(/Custo:\s*([\d.]+)/)
             if (match) cost = parseFloat(match[1])
         }
 
         return {
             monthlyEssentialCost: cost,
             targetMonths: months > 0 ? months : 6,
-            idealPillowTarget: total,
-            pillowPlanId: planId
+            idealTarget: total,
+            emergencyPlanId: planId
         }
-    }, [pillowPlan])
+    }, [emergencyPlan])
 
-    // Sincroniza inputs do modal quando os dados carregam
     useEffect(() => {
-        if (pillowPlan) {
+        if (emergencyPlan) {
             setTempCost(String(monthlyEssentialCost))
             setTempMonths(String(targetMonths))
         }
-    }, [pillowPlan, monthlyEssentialCost, targetMonths])
+    }, [emergencyPlan, monthlyEssentialCost, targetMonths])
 
     // ==========================================
     // 2. PROCESSAR MOVIMENTOS REAIS DA BASE DE DADOS
     // ==========================================
     const movements = useMemo(() => {
-        if (!financialRecords || !pillowPlanId) return []
+        if (!financialRecords || !emergencyPlanId) return []
 
         return financialRecords
-            .filter((r: any) => (r.installment_plan_id || r.installmentPlanId) === pillowPlanId)
+            .filter((r: any) => (r.installment_plan_id || r.installmentPlanId) === emergencyPlanId)
             .map((r: any) => {
                 const rtId = r.record_type_id || r.recordTypeId || r.recordType?.record_type_id || r.recordType?.id
                 const rt = (recordTypes || []).find((t: any) => (t.record_type_id || t.id) === rtId)
@@ -127,9 +126,8 @@ export default function MoneyPillowPage() {
                 }
             })
             .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    }, [financialRecords, pillowPlanId, recordTypes])
+    }, [financialRecords, emergencyPlanId, recordTypes])
 
-    // Cálculos da Visão Geral
     const totalDeposits = movements
         .filter((m) => m.type === "deposit")
         .reduce((acc, curr) => acc + curr.amount, 0)
@@ -144,14 +142,14 @@ export default function MoneyPillowPage() {
         ? Number((currentBalance / monthlyEssentialCost).toFixed(1))
         : 0
 
-    const completionPct = idealPillowTarget > 0
-        ? Math.min(Math.round((currentBalance / idealPillowTarget) * 100), 100)
+    const completionPct = idealTarget > 0
+        ? Math.min(Math.round((currentBalance / idealTarget) * 100), 100)
         : 0
 
     const securityLevel = Math.min(5, Math.max(1, Math.ceil((completionPct / 100) * 5)))
 
     // ==========================================
-    // 3. GUARDAR / CONFIGURAR O PÉ DE MEIA NA BD
+    // 3. GUARDAR / CONFIGURAR NA BD
     // ==========================================
     async function handleSaveConfig(e: React.FormEvent) {
         e.preventDefault()
@@ -170,28 +168,26 @@ export default function MoneyPillowPage() {
 
         setIsSubmitting(true)
         try {
-            if (pillowPlanId) {
-                // Atualiza plano existente
-                const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${pillowPlanId}`, {
+            if (emergencyPlanId) {
+                const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${emergencyPlanId}`, {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
                     credentials: "include",
                     body: JSON.stringify({
-                        name: pillowPlan.name || "Pé de Meia",
+                        name: "Fundo de Emergência",
                         total_amount: calculatedTarget,
                         total_installments: parsedMonths,
-                        description: `[PILLOW] Custo: ${parsedCost} | Meses: ${parsedMonths}`
+                        description: `[EMERGENCY] Custo: ${parsedCost} | Meses: ${parsedMonths}`
                     })
                 })
                 if (!res.ok) throw new Error("Falha ao atualizar parâmetros.")
             } else {
-                // Cria novo plano do Pé de Meia com dependências obrigatórias
                 const defaultCat = categories?.[0]
                 const expenseType = (recordTypes || []).find((rt: any) => rt.kind === "expense") || recordTypes?.[0]
 
                 const payload: Record<string, any> = {
-                    name: "Pé de Meia",
-                    description: `[PILLOW] Custo: ${parsedCost} | Meses: ${parsedMonths}`,
+                    name: "Fundo de Emergência",
+                    description: `[EMERGENCY] Custo: ${parsedCost} | Meses: ${parsedMonths}`,
                     total_amount: calculatedTarget,
                     total_installments: parsedMonths,
                     due_date: dueDate.toISOString().split("T")[0],
@@ -209,12 +205,12 @@ export default function MoneyPillowPage() {
                 })
                 if (!res.ok) {
                     const errData = await res.json().catch(() => ({}))
-                    throw new Error(errData.detail || errData.message || "Falha ao criar almofada financeira.")
+                    throw new Error(errData.detail || errData.message || "Falha ao criar fundo de emergência.")
                 }
             }
 
             refresh()
-            toast.success("Meta do Pé de Meia configurada com sucesso!")
+            toast.success("Fundo de Emergência configurado com sucesso!")
             setIsConfiguring(false)
         } catch (error: any) {
             toast.error(error.message || "Erro ao gravar configuração.")
@@ -224,16 +220,15 @@ export default function MoneyPillowPage() {
     }
 
     // ==========================================
-    // 4. REGISTAR ENTRADA OU SAÍDA (RECORD REAL)
+    // 4. REGISTAR ENTRADA OU SAÍDA
     // ==========================================
     async function handleAddMovement(e: React.FormEvent) {
         e.preventDefault()
         if (!movementMode || !activeDashboard?.dashboard_id) return
 
-        let activePillowId = pillowPlanId
+        let activePlanId = emergencyPlanId
 
-        // Se ainda não existir plano na BD, cria automaticamente antes do movimento
-        if (!activePillowId) {
+        if (!activePlanId) {
             const defaultTarget = (750 * 6).toFixed(2)
             const dueDate = new Date()
             dueDate.setMonth(dueDate.getMonth() + 6)
@@ -242,8 +237,8 @@ export default function MoneyPillowPage() {
             const expenseType = (recordTypes || []).find((rt: any) => rt.kind === "expense") || recordTypes?.[0]
 
             const payload: Record<string, any> = {
-                name: "Pé de Meia",
-                description: `[PILLOW] Custo: 750 | Meses: 6`,
+                name: "Fundo de Emergência",
+                description: `[EMERGENCY] Custo: 750 | Meses: 6`,
                 total_amount: defaultTarget,
                 total_installments: 6,
                 due_date: dueDate.toISOString().split("T")[0],
@@ -263,9 +258,9 @@ export default function MoneyPillowPage() {
             if (initRes.ok) {
                 const initData = await initRes.json()
                 const createdPlan = initData.data || initData
-                activePillowId = createdPlan.installment_plan_id || createdPlan.id
+                activePlanId = createdPlan.installment_plan_id || createdPlan.id
             } else {
-                return toast.error("Configura a almofada primeiro antes de registar movimentos.")
+                return toast.error("Configura o fundo de emergência primeiro.")
             }
         }
 
@@ -282,12 +277,11 @@ export default function MoneyPillowPage() {
         const fallbackMethodId = fallbackMethod?.payment_method_id || fallbackMethod?.id
         const selectedMethod = movPaymentMethodId || fallbackMethodId
         if (!selectedMethod) {
-            return toast.error("Não tens contas de pagamento registadas para debitar/creditar.")
+            return toast.error("Não tens contas de pagamento registadas.")
         }
 
         setIsSubmitting(true)
         try {
-            // Garante ou associa a Tag da categoria escolhida
             let matchedTag = (tags || []).find((t: any) => t.name?.toLowerCase() === movTag.toLowerCase())
             if (!matchedTag && movTag) {
                 const tagRes = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/tags`, {
@@ -316,7 +310,7 @@ export default function MoneyPillowPage() {
                 record_type_id: matchedType?.record_type_id || matchedType?.id,
                 category_id: categoryId,
                 payment_method_id: selectedMethod,
-                installment_plan_id: activePillowId,
+                installment_plan_id: activePlanId,
                 status: "paid",
                 payment_date: new Date().toISOString()
             }
@@ -332,14 +326,14 @@ export default function MoneyPillowPage() {
 
             if (!res.ok) {
                 const errData = await res.json().catch(() => ({}))
-                throw new Error(errData.detail || errData.message || "Erro ao registar movimento no servidor.")
+                throw new Error(errData.detail || errData.message || "Erro ao registar movimento.")
             }
 
             refresh()
             toast.success(
                 movementMode === "deposit"
                     ? `Reforço de € ${parsedAmount.toFixed(2)} adicionado!`
-                    : `Uso de emergência de € ${parsedAmount.toFixed(2)} registado.`
+                    : `Utilização de € ${parsedAmount.toFixed(2)} registada.`
             )
 
             setMovTitle("")
@@ -353,10 +347,10 @@ export default function MoneyPillowPage() {
     }
 
     // ==========================================
-    // 5. APAGAR MOVIMENTO (DELETE REAL)
+    // 5. APAGAR MOVIMENTO
     // ==========================================
     async function handleDeleteMovement(id: string) {
-        if (!confirm("Tens a certeza que queres eliminar este movimento do registo?")) return
+        if (!confirm("Tens a certeza que queres eliminar este movimento?")) return
         if (!activeDashboard?.dashboard_id) return
 
         try {
@@ -380,10 +374,10 @@ export default function MoneyPillowPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">
-                        Pé de Meia (Fundo de Emergência)
+                        Fundo de Emergência
                     </h1>
                     <p className="text-xs sm:text-sm text-muted-foreground">
-                        A tua almofada financeira para imprevistos e total tranquilidade.
+                        A tua reserva de segurança para imprevistos e total tranquilidade financeira.
                     </p>
                 </div>
 
@@ -397,7 +391,7 @@ export default function MoneyPillowPage() {
                         className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-medium px-3 py-2 rounded-lg transition-colors cursor-pointer"
                     >
                         <SlidersHorizontal className="w-4 h-4" />
-                        <span>Configurar Almofada</span>
+                        <span>Configurar Fundo</span>
                     </button>
 
                     <button
@@ -433,7 +427,7 @@ export default function MoneyPillowPage() {
                 <Card className="border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/30 dark:bg-emerald-950/10 shadow-sm animate-in fade-in slide-in-from-top-4">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm sm:text-base font-semibold flex items-center gap-2">
-                            Dimensionar a Almofada Financeira
+                            Dimensionar o Fundo de Emergência
                         </CardTitle>
                         <CardDescription className="text-xs">
                             Define o teu custo essencial mensal e quantos meses de segurança queres garantir.
@@ -503,12 +497,12 @@ export default function MoneyPillowPage() {
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm sm:text-base font-semibold flex items-center gap-2">
                             {movementMode === "deposit"
-                                ? "Reforçar o Pé de Meia (Entrada)"
+                                ? "Reforçar o Fundo de Emergência (Entrada)"
                                 : "Utilizar Fundo de Emergência (Saída)"}
                         </CardTitle>
                         <CardDescription className="text-xs">
                             {movementMode === "deposit"
-                                ? "Transfere montantes da tua conta corrente para reforçar a almofada."
+                                ? "Transfere montantes da tua conta corrente para reforçar a tua reserva."
                                 : "Regista saídas estritamente destinadas a imprevistos reais ou emergências."}
                         </CardDescription>
                     </CardHeader>
@@ -609,9 +603,9 @@ export default function MoneyPillowPage() {
                     <CardHeader className="pb-1 w-full">
                         <CardTitle className="text-sm sm:text-base font-medium text-muted-foreground flex items-center justify-center gap-2">
                             <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-md">
-                                <PiggyBank className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                             </div>
-                            Saldo no Pé de Meia
+                            Saldo do Fundo
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="px-4 pb-2 flex flex-col items-center justify-center text-center gap-1 my-auto">
@@ -619,7 +613,7 @@ export default function MoneyPillowPage() {
                             € {currentBalance.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
                         </div>
                         <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                            {completionPct}% da almofada recomendada (€ {idealPillowTarget.toLocaleString("pt-PT")})
+                            {completionPct}% da reserva recomendada (€ {idealTarget.toLocaleString("pt-PT")})
                         </span>
                     </CardContent>
                 </Card>
@@ -690,12 +684,12 @@ export default function MoneyPillowPage() {
             {/* SEÇÃO PRINCIPAL */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                {/* Coluna Esquerda: Termómetro & Educação Financeira */}
+                {/* Coluna Esquerda: Estado do Fundo */}
                 <Card className="lg:col-span-5 flex flex-col justify-between py-4 shadow-sm">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-base font-semibold flex items-center gap-2">
-                            <PiggyBank className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                            Estado da Tua Almofada
+                            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            Estado do Fundo de Emergência
                         </CardTitle>
                         <CardDescription className="text-xs">
                             Baseado num custo essencial de € {monthlyEssentialCost}/mês durante {targetMonths} meses.
@@ -706,20 +700,17 @@ export default function MoneyPillowPage() {
                         <div className="flex flex-col items-center text-center gap-2 pt-2">
                             <div className="relative flex items-center justify-center">
                                 <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-center shadow-inner">
-                                    <PiggyBank className="w-8 h-8 text-emerald-600 dark:text-emerald-400 stroke-[1.75]" />
-                                </div>
-                                <div className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-900 p-1 rounded-full shadow-sm border border-slate-100 dark:border-slate-800">
-                                    <ShieldCheck className="w-4 h-4 text-teal-500" />
+                                    <ShieldCheck className="w-8 h-8 text-emerald-600 dark:text-emerald-400 stroke-[1.75]" />
                                 </div>
                             </div>
 
                             <div className="w-full space-y-1.5 pt-2">
                                 <div className="flex justify-between text-xs font-medium">
                                     <span className="text-emerald-700 dark:text-emerald-400">
-                                        Guardado: € {currentBalance.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
+                                        Acumulado: € {currentBalance.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
                                     </span>
                                     <span className="text-muted-foreground">
-                                        Meta: € {idealPillowTarget.toLocaleString("pt-PT")}
+                                        Meta: € {idealTarget.toLocaleString("pt-PT")}
                                     </span>
                                 </div>
                                 <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -735,7 +726,7 @@ export default function MoneyPillowPage() {
                             <div className="p-3 rounded-lg bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/40 text-xs space-y-1">
                                 <p className="font-semibold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
                                     <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                    Quando reforçar (Entradas)?
+                                    Quando reforçar?
                                 </p>
                                 <p className="text-muted-foreground">
                                     Sempre que recebes salário, subsídios ou sobras de fim do mês.
@@ -745,26 +736,26 @@ export default function MoneyPillowPage() {
                             <div className="p-3 rounded-lg bg-amber-50/40 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/40 text-xs space-y-1">
                                 <p className="font-semibold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
                                     <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                                    Quando usar (Saídas)?
+                                    Quando usar?
                                 </p>
                                 <p className="text-muted-foreground">
-                                    Apenas para urgências comprovadas (saúde, quebra de rendimento ou reparações essenciais).
+                                    Apenas para urgências comprovadas (saúde, quebra inesperada de rendimento ou avarias graves).
                                 </p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Coluna Direita: Histórico de Movimentos Reais */}
+                {/* Coluna Direita: Histórico */}
                 <Card className="lg:col-span-7 flex flex-col py-4 shadow-sm">
                     <CardHeader className="pb-3 flex flex-row items-center justify-between">
                         <div>
                             <CardTitle className="text-base font-semibold flex items-center gap-2">
                                 <History className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                                Registo de Entradas e Saídas
+                                Movimentos do Fundo
                             </CardTitle>
                             <CardDescription className="text-xs">
-                                Movimentos financeiros reais associados ao teu Fundo de Emergência.
+                                Entradas e saídas associadas à tua reserva de segurança.
                             </CardDescription>
                         </div>
                         <span className="text-xs font-medium text-muted-foreground bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full">
@@ -775,7 +766,7 @@ export default function MoneyPillowPage() {
                     <CardContent className="space-y-2.5">
                         {movements.length === 0 && (
                             <p className="text-center text-xs text-muted-foreground py-8">
-                                Ainda não há movimentos registados no teu Pé de Meia.
+                                Ainda não há movimentos registados no teu Fundo de Emergência.
                             </p>
                         )}
                         {movements.map((mov, index) => {

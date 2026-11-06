@@ -13,6 +13,7 @@
     "db:seed:catalogs": "tsx --env-file=.env src/db/data/seed_catalogs.ts",
     "db:backfill:transactions": "tsx --env-file=.env src/db/data/backfill_transactions.ts",
     "db:delete": "tsx --env-file=.env src/db/data/delete.ts",
+    "db:color": "tsx --env-file=.env src/db/data/color-icon-seed.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
