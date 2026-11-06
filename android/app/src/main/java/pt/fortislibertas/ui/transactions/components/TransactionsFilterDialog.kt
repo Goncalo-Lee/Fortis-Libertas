@@ -1,4 +1,4 @@
-package pt.fortislibertas.ui.transactions
+package pt.fortislibertas.ui.transactions.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -42,13 +42,13 @@ import java.math.RoundingMode
 import kotlin.math.ceil
 
 /**
- * Diálogo de filtros (imagem 2 do wireframe), com fundo desfocado.
- * Cada secção abre/fecha na seta e tem altura máxima com scroll.
- * As escolhas só valem ao carregar em "Aplicar"; tocar fora descarta.
+ * Filter dialog (wireframe image 2) with a blurred background.
+ * Each section opens/closes with its arrow and has a max height with scroll.
+ * Choices only count after tapping "Apply"; tapping outside discards them.
  */
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun FilterDialog(
+fun TransactionsFilterDialog(
     options: FilterOptions?,
     current: TransactionFilter,
     currency: String,
@@ -76,10 +76,10 @@ private fun FilterBody(
     onApply: (categoryIds: Set<String>, tagIds: Set<String>, min: BigDecimal?, max: BigDecimal?) -> Unit,
 ) {
     Column {
-        // Fim do slider arredondado para cima (1 199,50 → 1 200)
+        // End of the slider rounded up (1 199,50 → 1 200)
         val sliderMax = ceil(options.maxAmount.toFloat()).coerceAtLeast(1f)
 
-        // Rascunho local: só passa para o ecrã no "Aplicar"
+        // Local draft: only reaches the screen on "Apply"
         var categoryIds by remember { mutableStateOf(current.categoryIds) }
         var tagIds by remember { mutableStateOf(current.tagIds) }
         var range by remember {
@@ -88,14 +88,14 @@ private fun FilterBody(
             )
         }
 
-        // Todo o conteúdo pode fazer scroll se o ecrã for baixo
+        // The whole content can scroll on short screens
         Column(
             modifier = Modifier
                 .heightIn(max = 480.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            // ── Categorias ──
+            // ── Categories ──
             CollapsibleSection(
                 title = stringResource(R.string.filter_categories),
                 selectedCount = categoryIds.size,
@@ -133,7 +133,7 @@ private fun FilterBody(
                 }
             }
 
-            // ── Valor ──
+            // ── Amount ──
             val amountActive = range.start > 0f || range.endInclusive < sliderMax
             CollapsibleSection(
                 title = stringResource(R.string.filter_amount),
@@ -166,7 +166,7 @@ private fun FilterBody(
         ) {
             Button(
                 onClick = {
-                    // Slider nos extremos = sem filtro de valor
+                    // Slider at both ends = no amount filter
                     val min = range.start.takeIf { it > 0f }?.toMoney()
                     val max = range.endInclusive.takeIf { it < sliderMax }?.toMoney()
                     onApply(categoryIds, tagIds, min, max)
@@ -190,5 +190,5 @@ private fun FilterBody(
 
 private fun Set<String>.toggle(id: String): Set<String> = if (id in this) this - id else this + id
 
-/** Float do slider → valor com 2 casas (evita 12.999999). */
+/** Slider float → amount with 2 decimals (avoids 12.999999). */
 private fun Float.toMoney(): BigDecimal = BigDecimal(toDouble()).setScale(2, RoundingMode.HALF_UP)
