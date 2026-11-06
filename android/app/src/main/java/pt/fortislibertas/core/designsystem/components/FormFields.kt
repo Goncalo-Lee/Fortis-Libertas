@@ -1,6 +1,7 @@
 package pt.fortislibertas.core.designsystem.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,6 +41,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
 
 /*
  * Reusable form fields, all with the same look:
@@ -278,4 +281,31 @@ fun SearchField(
         singleLine = true,
         shape = FieldShape,
     )
+}
+
+@FortisPreviews
+@Composable
+private fun FormFieldsPreview() {
+    FortisPreviewTheme {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            FormTextField(label = "Name", value = "Lunch", onValueChange = {})
+            FormTextField(label = "Price", value = "12,5x", onValueChange = {}, errorText = "Invalid amount")
+            SelectField(
+                label = "Status",
+                options = listOf("Paid", "Pending"),
+                selected = "Paid",
+                optionLabel = { it },
+                onSelect = {},
+            )
+            DateField(
+                label = "Payment date",
+                date = LocalDate.of(2026, 11, 6),
+                onDateChange = {},
+                confirmLabel = "OK",
+                dismissLabel = "Cancel",
+            )
+            PickerField(label = "Category", value = null, placeholder = "Choose", onClick = {})
+            SearchField(query = "", onQueryChange = {}, placeholder = "Search")
+        }
+    }
 }

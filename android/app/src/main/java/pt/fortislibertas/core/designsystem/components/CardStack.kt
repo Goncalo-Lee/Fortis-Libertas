@@ -2,7 +2,10 @@ package pt.fortislibertas.core.designsystem.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -21,6 +24,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
 
 /**
  * Stack of cards against the right edge, like in the Home wireframe.
@@ -79,6 +84,21 @@ fun CardStack(
                     .clip(shape)
                     .background(color),
             )
+        }
+    }
+}
+
+@FortisPreviews
+@Composable
+private fun CardStackPreview() {
+    FortisPreviewTheme {
+        Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(48.dp)) {
+            CardStack(
+                colors = listOf(Color(0xFFFFE761), Color(0xFF2092E9), Color(0xFF76C352)),
+                onClick = {},
+                onClickLabel = "Banks and cards",
+            )
+            CardStack(colors = emptyList(), onClick = {}, onClickLabel = "Add a card")
         }
     }
 }

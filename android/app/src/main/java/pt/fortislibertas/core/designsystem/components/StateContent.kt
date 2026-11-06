@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -15,6 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
 
 /** Generic states reusable in any screen: loading, error and empty. */
 
@@ -75,5 +78,23 @@ private fun CenteredMessage(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         content()
+    }
+}
+
+@FortisPreviews
+@Composable
+private fun StateContentPreview() {
+    FortisPreviewTheme {
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            LoadingContent(Modifier.height(120.dp))
+            ErrorContent(message = "No connection", retryLabel = "Retry", onRetry = {}, modifier = Modifier.height(160.dp))
+            EmptyContent(
+                title = "You are signed out",
+                message = "Sign in to see your data.",
+                actionLabel = "Sign in",
+                onAction = {},
+                modifier = Modifier.height(200.dp),
+            )
+        }
     }
 }

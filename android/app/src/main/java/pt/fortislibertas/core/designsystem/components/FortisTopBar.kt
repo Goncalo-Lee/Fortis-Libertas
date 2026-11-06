@@ -3,6 +3,7 @@ package pt.fortislibertas.core.designsystem.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Notifications
@@ -16,6 +17,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
 
 /**
  * Shared header (Home, Dashboard, Register…):
@@ -53,5 +56,21 @@ fun FortisTopBar(
                 Icon(Icons.Outlined.Notifications, contentDescription = notificationsLabel)
             }
         }
+    }
+}
+
+@FortisPreviews
+@Composable
+private fun FortisTopBarPreview() {
+    FortisPreviewTheme {
+        FortisTopBar(
+            title = "Home",
+            avatarName = "Ana Silva",
+            avatarUrl = null,
+            notificationCount = 3,
+            notificationsLabel = "Notifications",
+            onNotificationsClick = {},
+            modifier = Modifier.padding(16.dp),
+        )
     }
 }

@@ -1,7 +1,10 @@
 package pt.fortislibertas.core.designsystem.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -16,6 +19,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
 
 /**
  * Round profile photo. The initials are always drawn underneath:
@@ -60,5 +65,16 @@ private fun initialsOf(name: String): String {
         parts.isEmpty() -> "?"
         parts.size == 1 -> parts.first().take(1).uppercase()
         else -> (parts.first().take(1) + parts.last().take(1)).uppercase()
+    }
+}
+
+@FortisPreviews
+@Composable
+private fun UserAvatarPreview() {
+    FortisPreviewTheme {
+        Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            UserAvatar(name = "Ana Maria Silva", imageUrl = null)
+            UserAvatar(name = "Ana", imageUrl = null, size = 72.dp)
+        }
     }
 }

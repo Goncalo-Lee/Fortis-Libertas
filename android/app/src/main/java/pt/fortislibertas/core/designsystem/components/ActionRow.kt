@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.DeleteForever
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -16,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
 import pt.fortislibertas.core.designsystem.theme.CodGray
 import pt.fortislibertas.core.designsystem.theme.CuriousBlue
 import pt.fortislibertas.core.designsystem.theme.FortisTheme
@@ -103,4 +108,18 @@ private fun actionToneColors(tone: ActionTone): ActionToneColors = when (tone) {
         tileContainer = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
         tileContent = MaterialTheme.colorScheme.error,
     )
+}
+
+@FortisPreviews
+@Composable
+private fun ActionRowPreview() {
+    FortisPreviewTheme {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            ActionRow(icon = Icons.Outlined.Lock, title = "Password", description = "Change your password", onClick = {})
+            ActionRow(icon = Icons.Outlined.Block, title = "Deactivate", description = "Suspend the account",
+                onClick = {}, tone = ActionTone.Warning, showChevron = false)
+            ActionRow(icon = Icons.Outlined.DeleteForever, title = "Delete", description = "Delete the account",
+                onClick = {}, tone = ActionTone.Danger, showChevron = false)
+        }
+    }
 }

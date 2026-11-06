@@ -32,6 +32,8 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
 
 /**
  * Section with a title and an arrow that opens/closes the content.
@@ -84,6 +86,18 @@ fun CollapsibleSection(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 content = content,
             )
+        }
+    }
+}
+
+@FortisPreviews
+@Composable
+private fun CollapsibleSectionPreview() {
+    FortisPreviewTheme {
+        CollapsibleSection(title = "Categories", selectedCount = 2, modifier = Modifier.padding(16.dp)) {
+            Text("Food")
+            Text("Transport")
+            Text("Health")
         }
     }
 }

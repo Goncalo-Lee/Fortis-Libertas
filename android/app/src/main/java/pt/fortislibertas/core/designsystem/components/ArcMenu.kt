@@ -17,7 +17,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.PostAdd
+import androidx.compose.material.icons.outlined.Savings
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -41,6 +45,8 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
 
 /** One arc shortcut: icon + text + what it does. */
 data class ArcAction(
@@ -177,5 +183,23 @@ private fun ArcItem(
                 .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
                 .padding(horizontal = 6.dp, vertical = 2.dp),
         )
+    }
+}
+
+@FortisPreviews
+@Composable
+private fun ArcMenuPreview() {
+    FortisPreviewTheme {
+        Box(Modifier.size(width = 360.dp, height = 320.dp)) {
+            ArcMenu(
+                actions = listOf(
+                    ArcAction(Icons.Outlined.PostAdd, "Record") {},
+                    ArcAction(Icons.Outlined.CalendarMonth, "Plan") {},
+                    ArcAction(Icons.Outlined.Savings, "Savings") {},
+                ),
+                triggerIcon = Icons.Outlined.Add,
+                triggerLabel = "Add",
+            )
+        }
     }
 }

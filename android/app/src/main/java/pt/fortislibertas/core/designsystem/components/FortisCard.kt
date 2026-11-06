@@ -10,9 +10,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
 
 /**
  * Outlined card with rounded corners, like the ones in the wireframe.
@@ -47,6 +50,17 @@ fun FortisCard(
             border = border,
         ) {
             Column(Modifier.padding(contentPadding), content = content)
+        }
+    }
+}
+
+@FortisPreviews
+@Composable
+private fun FortisCardPreview() {
+    FortisPreviewTheme {
+        FortisCard(modifier = Modifier.padding(16.dp)) {
+            Text("Account details")
+            Text("Ana Silva")
         }
     }
 }

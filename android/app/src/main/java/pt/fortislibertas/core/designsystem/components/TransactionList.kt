@@ -22,12 +22,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import pt.fortislibertas.core.designsystem.theme.FortisTheme
-import pt.fortislibertas.core.designsystem.util.MoneyFormatter
-import pt.fortislibertas.data.model.RecordType
-import pt.fortislibertas.data.model.TransactionItem
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
+import pt.fortislibertas.core.designsystem.theme.FortisTheme
+import pt.fortislibertas.core.designsystem.util.MoneyFormatter
+import pt.fortislibertas.data.fake.FakeHomeData
+import pt.fortislibertas.data.model.RecordType
+import pt.fortislibertas.data.model.TransactionItem
 
 /**
  * Transactions of one day: "Today" on top and the rows
@@ -139,4 +142,17 @@ private fun amountColor(type: RecordType): Color = when (type) {
     RecordType.INCOME -> FortisTheme.colors.income
     RecordType.EXPENSE -> FortisTheme.colors.expense
     RecordType.INVESTMENT -> MaterialTheme.colorScheme.primary
+}
+
+@FortisPreviews
+@Composable
+private fun TransactionGroupPreview() {
+    FortisPreviewTheme {
+        TransactionGroup(
+            title = "Today",
+            items = FakeHomeData.build().recent.take(3),
+            onItemClick = {},
+            modifier = Modifier.padding(16.dp),
+        )
+    }
 }

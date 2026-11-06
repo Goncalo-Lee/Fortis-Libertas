@@ -20,6 +20,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
 
 /**
  * Reusable confirmation dialog.
@@ -91,4 +93,22 @@ fun ConfirmDialog(
             TextButton(onClick = onDismiss, enabled = !isWorking) { Text(dismissLabel) }
         },
     )
+}
+
+@FortisPreviews
+@Composable
+private fun ConfirmDialogPreview() {
+    FortisPreviewTheme {
+        ConfirmDialog(
+            title = "Delete account?",
+            message = "This cannot be undone after 30 days.",
+            confirmLabel = "Delete",
+            dismissLabel = "Cancel",
+            onConfirm = {},
+            onDismiss = {},
+            destructive = true,
+            requiredText = "ana@example.com",
+            requiredTextHint = "Type ana@example.com to confirm",
+        )
+    }
 }
