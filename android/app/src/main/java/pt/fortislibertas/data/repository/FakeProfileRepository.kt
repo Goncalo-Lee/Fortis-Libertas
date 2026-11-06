@@ -3,7 +3,7 @@ package pt.fortislibertas.data.repository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import pt.fortislibertas.data.local.AccountStore
-import pt.fortislibertas.data.local.FakeData
+import pt.fortislibertas.data.fake.FakeData
 import pt.fortislibertas.data.model.UserProfile
 
 /**

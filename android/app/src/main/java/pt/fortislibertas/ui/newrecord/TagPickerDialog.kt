@@ -43,7 +43,7 @@ import pt.fortislibertas.core.designsystem.components.BlurDialog
 import pt.fortislibertas.core.designsystem.components.SearchField
 import pt.fortislibertas.core.designsystem.components.SelectableChip
 import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
-import pt.fortislibertas.data.local.FakeRecordData
+import pt.fortislibertas.data.fake.FakeRecordData
 import pt.fortislibertas.data.model.Category
 import pt.fortislibertas.data.model.Tag
 

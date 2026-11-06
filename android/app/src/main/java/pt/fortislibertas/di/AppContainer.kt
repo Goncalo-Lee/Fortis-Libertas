@@ -11,7 +11,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import pt.fortislibertas.BuildConfig
 import pt.fortislibertas.data.local.AccountStore
-import pt.fortislibertas.data.local.FakeData
+import pt.fortislibertas.data.fake.FakeData
 import pt.fortislibertas.data.remote.AuthInterceptor
 import pt.fortislibertas.data.remote.FortisApi
 import pt.fortislibertas.data.remote.HomeApi

@@ -1,8 +1,8 @@
 package pt.fortislibertas.data.repository
 
 import kotlinx.coroutines.delay
-import pt.fortislibertas.data.local.FakeRecordData
-import pt.fortislibertas.data.local.FakeTransactionData
+import pt.fortislibertas.data.fake.FakeRecordData
+import pt.fortislibertas.data.fake.FakeTransactionData
 import pt.fortislibertas.data.model.FilterOptions
 import pt.fortislibertas.data.model.TransactionFilter
 import pt.fortislibertas.data.model.TransactionItem

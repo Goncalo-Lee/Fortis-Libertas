@@ -41,7 +41,7 @@ import pt.fortislibertas.core.designsystem.components.colorFromHex
 import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.core.designsystem.theme.FortisTheme
 import pt.fortislibertas.core.designsystem.util.MoneyFormatter
-import pt.fortislibertas.data.local.FakeHomeData
+import pt.fortislibertas.data.fake.FakeHomeData
 import pt.fortislibertas.data.model.HomeSummary
 import pt.fortislibertas.data.model.TransactionItem
 import java.math.BigDecimal

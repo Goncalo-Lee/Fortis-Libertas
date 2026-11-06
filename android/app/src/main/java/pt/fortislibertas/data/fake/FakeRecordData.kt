@@ -1,4 +1,4 @@
-package pt.fortislibertas.data.local
+package pt.fortislibertas.data.fake
 
 import pt.fortislibertas.data.model.Category
 import pt.fortislibertas.data.model.ColorOption

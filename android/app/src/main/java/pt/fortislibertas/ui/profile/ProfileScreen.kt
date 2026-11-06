@@ -59,7 +59,7 @@ import pt.fortislibertas.core.designsystem.components.LoadingContent
 import pt.fortislibertas.core.designsystem.components.UserAvatar
 import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.core.designsystem.util.MoneyFormatter
-import pt.fortislibertas.data.local.FakeData
+import pt.fortislibertas.data.fake.FakeData
 import pt.fortislibertas.data.model.UserProfile
 
 /**

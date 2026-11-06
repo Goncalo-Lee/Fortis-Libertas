@@ -1,7 +1,7 @@
 package pt.fortislibertas.data.repository
 
 import kotlinx.coroutines.delay
-import pt.fortislibertas.data.local.FakeRecordData
+import pt.fortislibertas.data.fake.FakeRecordData
 import pt.fortislibertas.data.model.Category
 import pt.fortislibertas.data.model.InstalmentPlanOption
 import pt.fortislibertas.data.model.NewFinancialRecord
