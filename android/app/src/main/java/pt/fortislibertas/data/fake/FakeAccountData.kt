@@ -5,7 +5,7 @@ import pt.fortislibertas.data.model.UserProfile
 import java.math.BigDecimal
 
 /** Dados de teste do modo local (USE_FAKE_DATA = true). */
-object FakeData {
+object FakeAccountData {
 
     private const val PERSONAL_ID = "0192f0a1-0000-7000-8000-000000000001"
     private const val COMPANY_ID = "0192f0a1-0000-7000-8000-000000000002"

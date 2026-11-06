@@ -3,11 +3,11 @@ package pt.fortislibertas.data.repository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import pt.fortislibertas.data.local.AccountStore
-import pt.fortislibertas.data.fake.FakeData
+import pt.fortislibertas.data.fake.FakeAccountData
 import pt.fortislibertas.data.model.UserProfile
 
 /**
- * Modo local: devolve os dados de FakeData com um pequeno atraso,
+ * Modo local: devolve os dados de FakeAccountData com um pequeno atraso,
  * para veres o estado de carregamento como se fosse a API.
  */
 class FakeProfileRepository(
@@ -17,7 +17,7 @@ class FakeProfileRepository(
     override suspend fun getProfile(): UserProfile {
         delay(400)
         val activeId = accountStore.activeAccountId.first() ?: throw NotSignedInException()
-        return FakeData.profiles[activeId] ?: throw NotSignedInException()
+        return FakeAccountData.profiles[activeId] ?: throw NotSignedInException()
     }
 
     override suspend fun deactivateAccount() = delay(600)

@@ -11,7 +11,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import pt.fortislibertas.BuildConfig
 import pt.fortislibertas.data.local.AccountStore
-import pt.fortislibertas.data.fake.FakeData
+import pt.fortislibertas.data.fake.FakeAccountData
 import pt.fortislibertas.data.remote.AuthInterceptor
 import pt.fortislibertas.data.remote.FortisApi
 import pt.fortislibertas.data.remote.HomeApi
@@ -86,7 +86,7 @@ class AppContainer(context: Context) {
 
     init {
         if (BuildConfig.USE_FAKE_DATA) {
-            appScope.launch { accountStore.seedIfEmpty(FakeData.accounts) }
+            appScope.launch { accountStore.seedIfEmpty(FakeAccountData.accounts) }
         }
     }
 }

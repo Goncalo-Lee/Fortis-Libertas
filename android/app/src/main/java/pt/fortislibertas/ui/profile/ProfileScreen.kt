@@ -59,7 +59,7 @@ import pt.fortislibertas.core.designsystem.components.LoadingContent
 import pt.fortislibertas.core.designsystem.components.UserAvatar
 import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 import pt.fortislibertas.core.designsystem.util.MoneyFormatter
-import pt.fortislibertas.data.fake.FakeData
+import pt.fortislibertas.data.fake.FakeAccountData
 import pt.fortislibertas.data.model.UserProfile
 
 /**
@@ -387,9 +387,9 @@ private fun ProfileContentPreview() {
         ProfileContent(
             state = ProfileUiState(
                 isLoading = false,
-                profile = FakeData.profiles.values.first(),
-                accounts = FakeData.accounts,
-                activeAccountId = FakeData.accounts.first().id,
+                profile = FakeAccountData.profiles.values.first(),
+                accounts = FakeAccountData.accounts,
+                activeAccountId = FakeAccountData.accounts.first().id,
             ),
             contentPadding = PaddingValues(),
             onRetry = {}, onSignIn = {}, onEditProfile = {}, onSwitchAccount = {},
@@ -405,8 +405,8 @@ private fun ProfileContentDarkPreview() {
         ProfileContent(
             state = ProfileUiState(
                 isLoading = false,
-                profile = FakeData.profiles.values.first(),
-                activeAccountId = FakeData.accounts.first().id,
+                profile = FakeAccountData.profiles.values.first(),
+                activeAccountId = FakeAccountData.accounts.first().id,
             ),
             contentPadding = PaddingValues(),
             onRetry = {}, onSignIn = {}, onEditProfile = {}, onSwitchAccount = {},
