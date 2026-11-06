@@ -23,7 +23,7 @@ data class RecordFormState(
     val name: String = "",
     val description: String = "",
     val type: RecordType? = null,
-    val price: String = "",                       // texto: o utilizador pode escrever "12,5"
+    val price: String = "",                       // text: the user may type "12,5"
     val currency: String = "EUR",
     val paymentMethodId: String? = null,
     val paymentDate: LocalDate? = LocalDate.now(),

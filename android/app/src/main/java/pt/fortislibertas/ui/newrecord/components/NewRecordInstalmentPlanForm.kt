@@ -21,8 +21,11 @@ import pt.fortislibertas.core.designsystem.components.DateField
 import pt.fortislibertas.core.designsystem.components.FormActions
 import pt.fortislibertas.core.designsystem.components.FormTextField
 import pt.fortislibertas.core.designsystem.components.SelectField
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
+import pt.fortislibertas.core.designsystem.preview.FortisScreenPreviews
 import pt.fortislibertas.core.designsystem.util.MoneyFormatter
 import pt.fortislibertas.core.designsystem.util.MoneyParser
+import pt.fortislibertas.data.fake.FakeRecordData
 import pt.fortislibertas.data.model.PaymentMethod
 import pt.fortislibertas.data.model.RecordFormOptions
 import pt.fortislibertas.ui.newrecord.FormField
@@ -166,6 +169,23 @@ fun NewRecordInstalmentPlanForm(
             onSave = onSave,
             isSaving = isSaving,
             modifier = Modifier.padding(top = 8.dp),
+        )
+    }
+}
+
+@FortisScreenPreviews
+@Composable
+private fun NewRecordInstalmentPlanFormPreview() {
+    FortisPreviewTheme {
+        NewRecordInstalmentPlanForm(
+            form = InstalmentFormState(name = "Laptop", totalAmount = "999,00", totalInstalments = "12"),
+            options = FakeRecordData.options(),
+            isSaving = false,
+            onUpdate = { _, _ -> },
+            onOpenCategory = {},
+            onOpenTags = {},
+            onCancel = {},
+            onSave = {},
         )
     }
 }

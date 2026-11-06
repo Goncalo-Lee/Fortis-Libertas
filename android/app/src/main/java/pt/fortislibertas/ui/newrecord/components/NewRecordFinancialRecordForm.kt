@@ -23,6 +23,9 @@ import pt.fortislibertas.core.designsystem.components.FormTextField
 import pt.fortislibertas.core.designsystem.components.PickerField
 import pt.fortislibertas.core.designsystem.components.SelectField
 import pt.fortislibertas.core.designsystem.components.colorFromHex
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
+import pt.fortislibertas.core.designsystem.preview.FortisScreenPreviews
+import pt.fortislibertas.data.fake.FakeRecordData
 import pt.fortislibertas.data.model.Category
 import pt.fortislibertas.data.model.InstalmentPlanOption
 import pt.fortislibertas.data.model.PaymentMethod
@@ -210,4 +213,21 @@ fun NewRecordTagsField(
         onClick = onClick,
         modifier = modifier,
     )
+}
+
+@FortisScreenPreviews
+@Composable
+private fun NewRecordFinancialRecordFormPreview() {
+    FortisPreviewTheme {
+        NewRecordFinancialRecordForm(
+            form = RecordFormState(name = "Lunch", price = "12,50"),
+            options = FakeRecordData.options(),
+            isSaving = false,
+            onUpdate = { _, _ -> },
+            onOpenCategory = {},
+            onOpenTags = {},
+            onCancel = {},
+            onSave = {},
+        )
+    }
 }

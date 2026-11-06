@@ -43,6 +43,9 @@ import pt.fortislibertas.core.designsystem.components.BlurDialog
 import pt.fortislibertas.core.designsystem.components.ColorDot
 import pt.fortislibertas.core.designsystem.components.SearchField
 import pt.fortislibertas.core.designsystem.components.colorFromHex
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
+import pt.fortislibertas.data.fake.FakeRecordData
 import pt.fortislibertas.data.model.Category
 import pt.fortislibertas.data.model.ColorOption
 import pt.fortislibertas.data.model.RecordType
@@ -191,5 +194,23 @@ fun NewRecordCategoryPickerDialog(
                 }
             }
         }
+    }
+}
+
+@FortisPreviews
+@Composable
+private fun NewRecordCategoryPickerDialogPreview() {
+    val options = FakeRecordData.options()
+    FortisPreviewTheme {
+        NewRecordCategoryPickerDialog(
+            categories = options.categories,
+            colors = options.colors,
+            selectedId = options.categories.first().id,
+            type = null,
+            isCreating = false,
+            onSelect = {},
+            onCreate = { _, _ -> },
+            onDismiss = {},
+        )
     }
 }
