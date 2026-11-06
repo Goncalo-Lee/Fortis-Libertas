@@ -8,8 +8,8 @@ import retrofit2.http.Query
 interface TransactionApi {
 
     /**
-     * Lista filtrada. Os parâmetros a null não são enviados.
-     * Listas vão separadas por vírgulas: categoryIds=a,b,c
+     * Filtered list. Null parameters are not sent.
+     * Lists are comma-separated: categoryIds=a,b,c
      */
     @GET("api/v1/records")
     suspend fun getRecords(

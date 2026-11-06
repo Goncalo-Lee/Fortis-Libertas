@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
-/** Estados genéricos reutilizáveis em qualquer ecrã: a carregar, erro e vazio. */
+/** Generic states reusable in any screen: loading, error and empty. */
 
 @Composable
 fun LoadingContent(modifier: Modifier = Modifier) {

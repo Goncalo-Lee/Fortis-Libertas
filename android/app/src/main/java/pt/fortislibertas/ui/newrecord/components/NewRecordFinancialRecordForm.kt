@@ -35,7 +35,7 @@ import pt.fortislibertas.ui.newrecord.RecordFormState
 import pt.fortislibertas.ui.newrecord.label
 import pt.fortislibertas.ui.newrecord.messageFor
 
-/** Formulário "Novo registo financeiro" (imagem 2 do wireframe). */
+/** "New financial record" form (wireframe image 2). */
 @Composable
 fun NewRecordFinancialRecordForm(
     form: RecordFormState,
@@ -91,7 +91,7 @@ fun NewRecordFinancialRecordForm(
             errorText = form.errors.messageFor(FormField.Type),
         )
 
-        // Valor + Moeda
+        // Amount + Currency
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             FormTextField(
                 label = stringResource(R.string.field_price),
@@ -121,7 +121,7 @@ fun NewRecordFinancialRecordForm(
             placeholder = none,
         )
 
-        // Data + Estado
+        // Date + Status
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             DateField(
                 label = stringResource(R.string.field_payment_date),
@@ -142,7 +142,7 @@ fun NewRecordFinancialRecordForm(
             )
         }
 
-        // Categoria + Tags
+        // Category + Tags
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             NewRecordCategoryField(
                 category = category,
@@ -177,7 +177,7 @@ fun NewRecordFinancialRecordForm(
     }
 }
 
-/** Campo Categoria: mostra a bolinha de cor + nome, ou "Escolher". */
+/** Category field: shows the colour dot + name, or "Choose". */
 @Composable
 fun NewRecordCategoryField(
     category: Category?,
@@ -196,7 +196,7 @@ fun NewRecordCategoryField(
     )
 }
 
-/** Campo Tags: mostra "3 tags" ou "Adicionar". */
+/** Tags field: shows "3 tags" or "Add". */
 @Composable
 fun NewRecordTagsField(
     count: Int,

@@ -9,7 +9,7 @@ object MoneyFormatter {
 
     private val locale: Locale = Locale.forLanguageTag("pt-PT")
 
-    /** 1250.4 → "1250,40 €" (formato português). */
+    /** 1250.4 → "1250,40 €" (Portuguese format). */
     fun format(value: BigDecimal, currencyCode: String = "EUR"): String {
         val formatter = NumberFormat.getCurrencyInstance(locale)
         formatter.currency = Currency.getInstance(currencyCode)

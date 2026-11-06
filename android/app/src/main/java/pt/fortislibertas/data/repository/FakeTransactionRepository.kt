@@ -8,7 +8,7 @@ import pt.fortislibertas.data.model.TransactionFilter
 import pt.fortislibertas.data.model.TransactionItem
 import java.math.BigDecimal
 
-/** Modo local: filtra a lista de teste em memória, como faria o servidor. */
+/** Local mode: filters the test list in memory, like the server would. */
 class FakeTransactionRepository : TransactionRepository {
 
     override suspend fun getTransactions(filter: TransactionFilter): List<TransactionItem> {

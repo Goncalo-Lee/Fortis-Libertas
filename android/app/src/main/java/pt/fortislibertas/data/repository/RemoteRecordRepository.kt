@@ -15,7 +15,7 @@ import pt.fortislibertas.data.remote.dto.CreateTagRequest
 import retrofit2.HttpException
 import java.io.IOException
 
-/** Modo API: envia os formulários para o Next.js com o token Bearer. */
+/** API mode: sends the forms to Next.js with the Bearer token. */
 class RemoteRecordRepository(
     private val api: RecordApi,
 ) : RecordRepository {

@@ -6,12 +6,12 @@ import java.math.BigDecimal
 import java.time.LocalDate
 
 /**
- * Transações de teste. Usam as categorias e tags de FakeRecordData,
- * para os filtros do diálogo baterem certo com a lista.
+ * Test transactions. They use the categories and tags from FakeRecordData,
+ * so the dialog filters match the list.
  */
 object FakeTransactionData {
 
-    /** A transação + o que é preciso para filtrar (não aparece na UI). */
+    /** The transaction + what is needed to filter it (not shown in the UI). */
     data class Entry(
         val item: TransactionItem,
         val categoryId: String,

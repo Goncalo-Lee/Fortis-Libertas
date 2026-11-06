@@ -4,7 +4,7 @@ import androidx.annotation.StringRes
 import pt.fortislibertas.data.model.SavedAccount
 import pt.fortislibertas.data.model.UserProfile
 
-/** Tudo o que o ecrã precisa para se desenhar. */
+/** Everything the screen needs to draw itself. */
 data class ProfileUiState(
     val isLoading: Boolean = true,
     val profile: UserProfile? = null,
@@ -13,13 +13,13 @@ data class ProfileUiState(
     val activeAccountId: String? = null,
     val showAccountSwitcher: Boolean = false,
     val dialog: ProfileDialog? = null,
-    val isWorking: Boolean = false,            // pedido de sair/desativar/apagar a correr
+    val isWorking: Boolean = false,            // sign out/deactivate/delete request running
 )
 
-/** Qual diálogo de confirmação está aberto. */
+/** Which confirmation dialog is open. */
 enum class ProfileDialog { SignOut, Deactivate, Delete }
 
-/** Acontecimentos que só acontecem uma vez (navegar, mostrar mensagem). */
+/** Things that happen only once (navigate, show a message). */
 sealed interface ProfileEvent {
     data object NavigateToSignIn : ProfileEvent
     data class ShowMessage(@StringRes val messageRes: Int) : ProfileEvent

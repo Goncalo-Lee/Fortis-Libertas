@@ -5,9 +5,9 @@ import pt.fortislibertas.data.model.UserProfile
 import java.math.BigDecimal
 
 /**
- * JSON de GET /api/v1/me.
- * Os valores em dinheiro vêm como String: o Drizzle devolve as colunas
- * decimal(10,2) do MySQL como texto, para não perder precisão.
+ * JSON from GET /api/v1/me.
+ * Money values come as String: Drizzle returns MySQL decimal(10,2)
+ * columns as text, so no precision is lost.
  */
 @Serializable
 data class ProfileDto(

@@ -7,7 +7,7 @@ import pt.fortislibertas.data.remote.TransactionApi
 import retrofit2.HttpException
 import java.io.IOException
 
-/** Modo API: o servidor filtra; a app só envia os parâmetros. */
+/** API mode: the server filters; the app only sends the parameters. */
 class RemoteTransactionRepository(
     private val api: TransactionApi,
 ) : TransactionRepository {

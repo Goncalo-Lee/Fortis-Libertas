@@ -32,7 +32,7 @@ class HomeViewModel(
     private var currentAccountId: String? = null
 
     init {
-        // Acompanha a conta ativa: nome/foto no topo e recarrega ao trocar de conta
+        // Follows the active account: name/photo on top and reload when switching account
         viewModelScope.launch {
             combine(accountStore.accounts, accountStore.activeAccountId) { accounts, activeId ->
                 accounts.firstOrNull { it.id == activeId }
@@ -50,7 +50,7 @@ class HomeViewModel(
                     _state.update { it.copy(isLoading = false, summary = null) }
                 } else if (account.id != currentAccountId) {
                     currentAccountId = account.id
-                    _state.update { it.copy(summary = null) }   // não mostra dados da conta anterior
+                    _state.update { it.copy(summary = null) }   // do not show the previous account's data
                     refresh()
                 }
             }
@@ -58,8 +58,8 @@ class HomeViewModel(
     }
 
     /**
-     * Carrega o Home. Se já houver dados no ecrã, atualiza sem mostrar
-     * o indicador de carregamento (os dados antigos ficam até chegarem os novos).
+     * Loads the Home. If there is already data on screen, refreshes without showing
+     * the loading indicator (the old data stays until the new data arrives).
      */
     fun refresh() {
         if (currentAccountId == null) return
@@ -73,7 +73,7 @@ class HomeViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                // Numa atualização silenciosa, mantém os dados antigos e não mostra erro
+                // On a silent refresh, keep the old data and do not show an error
                 if (!silent) {
                     _state.update { it.copy(isLoading = false, errorMessage = e.toMessageRes()) }
                 }
@@ -81,7 +81,7 @@ class HomeViewModel(
         }
     }
 
-    /** Chamado sempre que o separador Home volta a aparecer. */
+    /** Called every time the Home tab shows up again. */
     fun onScreenShown() {
         if (_state.value.summary != null) refresh()
     }

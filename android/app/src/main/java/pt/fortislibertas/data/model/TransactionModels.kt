@@ -2,7 +2,7 @@ package pt.fortislibertas.data.model
 
 import java.math.BigDecimal
 
-/** Tudo o que restringe a lista de transações. Vazio = mostra tudo. */
+/** Everything that narrows the transaction list. Empty = show everything. */
 data class TransactionFilter(
     val query: String = "",
     val type: RecordType? = null,
@@ -11,7 +11,7 @@ data class TransactionFilter(
     val minAmount: BigDecimal? = null,
     val maxAmount: BigDecimal? = null,
 ) {
-    /** Quantos filtros do diálogo estão ativos (para o número no botão). */
+    /** How many dialog filters are active (for the number on the button). */
     val activeCount: Int
         get() = listOf(
             categoryIds.isNotEmpty(),
@@ -20,9 +20,9 @@ data class TransactionFilter(
         ).count { it }
 }
 
-/** O que o diálogo de filtros precisa para se desenhar. */
+/** What the filter dialog needs to draw itself. */
 data class FilterOptions(
     val categories: List<Category>,
     val tags: List<Tag>,
-    val maxAmount: BigDecimal,         // valor mais alto entre as transações (fim do slider)
+    val maxAmount: BigDecimal,         // highest amount among the transactions (end of the slider)
 )

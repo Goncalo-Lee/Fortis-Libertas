@@ -8,7 +8,7 @@ import pt.fortislibertas.data.model.RecordFormOptions
 import pt.fortislibertas.data.model.RecordType
 import pt.fortislibertas.data.model.Tag
 
-/** Dados de teste dos formulários do Register (modo local). */
+/** Test data for the Register forms (local mode). */
 object FakeRecordData {
 
     val colors = listOf(

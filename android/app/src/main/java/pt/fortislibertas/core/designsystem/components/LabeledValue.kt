@@ -7,7 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 
-/** Rótulo pequeno em azul com o valor por baixo ("Account Balance / 200 €"). */
+/** Small blue label with the value below ("Account Balance / 200 €"). */
 @Composable
 fun LabeledValue(
     label: String,
@@ -22,7 +22,7 @@ fun LabeledValue(
         )
         Text(
             text = value,
-            // tnum: algarismos com a mesma largura, os valores ficam alinhados
+            // tnum: digits with the same width, so the values line up
             style = MaterialTheme.typography.titleMedium.copy(
                 fontWeight = FontWeight.SemiBold,
                 fontFeatureSettings = "tnum",

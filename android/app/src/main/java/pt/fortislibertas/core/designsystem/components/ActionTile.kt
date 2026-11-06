@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import pt.fortislibertas.core.designsystem.theme.CuriousBlue
 import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 
-/** Cartão quadrado grande com ícone e texto (os "+" do ecrã Register). */
+/** Big square card with an icon and text (the "+" tiles of the Register screen). */
 @Composable
 fun ActionTile(
     icon: ImageVector,

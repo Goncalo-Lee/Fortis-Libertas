@@ -35,15 +35,15 @@ import kotlin.math.floor
 import kotlin.math.log10
 import kotlin.math.pow
 
-/** Um grupo do gráfico: o rótulo por baixo e os dois valores. */
+/** One chart group: the label below and the two values. */
 data class BarGroup(val label: String, val income: Float, val expense: Float)
 
 private val LabelHeight = 24.dp
 
 /**
- * Gráfico de barras agrupadas (despesa + receita por dia), feito só com
- * Box e Row: sem biblioteca, sem Canvas. Cada barra é uma Box cuja altura
- * é uma fração da altura disponível (valor ÷ máximo).
+ * Grouped bar chart (expense + income per day), built only with
+ * Box and Row: no library, no Canvas. Each bar is a Box whose height
+ * is a fraction of the available height (value ÷ max).
  */
 @Composable
 fun GroupedBarChart(
@@ -59,7 +59,7 @@ fun GroupedBarChart(
     val max = niceMax(rawMax)
     val lineColor = MaterialTheme.colorScheme.outline
 
-    // As barras crescem desde 0 na primeira vez que o gráfico aparece
+    // The bars grow from 0 the first time the chart appears
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { visible = true }
 
@@ -67,10 +67,10 @@ fun GroupedBarChart(
         modifier = modifier
             .fillMaxWidth()
             .height(chartHeight)
-            // O TalkBack lê um resumo em vez de 14 barras soltas
+            // TalkBack reads a summary instead of 14 separate bars
             .clearAndSetSemantics { this.contentDescription = contentDescription },
     ) {
-        // Eixo Y: máximo, metade, zero
+        // Y axis: max, half, zero
         Column(
             modifier = Modifier
                 .fillMaxHeight()
@@ -98,7 +98,7 @@ fun GroupedBarChart(
                             .weight(1f)
                             .fillMaxWidth()
                             .drawBehind {
-                                // Linha de base por baixo das barras
+                                // Baseline under the bars
                                 drawLine(
                                     color = lineColor,
                                     start = Offset(0f, size.height),
@@ -142,7 +142,7 @@ private fun Bar(fraction: Float, color: Color) {
 }
 
 /**
- * Arredonda o máximo para um valor "bonito" no eixo:
+ * Rounds the max up to a "nice" axis value:
  * 88 → 100 · 112 → 200 · 1 250 → 2 000 · 0 → 100
  */
 private fun niceMax(value: Float): Float {

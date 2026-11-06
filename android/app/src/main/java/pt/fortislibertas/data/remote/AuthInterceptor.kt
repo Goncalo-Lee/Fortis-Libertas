@@ -6,11 +6,11 @@ import okhttp3.Response
 import pt.fortislibertas.data.local.AccountStore
 
 /**
- * Mete o token da conta ativa em todos os pedidos:
+ * Adds the active account's token to every request:
  *   Authorization: Bearer <token>
  *
- * O OkHttp corre os interceptors numa thread de rede, por isso o
- * runBlocking aqui não bloqueia a UI.
+ * OkHttp runs interceptors on a network thread, so the
+ * runBlocking here does not block the UI.
  */
 class AuthInterceptor(private val accountStore: AccountStore) : Interceptor {
 
@@ -23,7 +23,7 @@ class AuthInterceptor(private val accountStore: AccountStore) : Interceptor {
 
         val response = chain.proceed(request)
 
-        // Plugin bearer do Better Auth: se a sessão for renovada, o token novo vem neste header
+        // Better Auth bearer plugin: if the session is renewed, the new token comes in this header
         response.header("set-auth-token")?.let { newToken ->
             runBlocking { accountStore.updateActiveToken(newToken) }
         }

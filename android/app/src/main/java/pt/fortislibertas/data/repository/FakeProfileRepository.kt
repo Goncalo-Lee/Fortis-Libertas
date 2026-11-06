@@ -7,8 +7,8 @@ import pt.fortislibertas.data.fake.FakeAccountData
 import pt.fortislibertas.data.model.UserProfile
 
 /**
- * Modo local: devolve os dados de FakeAccountData com um pequeno atraso,
- * para veres o estado de carregamento como se fosse a API.
+ * Local mode: returns the data from FakeAccountData with a small delay,
+ * so you can see the loading state as if it were the API.
  */
 class FakeProfileRepository(
     private val accountStore: AccountStore,

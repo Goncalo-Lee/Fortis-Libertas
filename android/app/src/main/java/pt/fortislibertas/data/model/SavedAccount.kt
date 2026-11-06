@@ -3,8 +3,8 @@ package pt.fortislibertas.data.model
 import kotlinx.serialization.Serializable
 
 /**
- * Conta guardada no dispositivo, para poder trocar de conta sem novo login.
- * O token Bearer de cada conta fica aqui; nunca é mostrado na UI.
+ * Account saved on the device, to switch accounts without signing in again.
+ * Each account's Bearer token lives here; it is never shown in the UI.
  */
 @Serializable
 data class SavedAccount(

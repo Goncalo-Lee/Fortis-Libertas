@@ -18,8 +18,8 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 
 /**
- * Foto de perfil redonda. Mostra sempre as iniciais por baixo:
- * se não houver foto, ou se falhar o download, ficam as iniciais à vista.
+ * Round profile photo. The initials are always drawn underneath:
+ * if there is no photo, or the download fails, the initials stay visible.
  */
 @Composable
 fun UserAvatar(

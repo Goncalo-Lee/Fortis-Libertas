@@ -5,9 +5,9 @@ import java.math.BigDecimal
 object MoneyParser {
 
     /**
-     * Converte o que o utilizador escreveu num valor.
-     * Aceita vírgula ou ponto: "12,5" e "12.50" → 12.50
-     * Devolve null se não for um número ou tiver mais de 2 casas decimais.
+     * Turns what the user typed into an amount.
+     * Accepts comma or dot: "12,5" and "12.50" → 12.50
+     * Returns null if it is not a number or has more than 2 decimals.
      */
     fun parse(input: String): BigDecimal? {
         val normalized = input.trim().replace(" ", "").replace(',', '.')

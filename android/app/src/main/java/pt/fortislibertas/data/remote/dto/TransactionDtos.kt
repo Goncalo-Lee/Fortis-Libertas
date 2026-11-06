@@ -4,11 +4,11 @@ import kotlinx.serialization.Serializable
 import pt.fortislibertas.data.model.FilterOptions
 import java.math.BigDecimal
 
-/** Resposta de GET /api/v1/records (reutiliza o TransactionDto do Home). */
+/** Response of GET /api/v1/records (reuses the Home TransactionDto). */
 @Serializable
 data class TransactionListDto(val items: List<TransactionDto>)
 
-/** Resposta de GET /api/v1/records/filter-options. */
+/** Response of GET /api/v1/records/filter-options. */
 @Serializable
 data class FilterOptionsDto(
     val categories: List<CategoryDto>,

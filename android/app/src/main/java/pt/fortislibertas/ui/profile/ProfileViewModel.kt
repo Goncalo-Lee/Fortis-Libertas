@@ -38,7 +38,7 @@ class ProfileViewModel(
     private var loadJob: Job? = null
 
     init {
-        // Sempre que a lista de contas ou a conta ativa mudar, o ecrã acompanha
+        // Whenever the account list or the active account changes, the screen follows
         viewModelScope.launch {
             combine(accountStore.accounts, accountStore.activeAccountId) { accounts, activeId ->
                 accounts to activeId
@@ -64,7 +64,7 @@ class ProfileViewModel(
             try {
                 val profile = repository.getProfile()
                 _state.update { it.copy(isLoading = false, profile = profile) }
-                accountStore.updateDetails(profile)   // mantém o seletor de contas atualizado
+                accountStore.updateDetails(profile)   // keeps the account switcher up to date
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -73,7 +73,7 @@ class ProfileViewModel(
         }
     }
 
-    // ── Trocar de conta ────────────────────────────────────
+    // ── Switch account ──────────────────────────────────
 
     fun openAccountSwitcher() = _state.update { it.copy(showAccountSwitcher = true) }
 
@@ -83,7 +83,7 @@ class ProfileViewModel(
         _state.update { it.copy(showAccountSwitcher = false) }
         if (accountId == _state.value.activeAccountId) return
         viewModelScope.launch {
-            _state.update { it.copy(profile = null) }   // evita mostrar os dados da conta anterior
+            _state.update { it.copy(profile = null) }   // avoids showing the previous account's data
             accountStore.switchTo(accountId)
         }
     }
@@ -93,12 +93,12 @@ class ProfileViewModel(
         viewModelScope.launch { _events.send(ProfileEvent.NavigateToSignIn) }
     }
 
-    // ── Sair / desativar / apagar ─────────────────────────
+    // ── Sign out / deactivate / delete ──────────────────
 
     fun openDialog(dialog: ProfileDialog) = _state.update { it.copy(dialog = dialog) }
 
     fun closeDialog() {
-        if (_state.value.isWorking) return   // não fecha a meio do pedido
+        if (_state.value.isWorking) return   // does not close in the middle of the request
         _state.update { it.copy(dialog = null) }
     }
 
@@ -134,7 +134,7 @@ class ProfileViewModel(
         }
     }
 
-    /** Remove a conta do dispositivo. Se não sobrar nenhuma, vai para o login. */
+    /** Removes the account from the device. If none is left, goes to sign in. */
     private suspend fun leaveActiveAccount(@StringRes message: Int) {
         val activeId = _state.value.activeAccountId ?: return
         _state.update { it.copy(profile = null) }

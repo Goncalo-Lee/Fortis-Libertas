@@ -34,10 +34,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Secção com título e seta que abre/fecha o conteúdo.
+ * Section with a title and an arrow that opens/closes the content.
  *
- * - [selectedCount] mostra um número ao lado do título (útil quando está fechada)
- * - [maxContentHeight] limita a altura; o resto faz scroll dentro da secção
+ * - [selectedCount] shows a number next to the title (useful when it is closed)
+ * - [maxContentHeight] limits the height; the rest scrolls inside the section
  */
 @Composable
 fun CollapsibleSection(

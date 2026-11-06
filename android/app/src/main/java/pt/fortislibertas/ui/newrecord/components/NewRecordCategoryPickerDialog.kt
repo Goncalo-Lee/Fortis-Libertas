@@ -48,9 +48,9 @@ import pt.fortislibertas.data.model.ColorOption
 import pt.fortislibertas.data.model.RecordType
 
 /**
- * Seletor de categoria, com o mesmo estilo do seletor de tags.
- * Diferenças: escolhe só UMA (tocar escolhe e fecha) e a categoria nova
- * precisa de cor e herda o tipo do formulário.
+ * Category picker, with the same style as the tag picker.
+ * Differences: picks only ONE (tapping picks and closes) and a new category
+ * needs a colour and inherits the form type.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -69,7 +69,7 @@ fun NewRecordCategoryPickerDialog(
     var newName by rememberSaveable { mutableStateOf("") }
     var newColorKey by rememberSaveable { mutableStateOf(colors.firstOrNull()?.key.orEmpty()) }
 
-    // Só mostra as categorias do tipo escolhido (se ainda não há tipo, mostra todas)
+    // Only shows the categories of the chosen type (if there is no type yet, shows all)
     val visible = categories
         .filter { type == null || it.type == type }
         .filter { query.isBlank() || it.name.contains(query.trim(), ignoreCase = true) }
@@ -135,7 +135,7 @@ fun NewRecordCategoryPickerDialog(
                 Text(stringResource(R.string.action_new_category))
             }
         } else if (type == null) {
-            // Sem tipo não se sabe se é despesa, receita ou investimento
+            // Without a type we do not know if it is an expense, income or investment
             Text(
                 text = stringResource(R.string.category_choose_type_first),
                 style = MaterialTheme.typography.bodyMedium,

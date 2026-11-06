@@ -13,8 +13,8 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 
 /**
- * Endpoints do Register. O token Bearer vem do AuthInterceptor.
- * O servidor usa o dashboard ativo do utilizador (ver nota no SETUP).
+ * Register endpoints. The Bearer token comes from AuthInterceptor.
+ * The server uses the user's active dashboard (see the note in SETUP).
  */
 interface RecordApi {
 

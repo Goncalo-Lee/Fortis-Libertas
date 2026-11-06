@@ -6,23 +6,23 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 
 /**
- * Endpoints da API Next.js. O header "Authorization: Bearer <token>"
- * é acrescentado pelo AuthInterceptor, por isso não aparece aqui.
+ * Next.js API endpoints. The "Authorization: Bearer <token>" header
+ * is added by AuthInterceptor, so it does not appear here.
  */
 interface FortisApi {
 
     @GET("api/v1/me")
     suspend fun getMe(): ProfileDto
 
-    /** Suspende a conta (preenche suspended_at). */
+    /** Suspends the account (fills suspended_at). */
     @POST("api/v1/me/deactivate")
     suspend fun deactivateMe()
 
-    /** Soft delete (preenche deleted_at; recuperável durante 30 dias). */
+    /** Soft delete (fills deleted_at; recoverable for 30 days). */
     @DELETE("api/v1/me")
     suspend fun deleteMe()
 
-    /** Endpoint do Better Auth: invalida a sessão do token atual. */
+    /** Better Auth endpoint: invalidates the session of the current token. */
     @POST("api/auth/sign-out")
     suspend fun signOut()
 }

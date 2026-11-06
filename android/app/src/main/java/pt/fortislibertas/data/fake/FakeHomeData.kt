@@ -11,15 +11,15 @@ import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
 
 /**
- * Dados de teste do Home. As datas são calculadas a partir de hoje,
- * por isso "Hoje" e "Ontem" aparecem sempre certos.
+ * Home test data. Dates are calculated from today,
+ * so "Today" and "Yesterday" are always right.
  */
 object FakeHomeData {
 
     fun build(today: LocalDate = LocalDate.now()): HomeSummary {
         val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
 
-        // (receitas, despesas) de segunda a domingo
+        // (income, expenses) from Monday to Sunday
         val amounts = listOf(
             "0" to "42.30",
             "50.00" to "18.90",
@@ -31,7 +31,7 @@ object FakeHomeData {
         )
         val week = amounts.mapIndexed { i, (income, expense) ->
             val date = monday.plusDays(i.toLong())
-            // Dias que ainda não chegaram ficam a zero
+            // Days that have not come yet stay at zero
             if (date.isAfter(today)) DayTotals(date, BigDecimal.ZERO, BigDecimal.ZERO)
             else DayTotals(date, BigDecimal(income), BigDecimal(expense))
         }

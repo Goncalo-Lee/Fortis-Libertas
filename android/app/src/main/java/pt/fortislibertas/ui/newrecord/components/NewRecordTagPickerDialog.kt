@@ -48,9 +48,9 @@ import pt.fortislibertas.data.model.Category
 import pt.fortislibertas.data.model.Tag
 
 /**
- * Seletor de tags (imagem 4 do wireframe).
- * A escolha só é aplicada ao carregar em "Aplicar".
- * Tocar fora, ou no botão de voltar, fecha sem alterar nada.
+ * Tag picker (wireframe image 4).
+ * The choice is only applied after tapping "Apply".
+ * Tapping outside, or the back button, closes without changing anything.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -63,10 +63,10 @@ fun NewRecordTagPickerDialog(
     onApply: (Set<String>) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    // Seleção "rascunho": só passa para o formulário no Aplicar
+    // "Draft" selection: only reaches the form on Apply
     var selection by remember { mutableStateOf(initialSelection) }
     var query by rememberSaveable { mutableStateOf("") }
-    var newTagName by rememberSaveable { mutableStateOf<String?>(null) }  // null = não está a criar
+    var newTagName by rememberSaveable { mutableStateOf<String?>(null) }  // null = not creating
 
     val filtered = tags.filter { query.isBlank() || it.name.contains(query.trim(), ignoreCase = true) }
     val related = if (category == null) emptyList() else filtered.filter { category.id in it.categoryIds }
@@ -85,7 +85,7 @@ fun NewRecordTagPickerDialog(
             placeholder = stringResource(R.string.search),
         )
 
-        // Zona com scroll: com muitas tags, os botões ficam sempre visíveis
+        // Scrolling area: with many tags, the buttons are always visible
         Column(
             modifier = Modifier
                 .padding(vertical = 12.dp)
@@ -124,7 +124,7 @@ fun NewRecordTagPickerDialog(
             }
         }
 
-        // Criar tag nova (aparece ao carregar em "Nova tag")
+        // Create a new tag (shows after tapping "New tag")
         newTagName?.let { name ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -164,14 +164,14 @@ fun NewRecordTagPickerDialog(
         )
         Spacer(Modifier.size(8.dp))
 
-        // Os 3 botões do wireframe numa linha que cabe num telemóvel estreito:
-        // Nova tag à esquerda; Limpar e Aplicar à direita
+        // The 3 wireframe buttons in one row that fits a narrow phone:
+        // New tag on the left; Clear and Apply on the right
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             TextButton(
-                onClick = { newTagName = query.trim() },   // aproveita o que já foi pesquisado
+                onClick = { newTagName = query.trim() },   // reuses what was already searched
                 contentPadding = ButtonDefaults.TextButtonWithIconContentPadding,
             ) {
                 Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))

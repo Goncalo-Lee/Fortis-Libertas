@@ -6,7 +6,7 @@ import pt.fortislibertas.R
 import pt.fortislibertas.data.model.RecordStatus
 import pt.fortislibertas.data.model.RecordType
 
-/** Textos traduzidos para os enums (a API manda "expense", a UI mostra "Despesa"). */
+/** Translated texts for the enums (the API sends "expense", the UI shows "Despesa"). */
 
 @Composable
 fun RecordType.label(): String = stringResource(
@@ -25,7 +25,7 @@ fun RecordStatus.label(): String = stringResource(
     },
 )
 
-/** Mensagem de erro de um campo, ou null se o campo estiver bem. */
+/** Error message of a field, or null if the field is fine. */
 @Composable
 fun Map<FormField, Int>.messageFor(field: FormField): String? =
     this[field]?.let { stringResource(it) }

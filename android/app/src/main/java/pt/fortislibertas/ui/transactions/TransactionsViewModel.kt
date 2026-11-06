@@ -36,11 +36,11 @@ class TransactionsViewModel(
     private val _state = MutableStateFlow(TransactionsUiState())
     val state: StateFlow<TransactionsUiState> = _state.asStateFlow()
 
-    /** Aumentar este número força um novo pedido com o mesmo filtro. */
+    /** Increasing this number forces a new request with the same filter. */
     private val refreshTick = MutableStateFlow(0)
 
     init {
-        // Nome e foto da conta ativa para o cabeçalho
+        // Name and photo of the active account for the header
         viewModelScope.launch {
             combine(accountStore.accounts, accountStore.activeAccountId) { accounts, activeId ->
                 accounts.firstOrNull { it.id == activeId }
@@ -49,9 +49,9 @@ class TransactionsViewModel(
             }
         }
 
-        // Sempre que o filtro, a conta ou o refresh mudam → novo pedido.
-        // debounce: ao escrever na pesquisa, espera 300 ms de pausa antes de pedir.
-        // collectLatest: se chegar um filtro novo, cancela o pedido anterior.
+        // Whenever the filter, the account or the refresh changes → new request.
+        // debounce: while typing in the search, waits for a 300 ms pause before requesting.
+        // collectLatest: if a new filter arrives, cancels the previous request.
         viewModelScope.launch {
             combine(
                 _state.map { it.filter }.distinctUntilChanged().debounce(300),
@@ -90,12 +90,12 @@ class TransactionsViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                // Sem opções o diálogo mostra "a carregar"; tenta outra vez ao abrir
+                // Without options the dialog shows "loading"; tries again when opened
             }
         }
     }
 
-    // ── Ações do ecrã ───────────────────────────────────
+    // ── Screen actions ──────────────────────────────────
 
     fun onQueryChange(query: String) =
         _state.update { it.copy(filter = it.filter.copy(query = query)) }
@@ -131,7 +131,7 @@ class TransactionsViewModel(
 
     fun retry() = refreshTick.update { it + 1 }
 
-    /** Ao voltar ao separador: atualiza a lista e as opções (categorias/tags novas). */
+    /** When coming back to the tab: refreshes the list and the options (new categories/tags). */
     fun onScreenShown() {
         if (!_state.value.hasLoaded) return
         refreshTick.update { it + 1 }

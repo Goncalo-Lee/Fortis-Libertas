@@ -15,15 +15,15 @@ import kotlinx.serialization.json.Json
 import pt.fortislibertas.data.model.SavedAccount
 import pt.fortislibertas.data.model.UserProfile
 
-// Tem de ser top-level: cria UM DataStore para toda a app
+// Must be top-level: creates ONE DataStore for the whole app
 private val Context.accountsDataStore: DataStore<Preferences> by preferencesDataStore(name = "accounts")
 
 /**
- * Guarda as contas com sessão iniciada neste dispositivo e qual está ativa.
- * Funciona igual nos modos local (fake) e API.
+ * Stores the signed-in accounts on this device and which one is active.
+ * Works the same in local (fake) and API modes.
  *
- * Nota de segurança: na v1 os tokens ficam no DataStore (privado da app).
- * Numa versão futura, cifra-os com o Android Keystore.
+ * Security note: in v1 the tokens stay in DataStore (private to the app).
+ * In a future version, encrypt them with the Android Keystore.
  */
 class AccountStore(context: Context) {
 
@@ -44,14 +44,14 @@ class AccountStore(context: Context) {
         .map { prefs -> prefs[Keys.ACTIVE_ID] }
         .distinctUntilChanged()
 
-    /** Token da conta ativa (usado pelo AuthInterceptor). */
+    /** Token of the active account (used by AuthInterceptor). */
     suspend fun activeToken(): String? {
         val prefs = dataStore.data.first()
         val activeId = prefs[Keys.ACTIVE_ID] ?: return null
         return decode(prefs[Keys.ACCOUNTS]).firstOrNull { it.id == activeId }?.token
     }
 
-    /** Guarda (ou substitui) uma conta, por exemplo depois do login. */
+    /** Saves (or replaces) an account, for example after sign in. */
     suspend fun save(account: SavedAccount, makeActive: Boolean = true) {
         dataStore.edit { prefs ->
             val list = decode(prefs[Keys.ACCOUNTS]).filterNot { it.id == account.id } + account
@@ -60,7 +60,7 @@ class AccountStore(context: Context) {
         }
     }
 
-    /** Só para o modo local: cria contas de teste se ainda não houver nenhuma. */
+    /** Local mode only: creates test accounts if there are none yet. */
     suspend fun seedIfEmpty(seed: List<SavedAccount>) {
         dataStore.edit { prefs ->
             if (decode(prefs[Keys.ACCOUNTS]).isEmpty() && seed.isNotEmpty()) {
@@ -78,7 +78,7 @@ class AccountStore(context: Context) {
         }
     }
 
-    /** Remove a conta. Se era a ativa, passa para a seguinte (ou nenhuma). */
+    /** Removes the account. If it was the active one, switches to the next (or none). */
     suspend fun remove(accountId: String) {
         dataStore.edit { prefs ->
             val list = decode(prefs[Keys.ACCOUNTS]).filterNot { it.id == accountId }
@@ -90,7 +90,7 @@ class AccountStore(context: Context) {
         }
     }
 
-    /** Atualiza nome/email/foto guardados com os dados mais recentes do perfil. */
+    /** Updates the saved name/email/photo with the latest profile data. */
     suspend fun updateDetails(profile: UserProfile) {
         dataStore.edit { prefs ->
             val list = decode(prefs[Keys.ACCOUNTS]).map {
@@ -102,7 +102,7 @@ class AccountStore(context: Context) {
         }
     }
 
-    /** O Better Auth pode enviar um token novo no header "set-auth-token". */
+    /** Better Auth may send a new token in the "set-auth-token" header. */
     suspend fun updateActiveToken(newToken: String) {
         dataStore.edit { prefs ->
             val activeId = prefs[Keys.ACTIVE_ID] ?: return@edit

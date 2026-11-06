@@ -28,8 +28,8 @@ import androidx.compose.ui.unit.dp
 import pt.fortislibertas.data.model.SavedAccount
 
 /**
- * Painel que sobe de baixo com as contas guardadas.
- * Toca numa conta para trocar; "Adicionar conta" leva ao login.
+ * Sheet that slides up from the bottom with the saved accounts.
+ * Tap an account to switch; "Add account" goes to sign in.
  */
 
 @OptIn(ExperimentalMaterial3Api::class)

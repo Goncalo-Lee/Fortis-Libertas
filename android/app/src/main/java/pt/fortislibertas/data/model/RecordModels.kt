@@ -3,10 +3,10 @@ package pt.fortislibertas.data.model
 import java.math.BigDecimal
 import java.time.LocalDate
 
-/** Tipo de registo (tabela Record_Type). */
+/** Record type (Record_Type table). */
 enum class RecordType { EXPENSE, INCOME, INVESTMENT }
 
-/** Estado do pagamento (enum status do Financial_Record). */
+/** Payment status (status enum of Financial_Record). */
 enum class RecordStatus { PAID, PENDING }
 
 data class Category(
@@ -19,17 +19,17 @@ data class Category(
 data class Tag(
     val id: String,
     val name: String,
-    val categoryIds: Set<String> = emptySet(),   // tabela Tag__Category
+    val categoryIds: Set<String> = emptySet(),   // Tag__Category table
 )
 
 data class PaymentMethod(val id: String, val name: String)
 
 data class InstalmentPlanOption(val id: String, val name: String)
 
-/** Cor da paleta fechada (tabela Color). */
+/** Colour from the closed palette (Color table). */
 data class ColorOption(val key: String, val hex: String)
 
-/** Tudo o que os formulários precisam para preencher as listas. */
+/** Everything the forms need to fill their lists. */
 data class RecordFormOptions(
     val categories: List<Category>,
     val tags: List<Tag>,
@@ -39,7 +39,7 @@ data class RecordFormOptions(
     val currencies: List<String> = listOf("EUR", "USD", "GBP"),
 )
 
-/** O que é enviado ao guardar um registo financeiro. */
+/** What is sent when saving a financial record. */
 data class NewFinancialRecord(
     val name: String,
     val description: String?,
@@ -54,7 +54,7 @@ data class NewFinancialRecord(
     val instalmentPlanId: String?,
 )
 
-/** O que é enviado ao guardar um plano de prestações. */
+/** What is sent when saving an instalment plan. */
 data class NewInstalmentPlan(
     val name: String,
     val description: String?,

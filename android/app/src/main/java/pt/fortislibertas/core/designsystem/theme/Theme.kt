@@ -11,7 +11,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-// ── Cores do Material 3 ──────────────────────────────
+// ── Material 3 colours ──────────────────────────────
 private val LightColors = lightColorScheme(
     primary = DeepBlue,
     onPrimary = White,
@@ -50,7 +50,7 @@ private val DarkColors = darkColorScheme(
     outline = DarkOutline,
 )
 
-// ── Cores próprias da app (o Material não tem "receita") ──
+// ── App colours (Material has no "income") ──
 @Immutable
 data class FortisExtendedColors(
     val income: Color,
@@ -75,7 +75,7 @@ private val DarkExtended = FortisExtendedColors(
 
 private val LocalFortisColors = staticCompositionLocalOf { LightExtended }
 
-// ── Tema ──────────────────────────────────────────────
+// ── Theme ───────────────────────────────────────────
 @Composable
 fun FortisLibertasTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -87,13 +87,13 @@ fun FortisLibertasTheme(
     CompositionLocalProvider(LocalFortisColors provides extended) {
         MaterialTheme(
             colorScheme = colors,
-            typography = Typography,   // vem do Type.kt do template
+            typography = Typography,   // comes from the template's Type.kt
             content = content,
         )
     }
 }
 
-// Acesso às cores próprias: FortisTheme.colors.income
+// Access to the app colours: FortisTheme.colors.income
 object FortisTheme {
     val colors: FortisExtendedColors
         @Composable @ReadOnlyComposable

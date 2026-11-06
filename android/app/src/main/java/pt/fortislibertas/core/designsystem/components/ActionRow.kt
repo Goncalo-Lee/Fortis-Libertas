@@ -20,13 +20,13 @@ import pt.fortislibertas.core.designsystem.theme.CodGray
 import pt.fortislibertas.core.designsystem.theme.CuriousBlue
 import pt.fortislibertas.core.designsystem.theme.FortisTheme
 
-/** Tom da linha: normal, aviso (desativar) ou perigo (apagar). */
+/** Row tone: normal, warning (deactivate) or danger (delete). */
 enum class ActionTone { Default, Warning, Danger }
 
 /**
- * Linha clicável: quadrado com ícone + título + descrição + seta.
- * Usada no Profile (Password, Banks, Dashboards, Apagar conta…) e reutilizável
- * noutros ecrãs, como Definições.
+ * Clickable row: icon square + title + description + chevron.
+ * Used in Profile (Password, Banks, Dashboards, Delete account…) and reusable
+ * in other screens, like Settings.
  */
 @Composable
 fun ActionRow(
@@ -95,7 +95,7 @@ private fun actionToneColors(tone: ActionTone): ActionToneColors = when (tone) {
     )
     ActionTone.Warning -> ActionToneColors(
         title = MaterialTheme.colorScheme.onSurface,
-        tileContainer = FortisTheme.colors.warning,      // Pineapple: só como fundo
+        tileContainer = FortisTheme.colors.warning,      // Pineapple: only as a background
         tileContent = CodGray,
     )
     ActionTone.Danger -> ActionToneColors(

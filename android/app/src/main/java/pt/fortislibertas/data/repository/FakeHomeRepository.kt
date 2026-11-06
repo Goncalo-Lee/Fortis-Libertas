@@ -4,7 +4,7 @@ import kotlinx.coroutines.delay
 import pt.fortislibertas.data.fake.FakeHomeData
 import pt.fortislibertas.data.model.HomeSummary
 
-/** Modo local: devolve sempre os mesmos dados de teste. */
+/** Local mode: always returns the same test data. */
 class FakeHomeRepository : HomeRepository {
 
     override suspend fun getHome(): HomeSummary {

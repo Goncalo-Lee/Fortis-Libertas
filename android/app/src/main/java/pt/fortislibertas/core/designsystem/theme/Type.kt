@@ -13,7 +13,7 @@ val Montserrat = FontFamily(
     Font(R.font.montserrat_bold, FontWeight.Bold),
 )
 
-// Parte dos tamanhos por defeito do Material 3 e só troca a fonte
+// Starts from the Material 3 default sizes and only changes the font
 private val base = Typography()
 
 val Typography = Typography(

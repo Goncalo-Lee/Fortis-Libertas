@@ -3,8 +3,8 @@ package pt.fortislibertas.data.model
 import java.math.BigDecimal
 
 /**
- * Perfil do utilizador tal como a UI o usa.
- * Dinheiro em BigDecimal (nunca Double: 0.1 + 0.2 != 0.3 em Double).
+ * User profile as the UI uses it.
+ * Money in BigDecimal (never Double: 0.1 + 0.2 != 0.3 in Double).
  */
 data class UserProfile(
     val id: String,

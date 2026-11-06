@@ -5,7 +5,7 @@ import pt.fortislibertas.data.remote.HomeApi
 import retrofit2.HttpException
 import java.io.IOException
 
-/** Modo API: GET /api/v1/home com o token Bearer da conta ativa. */
+/** API mode: GET /api/v1/home with the active account's Bearer token. */
 class RemoteHomeRepository(
     private val api: HomeApi,
 ) : HomeRepository {

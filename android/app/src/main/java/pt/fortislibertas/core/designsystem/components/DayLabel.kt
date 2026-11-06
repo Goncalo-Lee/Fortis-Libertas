@@ -7,7 +7,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/** "Hoje", "Ontem" ou a data curta ("24 out"). Usado nos grupos de transações. */
+/** "Today", "Yesterday" or the short date ("24 Oct"). Used in the transaction groups. */
 @Composable
 fun dayLabel(date: LocalDate): String {
     val today = LocalDate.now()

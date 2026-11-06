@@ -9,7 +9,7 @@ data class TransactionsUiState(
     val filter: TransactionFilter = TransactionFilter(),
     val items: List<TransactionItem> = emptyList(),
     val isLoading: Boolean = true,
-    val hasLoaded: Boolean = false,          // já houve pelo menos um resultado
+    val hasLoaded: Boolean = false,          // there has been at least one result
     @StringRes val errorMessage: Int? = null,
     val options: FilterOptions? = null,
     val showFilter: Boolean = false,

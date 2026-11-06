@@ -1,8 +1,8 @@
 package pt.fortislibertas.ui.newrecord
 
-/** Têm de ser iguais aos da base de dados e da validação da API. */
+/** Must match the database and the API validation. */
 object FormLimits {
     const val NAME = 50
     const val DESCRIPTION = 500
-    const val DESCRIPTION_VISIBLE_LINES = 5   // depois disto, scroll dentro do campo
+    const val DESCRIPTION_VISIBLE_LINES = 5   // after this, the field scrolls inside
 }

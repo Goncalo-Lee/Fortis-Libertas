@@ -8,7 +8,7 @@ import pt.fortislibertas.data.model.TransactionItem
 import java.math.BigDecimal
 import java.time.LocalDate
 
-/** JSON de GET /api/v1/home. Dinheiro como texto, datas em ISO. */
+/** JSON from GET /api/v1/home. Money as text, dates in ISO. */
 @Serializable
 data class HomeDto(
     val totalBalance: String,

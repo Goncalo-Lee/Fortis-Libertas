@@ -24,12 +24,12 @@ import androidx.compose.ui.window.DialogWindowProvider
 import pt.fortislibertas.core.designsystem.theme.FortisLibertasTheme
 
 /**
- * Diálogo com o fundo desfocado. Tocar fora do cartão fecha-o.
+ * Dialog with a blurred background. Tapping outside the card closes it.
  *
- * O blur é do próprio Android (não precisa do Haze), porque o diálogo
- * abre numa janela por cima de tudo, incluindo o painel do formulário.
- * - Android 12+ (API 31): blur verdadeiro + escurecer ligeiro
- * - Versões antigas, ou se o blur estiver desligado no aparelho: só escurece
+ * The blur comes from Android itself (no Haze needed), because the dialog
+ * opens in a window on top of everything, including the form sheet.
+ * - Android 12+ (API 31): real blur + a light dim
+ * - Older versions, or blur turned off on the device: only dims
  */
 @Composable
 fun BlurDialog(

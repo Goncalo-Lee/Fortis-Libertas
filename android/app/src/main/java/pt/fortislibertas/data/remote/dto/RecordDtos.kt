@@ -9,7 +9,7 @@ import pt.fortislibertas.data.model.RecordFormOptions
 import pt.fortislibertas.data.model.RecordType
 import pt.fortislibertas.data.model.Tag
 
-// ── Respostas ───────────────────────────────────────────
+// ── Responses ───────────────────────────────────────
 
 @Serializable
 data class ColorDto(val key: String, val hexLight: String, val hexDark: String) {
@@ -62,9 +62,9 @@ data class FormOptionsDto(
     )
 }
 
-// ── Pedidos ─────────────────────────────────────────────
-// Dinheiro como String ("12.50") e datas em ISO ("2026-10-27"),
-// para não perder precisão nem depender do fuso horário.
+// ── Requests ────────────────────────────────────────
+// Money as String ("12.50") and dates in ISO ("2026-10-27"),
+// so no precision is lost and nothing depends on the time zone.
 
 @Serializable
 data class CreateRecordRequest(

@@ -5,7 +5,7 @@ import retrofit2.http.GET
 
 interface HomeApi {
 
-    /** Um só pedido com tudo o que o Home precisa. */
+    /** A single request with everything the Home needs. */
     @GET("api/v1/home")
     suspend fun getHome(): HomeDto
 }

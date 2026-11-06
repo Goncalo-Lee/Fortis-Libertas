@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/** O quadrado colorido com um ícone, à esquerda das linhas do Profile. */
+/** The coloured square with an icon, on the left of the Profile rows. */
 @Composable
 fun IconTile(
     icon: ImageVector,

@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import pt.fortislibertas.core.designsystem.theme.CuriousBlue
 
-/** Chip que se liga e desliga, com visto quando está selecionado (tags). */
+/** Chip that toggles on and off, with a check mark when selected (tags). */
 @Composable
 fun SelectableChip(
     label: String,
@@ -47,7 +47,7 @@ fun SelectableChip(
     )
 }
 
-/** Bolinha de cor; com contorno quando está escolhida (cores das categorias). */
+/** Colour dot; outlined when chosen (category colours). */
 @Composable
 fun ColorDot(
     color: Color,
@@ -73,6 +73,6 @@ fun ColorDot(
     ) {}
 }
 
-/** "#F97316" → Color. Se o texto vier mal formado, devolve cinzento. */
+/** "#F97316" → Color. If the text is malformed, returns grey. */
 fun colorFromHex(hex: String): Color =
     runCatching { Color(android.graphics.Color.parseColor(hex)) }.getOrDefault(Color.Gray)

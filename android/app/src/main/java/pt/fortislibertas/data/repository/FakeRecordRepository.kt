@@ -12,8 +12,8 @@ import pt.fortislibertas.data.model.Tag
 import java.util.UUID
 
 /**
- * Modo local: guarda tudo em memória enquanto a app está aberta.
- * Ao fechar a app, volta aos dados de FakeRecordData.
+ * Local mode: keeps everything in memory while the app is open.
+ * When the app closes, it goes back to the FakeRecordData data.
  */
 class FakeRecordRepository : RecordRepository {
 

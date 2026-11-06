@@ -6,19 +6,19 @@ import pt.fortislibertas.data.model.RecordStatus
 import pt.fortislibertas.data.model.RecordType
 import java.time.LocalDate
 
-/** Qual formulário está aberto no painel de baixo. */
+/** Which form is open in the bottom sheet. */
 enum class RegisterSheet { FinancialRecord, InstalmentPlan }
 
-/** Qual seletor (diálogo com blur) está aberto. */
+/** Which picker (blurred dialog) is open. */
 enum class PickerDialog { Category, Tags }
 
-/** Campos que podem ter erro de validação. */
+/** Fields that can have a validation error. */
 enum class FormField {
     Name, Type, Price, PaymentDate, Category,
     TotalAmount, TotalInstalments, FirstDueDate,
 }
 
-/** O que o utilizador já escreveu no formulário de registo. */
+/** What the user has typed so far in the record form. */
 data class RecordFormState(
     val name: String = "",
     val description: String = "",
@@ -31,10 +31,10 @@ data class RecordFormState(
     val categoryId: String? = null,
     val tagIds: Set<String> = emptySet(),
     val instalmentPlanId: String? = null,
-    val errors: Map<FormField, Int> = emptyMap(),  // campo → @StringRes da mensagem
+    val errors: Map<FormField, Int> = emptyMap(),  // field → @StringRes of the message
 )
 
-/** O que o utilizador já escreveu no formulário do plano de prestações. */
+/** What the user has typed so far in the instalment plan form. */
 data class InstalmentFormState(
     val name: String = "",
     val description: String = "",
@@ -59,9 +59,9 @@ data class NewRecordUiState(
     val record: RecordFormState = RecordFormState(),
     val plan: InstalmentFormState = InstalmentFormState(),
     val isSaving: Boolean = false,
-    val isCreatingOption: Boolean = false,          // a criar tag ou categoria
+    val isCreatingOption: Boolean = false,          // creating a tag or category
 ) {
-    /** Os seletores trabalham sobre o formulário que estiver aberto. */
+    /** The pickers work on whichever form is open. */
     val activeCategoryId: String?
         get() = when (openSheet) {
             RegisterSheet.FinancialRecord -> record.categoryId
@@ -76,7 +76,7 @@ data class NewRecordUiState(
             null -> emptySet()
         }
 
-    /** Um plano de prestações é sempre uma despesa. */
+    /** An instalment plan is always an expense. */
     val activeType: RecordType?
         get() = when (openSheet) {
             RegisterSheet.FinancialRecord -> record.type

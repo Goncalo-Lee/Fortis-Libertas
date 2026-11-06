@@ -15,8 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 /**
- * Cartão com contorno e cantos redondos, como os do wireframe.
- * Com onClick fica clicável (efeito de toque incluído); sem onClick é só um contentor.
+ * Outlined card with rounded corners, like the ones in the wireframe.
+ * With onClick it is clickable (touch effect included); without it, it is just a container.
  */
 @Composable
 fun FortisCard(

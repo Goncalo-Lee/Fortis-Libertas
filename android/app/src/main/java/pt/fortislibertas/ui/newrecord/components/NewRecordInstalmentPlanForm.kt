@@ -32,7 +32,7 @@ import pt.fortislibertas.ui.newrecord.messageFor
 
 private const val MAX_DESCRIPTION_LENGTH = 250
 
-/** Formulário "Novo plano de prestações" (imagem 3 do wireframe). */
+/** "New instalment plan" form (wireframe image 3). */
 @Composable
 fun NewRecordInstalmentPlanForm(
     form: InstalmentFormState,
@@ -48,7 +48,7 @@ fun NewRecordInstalmentPlanForm(
     val category = options.categories.firstOrNull { it.id == form.categoryId }
     val none = stringResource(R.string.hint_none)
 
-    // Pré-visualização: "12 × 83,33 €" por baixo do número de prestações
+    // Preview: "12 × 83,33 €" under the number of instalments
     val total = MoneyParser.parse(form.totalAmount)
     val count = form.totalInstalments.trim().toIntOrNull()
     val perInstalment = if (total != null && count != null && count >= 2) {
@@ -88,7 +88,7 @@ fun NewRecordInstalmentPlanForm(
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
         )
 
-        // Valor total + Moeda
+        // Total amount + Currency
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             FormTextField(
                 label = stringResource(R.string.field_total_amount),
@@ -109,13 +109,13 @@ fun NewRecordInstalmentPlanForm(
             )
         }
 
-        // N.º de prestações + 1.ª prestação
+        // Number of instalments + 1st instalment
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             FormTextField(
                 label = stringResource(R.string.field_total_instalments),
                 value = form.totalInstalments,
                 onValueChange = { v ->
-                    // só aceita algarismos
+                    // only accepts digits
                     onUpdate(FormField.TotalInstalments) { it.copy(totalInstalments = v.filter(Char::isDigit).take(3)) }
                 },
                 placeholder = "12",
@@ -144,7 +144,7 @@ fun NewRecordInstalmentPlanForm(
             placeholder = none,
         )
 
-        // Categoria + Tags (os mesmos campos do registo)
+        // Category + Tags (the same fields as the record form)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             NewRecordCategoryField(
                 category = category,

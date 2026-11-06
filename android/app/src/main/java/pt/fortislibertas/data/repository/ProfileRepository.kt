@@ -3,8 +3,8 @@ package pt.fortislibertas.data.repository
 import pt.fortislibertas.data.model.UserProfile
 
 /**
- * O que o ecrã Profile precisa. O ViewModel só conhece esta interface,
- * por isso não sabe se os dados são locais (Fake) ou da API (Remote).
+ * What the Profile screen needs. The ViewModel only knows this interface,
+ * so it does not know if the data is local (Fake) or from the API (Remote).
  */
 interface ProfileRepository {
     suspend fun getProfile(): UserProfile
@@ -13,7 +13,7 @@ interface ProfileRepository {
     suspend fun signOut()
 }
 
-/** Erros que a UI sabe mostrar. */
+/** Errors the UI knows how to show. */
 class SessionExpiredException : Exception("Session expired")
 class NetworkException(cause: Throwable) : Exception("Network error", cause)
 class NotSignedInException : Exception("No active account")

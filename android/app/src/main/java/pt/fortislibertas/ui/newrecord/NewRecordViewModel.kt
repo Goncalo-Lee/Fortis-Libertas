@@ -42,7 +42,7 @@ class NewRecordViewModel(
 
     init {
         loadOptions()
-        // Nome e foto da conta ativa para o avatar do cabeçalho
+        // Name and photo of the active account for the header avatar
         viewModelScope.launch {
             combine(accountStore.accounts, accountStore.activeAccountId) { accounts, activeId ->
                 accounts.firstOrNull { it.id == activeId }
@@ -66,7 +66,7 @@ class NewRecordViewModel(
         }
     }
 
-    // ── Painel do formulário ────────────────────────────
+    // ── Form sheet ──────────────────────────────────────
 
     fun openSheet(sheet: RegisterSheet) {
         _state.update { it.copy(openSheet = sheet) }
@@ -86,10 +86,10 @@ class NewRecordViewModel(
     }
 
     /**
-     * Atualiza o formulário de registo e limpa o erro do campo alterado.
-     * Regras automáticas:
-     * - mudar o tipo apaga a categoria se ela for de outro tipo
-     * - mudar a data acerta o estado: futuro = Pendente, hoje/passado = Pago
+     * Updates the record form and clears the error of the changed field.
+     * Automatic rules:
+     * - changing the type clears the category if it belongs to another type
+     * - changing the date sets the status: future = Pending, today/past = Paid
      */
     fun updateRecord(field: FormField?, transform: (RecordFormState) -> RecordFormState) {
         _state.update { s ->
@@ -119,7 +119,7 @@ class NewRecordViewModel(
         }
     }
 
-    // ── Seletores (Categoria / Tags) ────────────────────
+    // ── Pickers (Category / Tags) ───────────────────────
 
     fun openPicker(picker: PickerDialog) = _state.update { it.copy(openPicker = picker) }
 
@@ -137,7 +137,7 @@ class NewRecordViewModel(
         _state.update { it.copy(openPicker = null) }
     }
 
-    /** Escolher uma categoria também define o tipo, se ainda não estiver escolhido. */
+    /** Choosing a category also sets the type, if none is chosen yet. */
     fun selectCategory(categoryId: String) {
         val category = _state.value.options?.categories?.firstOrNull { it.id == categoryId } ?: return
         when (_state.value.openSheet) {
@@ -154,7 +154,7 @@ class NewRecordViewModel(
         _state.update { it.copy(openPicker = null) }
     }
 
-    /** Cria a tag e devolve-a ao diálogo, que a marca logo como escolhida. */
+    /** Creates the tag and returns it to the dialog, which selects it straight away. */
     fun createTag(name: String, onCreated: (Tag) -> Unit) {
         val clean = name.trim()
         if (clean.isEmpty() || _state.value.isCreatingOption) return
@@ -174,7 +174,7 @@ class NewRecordViewModel(
         }
     }
 
-    /** Cria a categoria com o tipo do formulário aberto e escolhe-a logo. */
+    /** Creates the category with the type of the open form and selects it straight away. */
     fun createCategory(name: String, colorKey: String) {
         val clean = name.trim()
         val type = _state.value.activeType ?: return
@@ -198,7 +198,7 @@ class NewRecordViewModel(
         }
     }
 
-    // ── Guardar ─────────────────────────────────────────
+    // ── Save ────────────────────────────────────────────
 
     fun saveRecord() {
         val form = _state.value.record
@@ -262,7 +262,7 @@ class NewRecordViewModel(
         )
         save(R.string.msg_plan_saved) {
             val created = repository.createInstalmentPlan(plan)
-            // O plano novo passa a aparecer no campo "Plano de prestações" do registo
+            // The new plan now shows up in the "Instalment plan" field of the record
             _state.update { s ->
                 s.copy(options = s.options?.let { it.copy(instalmentPlans = it.instalmentPlans + created) })
             }

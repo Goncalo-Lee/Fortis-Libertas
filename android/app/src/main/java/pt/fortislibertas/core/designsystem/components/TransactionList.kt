@@ -30,9 +30,9 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
- * Grupo de transações de um dia: "Hoje" por cima e as linhas
- * dentro de um só cartão, separadas por linhas finas.
- * Reutilizável no separador Transaction.
+ * Transactions of one day: "Today" on top and the rows
+ * inside a single card, separated by thin lines.
+ * Reusable in the Transactions tab.
  */
 @Composable
 fun TransactionGroup(
@@ -110,7 +110,7 @@ fun TransactionRow(
     }
 }
 
-/** Quadrado com a cor da categoria e a primeira letra do nome. */
+/** Square with the category colour and the first letter of its name. */
 @Composable
 private fun CategoryTile(name: String, color: Color) {
     Box(
@@ -128,7 +128,7 @@ private fun CategoryTile(name: String, color: Color) {
     }
 }
 
-/** "+50,00 €" nas receitas, "−24,68 €" nas despesas e investimentos. */
+/** "+50,00 €" for income, "−24,68 €" for expenses and investments. */
 private fun signedAmount(item: TransactionItem): String {
     val sign = if (item.type == RecordType.INCOME) "+" else "−"
     return sign + MoneyFormatter.format(item.amount, item.currency)

@@ -42,8 +42,8 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 /*
- * Campos de formulário reutilizáveis, todos com o mesmo aspeto:
- * rótulo por cima (como no wireframe), cantos de 12 dp e erro por baixo.
+ * Reusable form fields, all with the same look:
+ * label on top (like the wireframe), 12 dp corners and the error below.
  */
 
 private val FieldShape = RoundedCornerShape(12.dp)
@@ -60,7 +60,7 @@ fun FieldLabel(text: String, modifier: Modifier = Modifier) {
     )
 }
 
-/** Campo de texto normal. Com minLines > 1 passa a ter várias linhas (descrição). */
+/** Plain text field. With minLines > 1 it becomes multi-line (description). */
 @Composable
 fun FormTextField(
     label: String,
@@ -107,8 +107,8 @@ fun FormTextField(
 }
 
 /**
- * Campo só de leitura que abre algo ao tocar (menu, calendário, diálogo).
- * Base do SelectField, DateField e PickerField.
+ * Read-only field that opens something on tap (menu, calendar, dialog).
+ * Base of SelectField, DateField and PickerField.
  */
 @Composable
 private fun ClickableField(
@@ -134,7 +134,7 @@ private fun ClickableField(
             singleLine = true,
             shape = FieldShape,
         )
-        // Camada invisível por cima: o toque abre o seletor em vez do teclado
+        // Invisible layer on top: a tap opens the picker instead of the keyboard
         Box(
             Modifier
                 .matchParentSize()
@@ -143,7 +143,7 @@ private fun ClickableField(
     }
 }
 
-/** Lista de escolha (Record type, Currency, Payment method, Status…). */
+/** Choice list (Record type, Currency, Payment method, Status…). */
 @Composable
 fun <T> SelectField(
     label: String?,
@@ -182,7 +182,7 @@ fun <T> SelectField(
     }
 }
 
-/** Campo de data que abre o calendário do Material 3. */
+/** Date field that opens the Material 3 calendar. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DateField(
@@ -210,7 +210,7 @@ fun DateField(
     }
 
     if (open) {
-        // O DatePicker trabalha em milissegundos UTC; convertemos de/para LocalDate
+        // The DatePicker works in UTC milliseconds; we convert from/to LocalDate
         val state = rememberDatePickerState(
             initialSelectedDateMillis = date?.atStartOfDay(ZoneOffset.UTC)?.toInstant()?.toEpochMilli(),
         )
@@ -234,8 +234,8 @@ fun DateField(
 }
 
 /**
- * Campo que abre um diálogo próprio (Categoria, Tags).
- * Mostra o valor escolhido ou o texto de ajuda, com um "+" à direita.
+ * Field that opens its own dialog (Category, Tags).
+ * Shows the chosen value or the hint text, with a "+" on the right.
  */
 @Composable
 fun PickerField(
@@ -261,7 +261,7 @@ fun PickerField(
     }
 }
 
-/** Caixa de pesquisa compacta (diálogos de Tags e Categoria). */
+/** Compact search box (Tags and Category dialogs). */
 @Composable
 fun SearchField(
     query: String,

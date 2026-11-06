@@ -8,7 +8,7 @@ import pt.fortislibertas.data.model.RecordFormOptions
 import pt.fortislibertas.data.model.RecordType
 import pt.fortislibertas.data.model.Tag
 
-/** O que o ecrã Register precisa. Implementado em Fake (local) e Remote (API). */
+/** What the Register screen needs. Implemented as Fake (local) and Remote (API). */
 interface RecordRepository {
     suspend fun getFormOptions(): RecordFormOptions
     suspend fun createRecord(record: NewFinancialRecord)

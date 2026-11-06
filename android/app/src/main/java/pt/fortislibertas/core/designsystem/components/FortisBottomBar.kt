@@ -57,7 +57,7 @@ fun FortisBottomBar(
                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f))
                 .border(1.dp, Color.Gray, barShape)
                 .hazeChild(state = hazeState, style = HazeMaterials.thin())
-                .padding(6.dp),                       // espaço entre a barra e o quadrado
+                .padding(6.dp),                       // space between the bar and the square
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -66,7 +66,7 @@ fun FortisBottomBar(
                     destination = destination,
                     selected = destination == current,
                     onClick = { onNavigate(destination) },
-                    modifier = Modifier.weight(1f),   // os 5 itens com a mesma largura
+                    modifier = Modifier.weight(1f),   // the 5 items with the same width
                 )
             }
         }
@@ -80,7 +80,7 @@ private fun FortisNavItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Animação suave ao trocar de separador
+    // Smooth animation when switching tabs
     val contentColor by animateColorAsState(
         targetValue = if (selected) CuriousBlue else MaterialTheme.colorScheme.onSurfaceVariant,
         label = "navContentColor",
@@ -93,23 +93,23 @@ private fun FortisNavItem(
 
     Column(
         modifier = modifier
-            .clip(itemShape)                          // o ripple do toque também fica com cantos redondos
+            .clip(itemShape)                          // the touch ripple also gets rounded corners
             .background(backgroundColor)
             .selectable(
                 selected = selected,
                 onClick = onClick,
-                role = Role.Tab,                      // o TalkBack anuncia como separador
+                role = Role.Tab,                      // TalkBack announces it as a tab
             )
             .padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        // O ícone herda esta cor (camada base do LayeredIcon)
+        // The icon inherits this colour (base layer of LayeredIcon)
         CompositionLocalProvider(LocalContentColor provides contentColor) {
             LayeredIcon(
                 base = destination.baseIcon,
                 accent = destination.accentIcon,
-                accentColor = null,                   // ícone inteiro em CuriousBlue quando ativo
+                accentColor = null,                   // whole icon in CuriousBlue when active
                 size = 24.dp,
             )
         }

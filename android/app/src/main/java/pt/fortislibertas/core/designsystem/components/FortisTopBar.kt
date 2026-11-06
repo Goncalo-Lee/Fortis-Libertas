@@ -18,8 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 /**
- * Cabeçalho comum (Home, Dashboard, Register…):
- * avatar + título à esquerda, notificações com contador à direita.
+ * Shared header (Home, Dashboard, Register…):
+ * avatar + title on the left, notifications with a counter on the right.
  */
 @Composable
 fun FortisTopBar(

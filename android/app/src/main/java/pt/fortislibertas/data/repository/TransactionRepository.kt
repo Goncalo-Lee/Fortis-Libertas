@@ -5,7 +5,7 @@ import pt.fortislibertas.data.model.TransactionFilter
 import pt.fortislibertas.data.model.TransactionItem
 
 interface TransactionRepository {
-    /** Transações que cumprem o filtro, mais recentes primeiro. */
+    /** Transactions that match the filter, newest first. */
     suspend fun getTransactions(filter: TransactionFilter): List<TransactionItem>
     suspend fun getFilterOptions(): FilterOptions
 }

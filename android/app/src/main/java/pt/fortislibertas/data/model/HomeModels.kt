@@ -3,18 +3,18 @@ package pt.fortislibertas.data.model
 import java.math.BigDecimal
 import java.time.LocalDate
 
-/** Tudo o que o Home mostra, vindo de um só pedido. */
+/** Everything the Home shows, from a single request. */
 data class HomeSummary(
     val totalBalance: BigDecimal,
-    val balanceChange: BigDecimal,            // saldo de hoje − saldo de há 7 dias
-    val balanceChangePercent: BigDecimal?,    // null quando o saldo de há 7 dias era 0
+    val balanceChange: BigDecimal,            // today's balance − balance 7 days ago
+    val balanceChangePercent: BigDecimal?,    // null when the balance 7 days ago was 0
     val currency: String,
     val cards: List<CardPreview>,
-    val week: List<DayTotals>,                // 7 dias, de segunda a domingo
-    val recent: List<TransactionItem>,        // mais recentes primeiro
+    val week: List<DayTotals>,                // 7 days, Monday to Sunday
+    val recent: List<TransactionItem>,        // newest first
 )
 
-/** Só o necessário para desenhar o cartão na pilha. */
+/** Only what is needed to draw the card in the stack. */
 data class CardPreview(val id: String, val colorHex: String)
 
 data class DayTotals(
@@ -29,7 +29,7 @@ data class TransactionItem(
     val categoryName: String,
     val categoryColorHex: String,
     val type: RecordType,
-    val amount: BigDecimal,                   // sempre positivo; o sinal vem do tipo
+    val amount: BigDecimal,                   // always positive; the sign comes from the type
     val currency: String,
     val date: LocalDate,
 )

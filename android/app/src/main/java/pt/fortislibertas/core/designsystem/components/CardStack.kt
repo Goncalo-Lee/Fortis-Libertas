@@ -23,11 +23,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Pilha de cartões encostada à direita, como no wireframe do Home.
- * Desenha até 3 cartões, cada um desviado [step] para a direita.
- * A parte que sai do ecrã fica cortada de propósito ("há mais para ver").
+ * Stack of cards against the right edge, like in the Home wireframe.
+ * Draws up to 3 cards, each one shifted [step] to the right.
+ * The part that goes off-screen is cut on purpose ("there is more to see").
  *
- * Toda a pilha é um único botão.
+ * The whole stack is a single button.
  */
 @Composable
 fun CardStack(
@@ -51,7 +51,7 @@ fun CardStack(
             .clickable(role = Role.Button, onClickLabel = onClickLabel, onClick = onClick),
     ) {
         if (shown.isEmpty()) {
-            // Ainda sem cartões: um cartão cinzento com "+"
+            // No cards yet: one grey card with a "+"
             Box(
                 modifier = Modifier
                     .width(cardWidth)
@@ -69,7 +69,7 @@ fun CardStack(
             }
         }
 
-        // O primeiro da lista fica atrás; o último fica à frente
+        // The first in the list is at the back; the last is at the front
         shown.forEachIndexed { index, color ->
             Box(
                 Modifier

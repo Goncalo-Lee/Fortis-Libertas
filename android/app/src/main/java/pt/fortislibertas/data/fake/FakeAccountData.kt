@@ -4,7 +4,7 @@ import pt.fortislibertas.data.model.SavedAccount
 import pt.fortislibertas.data.model.UserProfile
 import java.math.BigDecimal
 
-/** Dados de teste do modo local (USE_FAKE_DATA = true). */
+/** Test data for local mode (USE_FAKE_DATA = true). */
 object FakeAccountData {
 
     private const val PERSONAL_ID = "0192f0a1-0000-7000-8000-000000000001"

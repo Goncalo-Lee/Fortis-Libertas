@@ -42,7 +42,7 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
-/** Um atalho do arco: ícone + texto + o que faz. */
+/** One arc shortcut: icon + text + what it does. */
 data class ArcAction(
     val icon: ImageVector,
     val label: String,
@@ -50,8 +50,8 @@ data class ArcAction(
 )
 
 /**
- * Botão flutuante que abre atalhos em arco por cima dele.
- * Põe-se por cima do conteúdo do ecrã (dentro de um Box que ocupa o ecrã todo).
+ * Floating button that opens shortcuts in an arc above it.
+ * Place it on top of the screen content (inside a Box that fills the screen).
  */
 @Composable
 fun ArcMenu(
@@ -60,23 +60,23 @@ fun ArcMenu(
     triggerLabel: String,
     modifier: Modifier = Modifier,
     radius: Dp = 140.dp,
-    startAngle: Float = 165f,   // esquerda
-    endAngle: Float = 15f,      // direita
+    startAngle: Float = 165f,   // left
+    endAngle: Float = 15f,      // right
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
 
-    // 0 = fechado, 1 = aberto; com "mola" para um efeito mais natural
+    // 0 = closed, 1 = open; with a "spring" for a more natural effect
     val progress by animateFloatAsState(
         targetValue = if (expanded) 1f else 0f,
         animationSpec = spring(dampingRatio = 0.7f, stiffness = Spring.StiffnessMediumLow),
         label = "arcProgress",
     )
 
-    // O botão "voltar" do Android fecha o menu em vez de sair do ecrã
+    // The Android back button closes the menu instead of leaving the screen
     BackHandler(enabled = expanded) { expanded = false }
 
     Box(modifier.fillMaxSize()) {
-        // Fundo escuro: tocar fora fecha
+        // Dark background: tapping outside closes it
         if (progress > 0f) {
             Box(
                 Modifier
@@ -96,7 +96,7 @@ fun ArcMenu(
                 .padding(bottom = 16.dp),
             contentAlignment = Alignment.Center,
         ) {
-            // Os atalhos ficam por baixo do botão e "saem" dele
+            // The shortcuts start under the button and "come out" of it
             if (progress > 0f) {
                 actions.forEachIndexed { index, action ->
                     val angle = if (actions.size == 1) 90.0
@@ -111,12 +111,12 @@ fun ArcMenu(
                             action.onClick()
                         },
                         modifier = Modifier
-                            // offset move também a zona de toque
+                            // offset also moves the touch area
                             .offset {
                                 val r = radius.toPx() * progress
                                 IntOffset(
                                     x = (r * cos(rad)).roundToInt(),
-                                    y = -(r * sin(rad)).roundToInt(),   // negativo = para cima
+                                    y = -(r * sin(rad)).roundToInt(),   // negative = up
                                 )
                             }
                             .graphicsLayer {

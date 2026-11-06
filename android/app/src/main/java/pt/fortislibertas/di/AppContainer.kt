@@ -33,8 +33,8 @@ import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
 /**
- * Cria as dependências da app num só sítio.
- * É aqui (e só aqui) que se escolhe entre dados locais e API.
+ * Creates the app dependencies in one place.
+ * This is where (and the only place where) local data or the API is chosen.
  */
 class AppContainer(context: Context) {
 
@@ -49,7 +49,7 @@ class AppContainer(context: Context) {
             .addInterceptor(AuthInterceptor(accountStore))
             .addInterceptor(
                 HttpLoggingInterceptor().apply {
-                    // Em debug mostra os pedidos no Logcat (sem o token: ver redactHeader)
+                    // In debug, shows the requests in Logcat (without the token: see redactHeader)
                     level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY
                     else HttpLoggingInterceptor.Level.NONE
                     redactHeader("Authorization")
@@ -66,7 +66,7 @@ class AppContainer(context: Context) {
             .build()
     }
 
-    // ── Repositórios ─────────────────────────────────────
+    // ── Repositories ────────────────────────────────────
 
     val profileRepository: ProfileRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeProfileRepository(accountStore)

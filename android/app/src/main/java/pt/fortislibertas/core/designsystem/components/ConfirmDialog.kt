@@ -22,11 +22,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
 /**
- * Diálogo de confirmação reutilizável.
+ * Reusable confirmation dialog.
  *
- * - destructive = true: botão de confirmar a vermelho (apagar, desativar…)
- * - requiredText: obriga a escrever um texto (ex.: o email) antes de confirmar
- * - isWorking: mostra um indicador e impede fechar enquanto o pedido corre
+ * - destructive = true: red confirm button (delete, deactivate…)
+ * - requiredText: the user must type a text (e.g. their email) before confirming
+ * - isWorking: shows a spinner and blocks closing while the request runs
  */
 @Composable
 fun ConfirmDialog(

@@ -13,9 +13,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Ícone feito de 2 camadas sobrepostas.
- * - base: usa a cor herdada (LocalContentColor), por isso segue o tema e o estado da barra
- * - accent: usa accentColor; se for null, também herda a cor
+ * Icon made of 2 stacked layers.
+ * - base: uses the inherited colour (LocalContentColor), so it follows the theme and the bar state
+ * - accent: uses accentColor; if it is null, it also inherits the colour
  */
 @Composable
 fun LayeredIcon(
@@ -30,7 +30,7 @@ fun LayeredIcon(
             painter = painterResource(base),
             contentDescription = null,
             modifier = Modifier.size(size),
-            // sem tint → usa LocalContentColor
+            // no tint → uses LocalContentColor
         )
         if (accent != null) {
             Icon(

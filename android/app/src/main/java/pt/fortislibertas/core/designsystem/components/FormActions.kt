@@ -15,7 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-/** Botões Cancelar / Guardar no fim de um formulário. */
+/** Cancel / Save buttons at the end of a form. */
 @Composable
 fun FormActions(
     cancelLabel: String,
