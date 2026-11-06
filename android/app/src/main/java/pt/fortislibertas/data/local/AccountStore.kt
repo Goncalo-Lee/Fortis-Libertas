@@ -60,6 +60,23 @@ class AccountStore(context: Context) {
         }
     }
 
+    /**
+     * Removes the accounts saved with "Remember me" off.
+     * Called once when the app starts, so those sessions end when the app is closed.
+     */
+    suspend fun clearSessionOnly() {
+        dataStore.edit { prefs ->
+            val list = decode(prefs[Keys.ACCOUNTS])
+            val kept = list.filter { it.remember }
+            if (kept.size == list.size) return@edit
+            prefs[Keys.ACCOUNTS] = encode(kept)
+            if (kept.none { it.id == prefs[Keys.ACTIVE_ID] }) {
+                val next = kept.firstOrNull()
+                if (next != null) prefs[Keys.ACTIVE_ID] = next.id else prefs.remove(Keys.ACTIVE_ID)
+            }
+        }
+    }
+
     /** Local mode only: creates test accounts if there are none yet. */
     suspend fun seedIfEmpty(seed: List<SavedAccount>) {
         dataStore.edit { prefs ->

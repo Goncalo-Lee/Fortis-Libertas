@@ -13,4 +13,5 @@ data class SavedAccount(
     val email: String,
     val imageUrl: String? = null,
     val token: String,
+    val remember: Boolean = true,   // false = only for this session ("Remember me" off)
 )

@@ -15,6 +15,13 @@ import pt.fortislibertas.data.local.AccountStore
 class AuthInterceptor(private val accountStore: AccountStore) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
+        // Sign in / sign up: no Bearer, and the token in the answer belongs to the NEW account,
+        // so it must not replace the active account's token
+        val path = chain.request().url.encodedPath
+        if (path.endsWith("/sign-in/email") || path.endsWith("/sign-up/email")) {
+            return chain.proceed(chain.request())
+        }
+
         val token = runBlocking { accountStore.activeToken() }
 
         val request = chain.request().newBuilder().apply {

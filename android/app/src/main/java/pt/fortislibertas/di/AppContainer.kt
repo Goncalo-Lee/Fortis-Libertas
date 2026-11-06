@@ -10,13 +10,16 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import pt.fortislibertas.BuildConfig
-import pt.fortislibertas.data.local.AccountStore
 import pt.fortislibertas.data.fake.FakeAccountData
+import pt.fortislibertas.data.local.AccountStore
+import pt.fortislibertas.data.remote.AuthApi
 import pt.fortislibertas.data.remote.AuthInterceptor
 import pt.fortislibertas.data.remote.FortisApi
 import pt.fortislibertas.data.remote.HomeApi
 import pt.fortislibertas.data.remote.RecordApi
 import pt.fortislibertas.data.remote.TransactionApi
+import pt.fortislibertas.data.repository.AuthRepository
+import pt.fortislibertas.data.repository.FakeAuthRepository
 import pt.fortislibertas.data.repository.FakeHomeRepository
 import pt.fortislibertas.data.repository.FakeProfileRepository
 import pt.fortislibertas.data.repository.FakeRecordRepository
@@ -24,6 +27,7 @@ import pt.fortislibertas.data.repository.FakeTransactionRepository
 import pt.fortislibertas.data.repository.HomeRepository
 import pt.fortislibertas.data.repository.ProfileRepository
 import pt.fortislibertas.data.repository.RecordRepository
+import pt.fortislibertas.data.repository.RemoteAuthRepository
 import pt.fortislibertas.data.repository.RemoteHomeRepository
 import pt.fortislibertas.data.repository.RemoteProfileRepository
 import pt.fortislibertas.data.repository.RemoteRecordRepository
@@ -68,6 +72,10 @@ class AppContainer(context: Context) {
 
     // ── Repositories ────────────────────────────────────
 
+    val authRepository: AuthRepository =
+        if (BuildConfig.USE_FAKE_DATA) FakeAuthRepository()
+        else RemoteAuthRepository(retrofit.create(AuthApi::class.java))
+
     val profileRepository: ProfileRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeProfileRepository(accountStore)
         else RemoteProfileRepository(retrofit.create(FortisApi::class.java))
@@ -83,10 +91,10 @@ class AppContainer(context: Context) {
         if (BuildConfig.USE_FAKE_DATA) FakeTransactionRepository()
         else RemoteTransactionRepository(retrofit.create(TransactionApi::class.java))
 
-
     init {
-        if (BuildConfig.USE_FAKE_DATA) {
-            appScope.launch { accountStore.seedIfEmpty(FakeAccountData.accounts) }
+        appScope.launch {
+            accountStore.clearSessionOnly()          // "Remember me" off → that session ends here
+            if (BuildConfig.USE_FAKE_DATA) accountStore.seedIfEmpty(FakeAccountData.accounts)
         }
     }
 }
