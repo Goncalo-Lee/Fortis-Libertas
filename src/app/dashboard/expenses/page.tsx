@@ -13,7 +13,6 @@ import {
     ShoppingBag,
     Repeat,
     Plus,
-    Calendar,
     TrendingDown,
     ArrowDownRight,
     PieChart,
@@ -58,30 +57,31 @@ export default function ExpensesPage() {
         if (!financialRecords || !recordTypes) return []
 
         return financialRecords.filter((record: any) => {
-            let typeName = record.recordType?.name || ""
-            if (!typeName) {
-                const typeId = record.recordTypeId || record.record_type_id
-                const rt = recordTypes.find((t: any) => t.id === typeId)
-                if (rt) typeName = rt.name
-            }
-            return typeName.toUpperCase() === "EXPENSE"
+            const rtId = record.record_type_id || record.recordTypeId || record.recordType?.record_type_id || record.recordType?.id
+            const rt = recordTypes.find((t: any) => (t.record_type_id || t.id) === rtId)
+
+            const kind = rt?.kind || record.record_type?.kind
+            const typeName = (rt?.name || record.recordType?.name || "").toLowerCase()
+
+            return kind === "expense" || typeName.includes("despesa") || typeName.includes("expense")
         }).map((record: any) => {
-            const catId = record.category?.id || record.categoryId || record.category_id
-            const categoryObj = categories.find((c: any) => c.id === catId)
+            const recordId = record.financial_record_id || record.id
+            const catId = record.category_id || record.categoryId || record.category?.category_id || record.category?.id
+            const categoryObj = categories.find((c: any) => (c.category_id || c.id) === catId)
 
             // LER A TAG PARA SABER A NATUREZA (Espontânea, Essencial, Subscrição)
             const recordTags = record.tags || []
             let nature: ExpenseNature = "spontaneous"
-            if (recordTags.some((t: any) => t.name.toUpperCase() === "ESSENCIAL")) nature = "essential"
-            if (recordTags.some((t: any) => t.name.toUpperCase() === "SUBSCRIÇÃO")) nature = "subscription"
+            if (recordTags.some((t: any) => t.name?.toUpperCase() === "ESSENCIAL")) nature = "essential"
+            if (recordTags.some((t: any) => t.name?.toUpperCase() === "SUBSCRIÇÃO")) nature = "subscription"
 
             return {
-                id: record.id,
+                id: recordId,
                 title: record.name,
                 amount: Number(record.price || 0),
                 categoryId: catId,
-                categoryName: categoryObj?.name || "Sem Categoria",
-                date: record.paymentDate || record.payment_date,
+                categoryName: categoryObj?.name || record.category?.name || "Sem Categoria",
+                date: record.payment_date || record.paymentDate,
                 nature,
             }
         })
@@ -94,7 +94,7 @@ export default function ExpensesPage() {
 
     const essentialTotal = expenses.filter((e: any) => e.nature === "essential").reduce((acc: number, curr: any) => acc + curr.amount, 0) * multiplier
     const subscriptionTotal = expenses.filter((e: any) => e.nature === "subscription").reduce((acc: number, curr: any) => acc + curr.amount, 0) * multiplier
-    const spontaneousTotal = expenses.filter((e: any) => e.nature === "spontaneous").reduce((acc: number, curr: any) => acc + curr.amount, 0) // Espontâneas não multiplicam no ano
+    const spontaneousTotal = expenses.filter((e: any) => e.nature === "spontaneous").reduce((acc: number, curr: any) => acc + curr.amount, 0)
 
     const totalExpenses = essentialTotal + subscriptionTotal + spontaneousTotal
 
@@ -108,21 +108,56 @@ export default function ExpensesPage() {
     async function handleCreateCategory() {
         if (!newCategoryName.trim()) return
         if (categories.length >= 20) return toast.error("Limite de 20 categorias atingido.")
+        if (!activeDashboard?.dashboard_id) return toast.error("Sem dashboard ativo.")
 
         setIsSubmittingCategory(true)
         try {
+            // A nova API exige color_id e icon_id para criar categoria.
+            // Copiamos de uma categoria existente ou usamos defaults do contexto.
+            const sampleCat = categories[0]
+            const payload: Record<string, any> = {
+                name: newCategoryName.trim(),
+                description: `Categoria ${newCategoryName.trim()}`,
+            }
+
+            if (sampleCat?.color_id) payload.color_id = sampleCat.color_id
+            if (sampleCat?.icon_id) payload.icon_id = sampleCat.icon_id
+
             const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/categories`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: newCategoryName.trim() })
+                credentials: "include",
+                body: JSON.stringify(payload)
             })
-            if (!res.ok) throw new Error("Erro")
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}))
+                throw new Error(errData.detail || errData.message || "Erro ao criar categoria.")
+            }
+
+            const data = await res.json()
+            const createdCat = data.data || data
+            const createdCatId = createdCat.category_id || createdCat.id
+
+            // Associa obrigatoriamente a nova categoria ao tipo de despesa (Record_Type__Category)
+            const expenseType = recordTypes.find((rt: any) => rt.kind === "expense")
+            if (expenseType && createdCatId) {
+                const expTypeId = expenseType.record_type_id || expenseType.id
+                await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/record-types/${expTypeId}/categories`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({ category_id: createdCatId })
+                }).catch(() => {})
+            }
+
             refresh()
-            toast.success("Categoria criada!")
+            toast.success("Categoria criada e associada a Despesas!")
+            if (createdCatId) setNewCategoryId(createdCatId)
             setNewCategoryName("")
             setIsAddingCategory(false)
-        } catch (error) {
-            toast.error("Não foi possível criar a categoria.")
+        } catch (error: any) {
+            toast.error(error.message || "Não foi possível criar a categoria.")
         } finally {
             setIsSubmittingCategory(false)
         }
@@ -130,9 +165,16 @@ export default function ExpensesPage() {
 
     async function handleDeleteCategory(categoryId: string) {
         if (!confirm("Queres eliminar esta categoria?")) return
+        if (!activeDashboard?.dashboard_id) return
+
         setIsSubmittingCategory(true)
         try {
-            await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/categories/${categoryId}`, { method: "DELETE" })
+            const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/categories/${categoryId}`, {
+                method: "DELETE",
+                credentials: "include"
+            })
+            if (!res.ok) throw new Error("Erro")
+
             refresh()
             toast.success("Categoria eliminada.")
             if (newCategoryId === categoryId) setNewCategoryId("")
@@ -148,6 +190,7 @@ export default function ExpensesPage() {
         const parsedAmount = parseFloat(newAmount)
         if (!newTitle.trim() || isNaN(parsedAmount) || parsedAmount <= 0) return
         if (!newCategoryId || !newPaymentMethodId) return toast.error("Seleciona a Categoria e a Conta de Pagamento!")
+        if (!activeDashboard?.dashboard_id) return toast.error("Sem dashboard ativo.")
 
         setIsSubmitting(true)
         try {
@@ -155,12 +198,13 @@ export default function ExpensesPage() {
             const tagNameMap = { "essential": "Essencial", "subscription": "Subscrição", "spontaneous": "Espontânea" }
             const targetTagName = tagNameMap[newNature]
 
-            let targetTag = tags.find((t: any) => t.name.toUpperCase() === targetTagName.toUpperCase())
+            let targetTag = tags.find((t: any) => t.name?.toUpperCase() === targetTagName.toUpperCase())
             if (!targetTag) {
                 const tagRes = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/tags`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ name: targetTagName })
+                    credentials: "include",
+                    body: JSON.stringify({ name: targetTagName, description: `Tag ${targetTagName}` })
                 })
                 if (tagRes.ok) {
                     const tagData = await tagRes.json()
@@ -168,13 +212,15 @@ export default function ExpensesPage() {
                 }
             }
 
+            const tagId = targetTag?.tag_id || targetTag?.id
+
             await addFinancialRecord({
                 name: newTitle,
                 price: parsedAmount,
                 recordTypeName: "EXPENSE",
                 categoryId: newCategoryId,
                 paymentMethodId: newPaymentMethodId,
-                tagIds: targetTag ? [targetTag.id] : []
+                tagIds: tagId ? [tagId] : []
             })
 
             toast.success(`Despesa "${newTitle}" adicionada!`)
@@ -192,8 +238,15 @@ export default function ExpensesPage() {
 
     async function handleDelete(id: string) {
         if (!confirm("Eliminar esta despesa?")) return
+        if (!activeDashboard?.dashboard_id) return
+
         try {
-            await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/financial-records/${id}`, { method: "DELETE" })
+            const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/financial-records/${id}`, {
+                method: "DELETE",
+                credentials: "include"
+            })
+            if (!res.ok) throw new Error("Erro")
+
             refresh()
             toast.success("Despesa eliminada.")
         } catch (error) {
@@ -210,8 +263,8 @@ export default function ExpensesPage() {
                 </div>
                 <div className="flex items-center gap-2 self-start sm:self-auto">
                     <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200/60 dark:border-slate-700">
-                        <button type="button" onClick={() => setViewMode("monthly")} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewMode === "monthly" ? "bg-white dark:bg-slate-900 text-slate-900 shadow-xs" : "text-muted-foreground"}`}>Mensal</button>
-                        <button type="button" onClick={() => setViewMode("annual")} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewMode === "annual" ? "bg-white dark:bg-slate-900 text-slate-900 shadow-xs" : "text-muted-foreground"}`}>Impacto Anual</button>
+                        <button type="button" onClick={() => setViewMode("monthly")} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewMode === "monthly" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs" : "text-muted-foreground"}`}>Mensal</button>
+                        <button type="button" onClick={() => setViewMode("annual")} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewMode === "annual" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs" : "text-muted-foreground"}`}>Impacto Anual</button>
                     </div>
                     <button type="button" onClick={() => setIsAdding((prev) => !prev)} className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-medium px-3.5 py-2 rounded-lg shadow-xs transition-colors">
                         <Plus className="w-4 h-4" />
@@ -241,22 +294,25 @@ export default function ExpensesPage() {
                                 <label className="text-xs font-medium text-muted-foreground">Categoria</label>
                                 {isAddingCategory ? (
                                     <div className="flex items-center gap-1 h-9">
-                                        <input type="text" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} className="h-full w-full rounded-md border border-rose-300 dark:border-rose-700 bg-white px-2 text-xs" autoFocus />
+                                        <input type="text" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} placeholder="Nome da Categoria" className="h-full w-full rounded-md border border-rose-300 dark:border-rose-700 bg-white dark:bg-slate-900 px-2 text-xs" autoFocus />
                                         <button type="button" onClick={handleCreateCategory} disabled={isSubmittingCategory} className="h-full aspect-square bg-rose-600 text-white rounded-md flex items-center justify-center"><Check className="w-4 h-4" /></button>
                                         <button type="button" onClick={() => setIsAddingCategory(false)} className="h-full aspect-square bg-slate-200 text-slate-600 rounded-md flex items-center justify-center"><X className="w-4 h-4" /></button>
                                     </div>
                                 ) : (
                                     <div className="flex gap-1 h-9">
-                                        <select value={newCategoryId} onChange={(e) => setNewCategoryId(e.target.value)} className="h-full flex-1 rounded-md border border-slate-200 bg-white px-3 text-xs" required={!isAddingCategory}>
+                                        <select value={newCategoryId} onChange={(e) => setNewCategoryId(e.target.value)} className="h-full flex-1 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs" required={!isAddingCategory}>
                                             <option value="" disabled>Selecionar...</option>
-                                            {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                            {categories.map((c: any) => {
+                                                const catId = c.category_id || c.id
+                                                return <option key={catId} value={catId}>{c.name}</option>
+                                            })}
                                         </select>
                                         {newCategoryId && (
                                             <button type="button" onClick={() => handleDeleteCategory(newCategoryId)} disabled={isSubmittingCategory} className="h-full aspect-square bg-red-50 text-red-500 rounded-md flex items-center justify-center border border-red-200 hover:bg-red-100">
                                                 <Trash2 className="w-3.5 h-3.5" />
                                             </button>
                                         )}
-                                        <button type="button" onClick={() => setIsAddingCategory(true)} className="h-full aspect-square bg-slate-100 border border-slate-200 rounded-md flex items-center justify-center">
+                                        <button type="button" onClick={() => setIsAddingCategory(true)} className="h-full aspect-square bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md flex items-center justify-center">
                                             <Plus className="w-4 h-4 text-slate-500" />
                                         </button>
                                     </div>
@@ -265,17 +321,20 @@ export default function ExpensesPage() {
 
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs font-medium text-muted-foreground">Pago por</label>
-                                <select value={newPaymentMethodId} onChange={(e) => setNewPaymentMethodId(e.target.value)} className="h-9 rounded-md border border-slate-200 bg-white px-3 text-xs" required>
+                                <select value={newPaymentMethodId} onChange={(e) => setNewPaymentMethodId(e.target.value)} className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs" required>
                                     <option value="" disabled>Conta...</option>
-                                    {paymentMethods.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                    {paymentMethods.map((p: any) => {
+                                        const payId = p.payment_method_id || p.id
+                                        return <option key={payId} value={payId}>{p.name}</option>
+                                    })}
                                 </select>
                             </div>
 
-                            {/* SELECTOR DE NATUREZA / TAG (Espontânea vs Fixa) */}
+                            {/* SELECTOR DE NATUREZA / TAG */}
                             <div className="flex flex-col sm:flex-row gap-3 md:col-span-6 mt-2 items-center justify-between border-t border-rose-100 dark:border-rose-900/50 pt-3">
                                 <div className="flex items-center gap-2">
                                     <label className="text-xs font-medium text-muted-foreground">Classificação:</label>
-                                    <select value={newNature} onChange={(e) => setNewNature(e.target.value as ExpenseNature)} className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs">
+                                    <select value={newNature} onChange={(e) => setNewNature(e.target.value as ExpenseNature)} className="h-8 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 text-xs">
                                         <option value="spontaneous">🛍️ Espontânea / Impulso</option>
                                         <option value="essential">🏠 Essencial Fixa</option>
                                         <option value="subscription">🔄 Subscrição Mensal</option>
@@ -369,26 +428,26 @@ export default function ExpensesPage() {
                         <CardDescription className="text-xs">Percebe onde podes cortar caso precises de poupar mais.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                        <div className="flex items-center justify-between p-3 rounded-xl border border-slate-200/70 bg-slate-50/50">
+                        <div className="flex items-center justify-between p-3 rounded-xl border border-slate-200/70 bg-slate-50/50 dark:bg-slate-900/30 dark:border-slate-800">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-blue-100 rounded-lg"><Home className="w-4 h-4 text-blue-600" /></div>
-                                <div><p className="text-sm font-semibold text-slate-900">Essenciais e Habitação</p><p className="text-xs text-muted-foreground">Custos obrigatórios</p></div>
+                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg"><Home className="w-4 h-4 text-blue-600 dark:text-blue-400" /></div>
+                                <div><p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Essenciais e Habitação</p><p className="text-xs text-muted-foreground">Custos obrigatórios</p></div>
                             </div>
-                            <span className="text-sm font-bold text-slate-900">€ {essentialTotal.toLocaleString("pt-PT")}</span>
+                            <span className="text-sm font-bold text-slate-900 dark:text-slate-100">€ {essentialTotal.toLocaleString("pt-PT")}</span>
                         </div>
-                        <div className="flex items-center justify-between p-3 rounded-xl border border-slate-200/70 bg-slate-50/50">
+                        <div className="flex items-center justify-between p-3 rounded-xl border border-slate-200/70 bg-slate-50/50 dark:bg-slate-900/30 dark:border-slate-800">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-purple-100 rounded-lg"><Repeat className="w-4 h-4 text-purple-600" /></div>
-                                <div><p className="text-sm font-semibold text-slate-900">Subscrições e Serviços</p><p className="text-xs text-muted-foreground">Débitos automáticos</p></div>
+                                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg"><Repeat className="w-4 h-4 text-purple-600 dark:text-purple-400" /></div>
+                                <div><p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Subscrições e Serviços</p><p className="text-xs text-muted-foreground">Débitos automáticos</p></div>
                             </div>
-                            <span className="text-sm font-bold text-slate-900">€ {subscriptionTotal.toLocaleString("pt-PT")}</span>
+                            <span className="text-sm font-bold text-slate-900 dark:text-slate-100">€ {subscriptionTotal.toLocaleString("pt-PT")}</span>
                         </div>
-                        <div className="flex items-center justify-between p-3 rounded-xl border border-rose-200/60 bg-rose-50/30">
+                        <div className="flex items-center justify-between p-3 rounded-xl border border-rose-200/60 bg-rose-50/30 dark:bg-rose-950/20 dark:border-rose-900/50">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-rose-100 rounded-lg"><ShoppingBag className="w-4 h-4 text-rose-600" /></div>
-                                <div><p className="text-sm font-semibold text-slate-900">Despesas Espontâneas</p><p className="text-xs text-rose-700">Onde é mais fácil reduzir</p></div>
+                                <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg"><ShoppingBag className="w-4 h-4 text-rose-600 dark:text-rose-400" /></div>
+                                <div><p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Despesas Espontâneas</p><p className="text-xs text-rose-700 dark:text-rose-400">Onde é mais fácil reduzir</p></div>
                             </div>
-                            <span className="text-sm font-bold text-rose-600">€ {spontaneousTotal.toLocaleString("pt-PT")}</span>
+                            <span className="text-sm font-bold text-rose-600 dark:text-rose-400">€ {spontaneousTotal.toLocaleString("pt-PT")}</span>
                         </div>
                     </CardContent>
                 </Card>
@@ -407,40 +466,43 @@ export default function ExpensesPage() {
                     </CardHeader>
                     <CardContent className="space-y-2.5">
                         {expenses.length === 0 && <p className="text-center text-sm text-muted-foreground py-6">Sem despesas registadas.</p>}
-                        {expenses.map((item: any) => (
-                            <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors">
-                                <div className="flex items-center gap-3">
-                                    <div className={`p-2 rounded-md ${item.nature === "essential" ? "bg-blue-100 text-blue-600" : item.nature === "subscription" ? "bg-purple-100 text-purple-600" : "bg-rose-100 text-rose-600"}`}>
-                                        {item.nature === "essential" && <Home className="w-4 h-4" />}
-                                        {item.nature === "subscription" && <Repeat className="w-4 h-4" />}
-                                        {item.nature === "spontaneous" && <ShoppingBag className="w-4 h-4" />}
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <p className="text-sm font-medium text-slate-900">{item.title}</p>
-                                            {item.nature === "spontaneous" ? (
-                                                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 flex items-center gap-1 border border-rose-200/50">
-                                                    <AlertCircle className="w-2.5 h-2.5" /> Espontânea
-                                                </span>
-                                            ) : (
-                                                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">Recorrente</span>
-                                            )}
+                        {expenses.map((item: any, index: number) => {
+                            const itemId = item.id || index
+                            return (
+                                <div key={itemId} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-md ${item.nature === "essential" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : item.nature === "subscription" ? "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400" : "bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400"}`}>
+                                            {item.nature === "essential" && <Home className="w-4 h-4" />}
+                                            {item.nature === "subscription" && <Repeat className="w-4 h-4" />}
+                                            {item.nature === "spontaneous" && <ShoppingBag className="w-4 h-4" />}
                                         </div>
-                                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                                            {item.categoryName} • {item.date ? new Date(item.date).toLocaleDateString("pt-PT") : ""}
-                                        </p>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{item.title}</p>
+                                                {item.nature === "spontaneous" ? (
+                                                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center gap-1 border border-rose-200/50 dark:border-rose-900/50">
+                                                        <AlertCircle className="w-2.5 h-2.5" /> Espontânea
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Recorrente</span>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                                {item.categoryName} • {item.date ? new Date(item.date).toLocaleDateString("pt-PT") : ""}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-sm sm:text-base font-bold text-rose-600 dark:text-rose-400">
+                                            € {item.amount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
+                                        </span>
+                                        <button type="button" onClick={() => handleDelete(item.id)} className="p-1.5 text-slate-400 hover:text-red-500 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    <span className="text-sm sm:text-base font-bold text-rose-600">
-                                        € {item.amount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
-                                    </span>
-                                    <button type="button" onClick={() => handleDelete(item.id)} className="p-1.5 text-slate-400 hover:text-red-500 rounded-md hover:bg-red-50 transition-colors">
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </CardContent>
                 </Card>
             </div>

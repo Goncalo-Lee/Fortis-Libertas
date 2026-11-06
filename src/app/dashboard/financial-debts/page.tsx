@@ -30,7 +30,7 @@ type DebtHorizon = "short" | "medium" | "long"
 
 export default function DebtsPage() {
     const { activeDashboard } = useDashboard()
-    const { installmentPlans, financialRecords, refresh } = useFinancial()
+    const { installmentPlans, financialRecords, categories, recordTypes, refresh } = useFinancial()
 
     // Estado do Formulário de Criação
     const [isAdding, setIsAdding] = useState(false)
@@ -69,27 +69,32 @@ export default function DebtsPage() {
         return installmentPlans
             .filter((p: any) => p.description && p.description.startsWith("[DEBT]"))
             .map((plan: any) => {
+                const planId = plan.installment_plan_id || plan.id
+
                 const targetAmount = Number(
-                    plan.totalAmount ?? plan.total_amount ?? plan.amount ?? plan.target_amount ?? plan.price ?? 0
+                    plan.total_amount ?? plan.totalAmount ?? plan.amount ?? plan.target_amount ?? plan.price ?? 0
                 )
 
                 const paidAmount = (financialRecords || [])
-                    .filter((r: any) => (r.installmentPlanId || r.installment_plan_id) === plan.id)
+                    .filter((r: any) => (r.installment_plan_id || r.installmentPlanId) === planId)
                     .reduce((acc: number, r: any) => acc + Number(r.price || 0), 0)
 
                 return {
                     ...plan,
+                    id: planId,
+                    installment_plan_id: planId,
                     targetAmount,
                     paidAmount,
-                    monthsRemaining: Number(plan.totalInstallments ?? plan.total_installments ?? 12),
+                    monthsRemaining: Number(plan.total_installments ?? plan.totalInstallments ?? 12),
                     status: plan.status || "pending",
-                    createdAt: plan.createdAt || plan.created_at || new Date().toISOString()
+                    createdAt: plan.created_at || plan.createdAt || new Date().toISOString()
                 }
             })
     }, [installmentPlans, financialRecords])
 
-    const activeDebts = enrichedPlans.filter((p: any) => p.status !== "completed" && p.status !== "cancelled")
-    const completedDebts = enrichedPlans.filter((p: any) => p.status === "completed")
+    // Na nova API o status liquidado é 'paid'
+    const activeDebts = enrichedPlans.filter((p: any) => p.status !== "paid" && p.status !== "cancelled")
+    const completedDebts = enrichedPlans.filter((p: any) => p.status === "paid")
 
     // Dívida selecionada / destaque
     const selectedDebt = useMemo(() => {
@@ -111,6 +116,11 @@ export default function DebtsPage() {
     // ==========================================
     async function handleCreateDebt(e: React.FormEvent) {
         e.preventDefault()
+        if (!activeDashboard?.dashboard_id) {
+            toast.error("Sem dashboard ativo selecionado.")
+            return
+        }
+
         const target = parseFloat(newTarget)
         const months = parseInt(newMonths, 10) || 1
 
@@ -121,18 +131,32 @@ export default function DebtsPage() {
         calculatedDueDate.setMonth(calculatedDueDate.getMonth() + months)
         const dueDateString = calculatedDueDate.toISOString().split("T")[0]
 
+        // Referências obrigatórias para a nova API
+        const expenseType = (recordTypes || []).find((rt: any) => rt.kind === "expense") || recordTypes?.[0]
+        const defaultCategory = categories?.[0]
+
+        const payload: Record<string, any> = {
+            name: newTitle.trim(),
+            description: `[DEBT] Crédito a ${newHorizon === "short" ? "curto" : newHorizon === "medium" ? "médio" : "longo"} prazo`,
+            total_amount: target.toFixed(2),
+            total_installments: months,
+            due_date: dueDateString,
+            status: "pending"
+        }
+
+        if (defaultCategory) {
+            payload.category_id = defaultCategory.category_id || defaultCategory.id
+        }
+        if (expenseType) {
+            payload.record_type_id = expenseType.record_type_id || expenseType.id
+        }
+
         try {
             const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: newTitle.trim(),
-                    description: `[DEBT] Crédito a ${newHorizon === "short" ? "curto" : newHorizon === "medium" ? "médio" : "longo"} prazo`,
-                    total_amount: target.toFixed(2),
-                    total_installments: months,
-                    due_date: dueDateString,
-                    status: "pending"
-                })
+                credentials: "include",
+                body: JSON.stringify(payload)
             })
 
             const resData = await res.json().catch(() => ({}))
@@ -141,7 +165,7 @@ export default function DebtsPage() {
                 if (res.status === 409 || resData.code === "NAME_ALREADY_EXISTS") {
                     throw new Error(`O nome "${newTitle.trim()}" já está a ser utilizado noutro registo.`)
                 }
-                throw new Error(resData.message || "Falha ao registar dívida.")
+                throw new Error(resData.detail || resData.message || "Falha ao registar dívida.")
             }
 
             refresh()
@@ -158,14 +182,15 @@ export default function DebtsPage() {
     }
 
     function openEditModal(debt: any) {
-        setEditingDebt({ id: debt.id, name: debt.name, targetAmount: debt.targetAmount })
+        const debtId = debt.installment_plan_id || debt.id
+        setEditingDebt({ id: debtId, name: debt.name, targetAmount: debt.targetAmount })
         setEditName(debt.name)
         setEditTarget(String(debt.targetAmount))
     }
 
     async function handleSaveEdit(e: React.FormEvent) {
         e.preventDefault()
-        if (!editingDebt) return
+        if (!editingDebt || !activeDashboard?.dashboard_id) return
 
         const target = parseFloat(editTarget)
         if (!editName.trim() || isNaN(target) || target <= 0) {
@@ -177,6 +202,7 @@ export default function DebtsPage() {
             const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${editingDebt.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
+                credentials: "include",
                 body: JSON.stringify({
                     name: editName.trim(),
                     total_amount: target.toFixed(2)
@@ -188,7 +214,7 @@ export default function DebtsPage() {
                 if (res.status === 409 || resData.code === "NAME_ALREADY_EXISTS") {
                     throw new Error(`Já existe outro registo com o nome "${editName.trim()}".`)
                 }
-                throw new Error(resData.message || "Erro ao atualizar dados da dívida.")
+                throw new Error(resData.detail || resData.message || "Erro ao atualizar dados da dívida.")
             }
 
             refresh()
@@ -202,11 +228,13 @@ export default function DebtsPage() {
     }
 
     async function handleCompleteDebt(debtId: string) {
+        if (!activeDashboard?.dashboard_id) return
         try {
             const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${debtId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status: "completed" })
+                credentials: "include",
+                body: JSON.stringify({ status: "paid" })
             })
             if (!res.ok) throw new Error("Falha ao concluir")
 
@@ -223,10 +251,12 @@ export default function DebtsPage() {
     }
 
     async function handleDeleteDebt(id: string) {
+        if (!activeDashboard?.dashboard_id) return
         if (!confirm("Tens a certeza? Os pagamentos associados não serão apagados, mas perderão a ligação a esta dívida.")) return
         try {
             const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${id}`, {
-                method: "DELETE"
+                method: "DELETE",
+                credentials: "include"
             })
             if (!res.ok) throw new Error("Falha ao eliminar")
 
@@ -437,7 +467,7 @@ export default function DebtsPage() {
                                 <div className="text-xl font-bold @[220px]:text-xl @[320px]:text-2xl text-slate-900 dark:text-slate-100">
                                     € {selectedDebt.paidAmount.toLocaleString("pt-PT")}
                                     <span className="text-xs font-normal text-muted-foreground">
-                                        {" "}abertos / € {selectedDebt.targetAmount.toLocaleString("pt-PT")} ({selectedPct}%)
+                                        {" "}amortizados / € {selectedDebt.targetAmount.toLocaleString("pt-PT")} ({selectedPct}%)
                                     </span>
                                 </div>
                                 <div className="w-full max-w-[200px] h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -457,7 +487,7 @@ export default function DebtsPage() {
                 <Card className="@container flex flex-col justify-between py-3 shadow-sm">
                     <CardHeader className="pb-1 w-full">
                         <CardTitle className="text-sm sm:text-base font-medium text-muted-foreground flex items-center justify-center gap-2">
-                            <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-md">
+                            <div className="p-1.5 bg-orange-100 dark:orange-900/30 rounded-md">
                                 <TrendingDown className="w-4 h-4 text-orange-600 dark:text-orange-400" />
                             </div>
                             Esforço Mensal Base
@@ -518,16 +548,17 @@ export default function DebtsPage() {
                         {activeDebts.length === 0 && (
                             <p className="text-sm text-center text-muted-foreground py-6">Excelente, não tens dívidas registadas!</p>
                         )}
-                        {activeDebts.map((debt: any) => {
+                        {activeDebts.map((debt: any, index: number) => {
+                            const debtId = debt.installment_plan_id || debt.id
                             const pct = Math.min(Math.round((debt.paidAmount / debt.targetAmount) * 100), 100)
                             const remaining = Math.max(0, debt.targetAmount - debt.paidAmount)
                             const monthlyNeeded = Math.ceil(remaining / Math.max(1, debt.monthsRemaining))
                             const isReadyToComplete = pct >= 100
-                            const isPrimary = (selectedDebt?.id === debt.id)
+                            const isPrimary = (selectedDebt?.id === debtId)
 
                             return (
                                 <div
-                                    key={debt.id}
+                                    key={debtId || index}
                                     className={`p-4 rounded-xl border space-y-3 transition-all ${
                                         isPrimary
                                             ? "border-rose-400/80 dark:border-rose-500/60 bg-rose-50/20 dark:bg-rose-950/20 shadow-sm"
@@ -550,7 +581,7 @@ export default function DebtsPage() {
                                                 <Clock className="w-3 h-3" />
                                                 {isReadyToComplete
                                                     ? "Valor totalmente liquidado! Pronto para fechar."
-                                                    : `Faltam € ${remaining.toLocaleString("pt-PT")} • Pagamento ref: € ${monthlyNeeded}/mês`}
+                                                    : `Faltam € ${remaining.toLocaleString("pt-PT")} | Pagamento ref: € ${monthlyNeeded}/mês`}
                                             </p>
                                         </div>
 
@@ -596,7 +627,7 @@ export default function DebtsPage() {
                                             {!isPrimary && (
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleSetPrimaryDebt(debt.id)}
+                                                    onClick={() => handleSetPrimaryDebt(debtId)}
                                                     className="text-[11px] font-medium px-2.5 py-1 rounded-md text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors border border-rose-200 dark:border-rose-900/50 cursor-pointer"
                                                 >
                                                     Focar
@@ -614,7 +645,7 @@ export default function DebtsPage() {
                                             ) : (
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleCompleteDebt(debt.id)}
+                                                    onClick={() => handleCompleteDebt(debtId)}
                                                     className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer"
                                                 >
                                                     <CheckCircle2 className="w-3.5 h-3.5" />
@@ -624,7 +655,7 @@ export default function DebtsPage() {
 
                                             <button
                                                 type="button"
-                                                onClick={() => handleDeleteDebt(debt.id)}
+                                                onClick={() => handleDeleteDebt(debtId)}
                                                 className="p-1 text-slate-400 hover:text-red-500 rounded-md transition-colors cursor-pointer"
                                             >
                                                 <Trash2 className="w-4 h-4" />
@@ -650,30 +681,33 @@ export default function DebtsPage() {
                             {completedDebts.length === 0 && (
                                 <p className="text-xs text-center text-muted-foreground py-4">Ainda não liquidaste nenhuma dívida pelo sistema.</p>
                             )}
-                            {completedDebts.map((item: any) => (
-                                <div
-                                    key={item.id}
-                                    className="flex items-center justify-between p-3 rounded-lg border border-emerald-200/50 dark:border-emerald-900/40 bg-emerald-50/30 dark:bg-emerald-950/10"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
-                                            <CheckCircle2 className="w-4 h-4" />
+                            {completedDebts.map((item: any, index: number) => {
+                                const itemId = item.installment_plan_id || item.id
+                                return (
+                                    <div
+                                        key={itemId || index}
+                                        className="flex items-center justify-between p-3 rounded-lg border border-emerald-200/50 dark:border-emerald-900/40 bg-emerald-50/30 dark:bg-emerald-950/10"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
+                                                <CheckCircle2 className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                                    {item.name}
+                                                </p>
+                                                <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                                    <Calendar className="w-3 h-3" />
+                                                    {new Date(item.createdAt).toLocaleDateString("pt-PT")}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                                                {item.name}
-                                            </p>
-                                            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                                                <Calendar className="w-3 h-3" />
-                                                {new Date(item.createdAt).toLocaleDateString("pt-PT")}
-                                            </p>
-                                        </div>
+                                        <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                                            € {item.targetAmount.toLocaleString("pt-PT")}
+                                        </span>
                                     </div>
-                                    <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
-                                        € {item.targetAmount.toLocaleString("pt-PT")}
-                                    </span>
-                                </div>
-                            ))}
+                                )
+                            })}
                         </CardContent>
                     </Card>
                 </div>

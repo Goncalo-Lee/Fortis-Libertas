@@ -5,14 +5,9 @@ import { useDashboard } from './DashboardContext';
 
 const FinancialContext = createContext<any>(undefined);
 
-/**
- * Helper function to safely fetch data and handle non-JSON responses.
- * Prevents the application from crashing with "Unexpected token '<'"
- * if the server returns an HTML error page (e.g., 404 or 500).
- */
 async function safeFetch(url: string) {
     try {
-        const res = await fetch(url);
+        const res = await fetch(url, { credentials: 'include' });
         if (!res.ok) {
             console.error(`Fetch failed for ${url}: Status ${res.status} (${res.statusText})`);
             return null;
@@ -38,6 +33,7 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
     // Transactional data states
     const [financialRecords, setFinancialRecords] = useState<any[]>([]);
     const [installmentPlans, setInstallmentPlans] = useState<any[]>([]);
+    const [dashboardBalance, setDashboardBalance] = useState<number | null>(null);
 
     // UI states
     const [loading, setLoading] = useState(true);
@@ -62,9 +58,9 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
 
         const dashId = activeDashboard.dashboard_id;
 
-        // Transformámos a Promise.all numa função async para permitir o Auto-Provisionamento
         async function fetchEcosystem() {
             try {
+                // Adicionámos per_page=100 para trazer os catálogos completos e include nos registos
                 const [
                     banksData,
                     cardsData,
@@ -73,50 +69,36 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
                     paysData,
                     typesData,
                     recordsData,
-                    plansData
+                    plansData,
+                    balanceData
                 ] = await Promise.all([
-                    safeFetch('/api/v1/bank-accounts'),
-                    safeFetch('/api/v1/cards'),
-                    safeFetch(`/api/v1/dashboards/${dashId}/categories`),
-                    safeFetch(`/api/v1/dashboards/${dashId}/tags`),
-                    safeFetch(`/api/v1/dashboards/${dashId}/payment-methods`),
-                    safeFetch(`/api/v1/dashboards/${dashId}/record-types`),
-                    safeFetch(`/api/v1/dashboards/${dashId}/financial-records`),
-                    safeFetch(`/api/v1/dashboards/${dashId}/installment-plans`),
+                    safeFetch('/api/v1/bank-accounts?per_page=100'),
+                    safeFetch('/api/v1/cards?per_page=100'),
+                    safeFetch(`/api/v1/dashboards/${dashId}/categories?per_page=100&include=tags`),
+                    safeFetch(`/api/v1/dashboards/${dashId}/tags?per_page=100`),
+                    safeFetch(`/api/v1/dashboards/${dashId}/payment-methods?per_page=100`),
+                    safeFetch(`/api/v1/dashboards/${dashId}/record-types?per_page=100`),
+                    safeFetch(`/api/v1/dashboards/${dashId}/financial-records?per_page=100&include=record_type,category,payment_method,installment_plan`),
+                    safeFetch(`/api/v1/dashboards/${dashId}/installment-plans?per_page=100`),
+                    safeFetch(`/api/v1/dashboards/${dashId}/balance`),
                 ]);
 
-                let fetchedTypes = typesData?.data || typesData || [];
+                // Nota: Removemos o auto-provisioning porque a nova API exige color_id e icon_id,
+                // e já cria automaticamente Income, Expenses e Investment ao criar um Dashboard.
+                setBankAccounts(banksData?.data || []);
+                setCards(cardsData?.data || []);
+                setCategories(catsData?.data || []);
+                setTags(tagsData?.data || []);
+                setPaymentMethods(paysData?.data || []);
+                setRecordTypes(typesData?.data || []);
+                setFinancialRecords(recordsData?.data || []);
+                setInstallmentPlans(plansData?.data || []);
 
-                // AUTO-PROVISIONING: Garante que INCOME e EXPENSE existem na BD para novos utilizadores
-                const baseTypes = ["INCOME", "EXPENSE"];
-                for (const typeName of baseTypes) {
-                    const exists = fetchedTypes.some((t: any) => t.name && t.name.toUpperCase() === typeName);
-                    if (!exists) {
-                        try {
-                            const createRes = await fetch(`/api/v1/dashboards/${dashId}/record-types`, {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ name: typeName, description: `System generated ${typeName}` })
-                            });
-                            if (createRes.ok) {
-                                const newType = await createRes.json();
-                                fetchedTypes.push(newType.data || newType);
-                            }
-                        } catch (err) {
-                            console.error(`Failed to auto-create record type ${typeName}:`, err);
-                        }
-                    }
+                if (balanceData?.data?.balance !== undefined) {
+                    setDashboardBalance(Number(balanceData.data.balance));
+                } else {
+                    setDashboardBalance(null);
                 }
-
-                // Guardar nos estados (igual ao teu código original)
-                setBankAccounts(banksData?.data || banksData || []);
-                setCards(cardsData?.data || cardsData || []);
-                setCategories(catsData?.data || catsData || []);
-                setTags(tagsData?.data || tagsData || []);
-                setPaymentMethods(paysData?.data || paysData || []);
-                setRecordTypes(fetchedTypes); // Usamos a lista que já inclui os gerados automaticamente
-                setFinancialRecords(recordsData?.data || recordsData || []);
-                setInstallmentPlans(plansData?.data || plansData || []);
 
             } catch (err) {
                 console.error("Error syncing financial ecosystem:", err);
@@ -131,81 +113,121 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
     }, [activeDashboard, dashLoading, refreshKey]);
 
     // ==========================================
-    // FUNÇÃO PARA ADICIONAR REGISTOS (Disponível em qualquer página)
+    // FUNÇÃO PARA ADICIONAR REGISTOS
     // ==========================================
     const addFinancialRecord = async (recordData: {
         name: string;
-        price: number;
-        recordTypeName: "INCOME" | "EXPENSE";
+        description?: string | null;
+        price: number | string;
+        recordTypeName?: "INCOME" | "EXPENSE" | "NEUTRAL";
+        recordTypeId?: string;
         categoryId: string;
         paymentMethodId: string;
+        currency?: string;
+        status?: "active" | "settled" | "cancelled" | "pending" | "paid" | "late";
+        paymentDate?: string;
+        tagIds?: string[];
     }) => {
         if (!activeDashboard?.dashboard_id) throw new Error("Sem dashboard ativo.");
 
-        // Procura o ID correto (case-insensitive para não falhar)
-        const targetType = recordTypes.find((rt: any) => rt.name && rt.name.toUpperCase() === recordData.recordTypeName);
-        if (!targetType) {
-            throw new Error(`Tipo de registo '${recordData.recordTypeName}' não encontrado.`);
+        let resolvedRecordTypeId = recordData.recordTypeId;
+
+        if (!resolvedRecordTypeId && recordData.recordTypeName) {
+            const desiredKind = recordData.recordTypeName.toLowerCase(); // 'income' | 'expense' | 'neutral'
+
+            // 1. Procura pelo campo oficial `kind` da nova API ('income', 'expense', 'neutral')
+            let targetType = recordTypes.find((rt: any) => rt.kind === desiredKind);
+
+            // 2. Fallback por nome (cobre "Expenses", "Expense", "Despesa", "Income", "Receita")
+            if (!targetType) {
+                targetType = recordTypes.find((rt: any) => {
+                    const n = (rt.name || "").toUpperCase();
+                    if (desiredKind === "expense") return n.includes("EXPENSE") || n.includes("DESPESA");
+                    if (desiredKind === "income") return n.includes("INCOME") || n.includes("RECEITA");
+                    return n === recordData.recordTypeName?.toUpperCase();
+                });
+            }
+
+            if (!targetType) {
+                throw new Error(`Tipo de registo '${recordData.recordTypeName}' não encontrado neste dashboard.`);
+            }
+            resolvedRecordTypeId = targetType.record_type_id || targetType.id;
         }
+
+        // A API exige que `price` seja uma decimal string com até 2 casas decimais (ex: "40.00")
+        const formattedPrice = Number(recordData.price).toFixed(2);
+
+        const payload: Record<string, any> = {
+            name: recordData.name,
+            description: recordData.description ?? null,
+            price: formattedPrice,
+            record_type_id: resolvedRecordTypeId,
+            category_id: recordData.categoryId,
+            payment_method_id: recordData.paymentMethodId,
+            installment_plan_id: null,
+            status: recordData.status || "paid",
+            payment_date: recordData.paymentDate || new Date().toISOString(),
+        };
+
+        if (recordData.currency) payload.currency = recordData.currency;
+        if (recordData.tagIds && recordData.tagIds.length > 0) payload.tag_ids = recordData.tagIds;
 
         const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/financial-records`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                name: recordData.name,
-                price: recordData.price,
-                // Apanha o ID, quer ele venha como `id` ou como `record_type_id` da base de dados
-                record_type_id: targetType.id || targetType.record_type_id,
-                category_id: recordData.categoryId,
-                payment_method_id: recordData.paymentMethodId,
-                currency: "EUR",
-                status: "paid",
-                payment_date: new Date().toISOString()
-            })
+            credentials: "include",
+            body: JSON.stringify(payload)
         });
 
         if (!res.ok) {
             const errJson = await res.json().catch(() => ({}));
-            throw new Error(errJson.message || "Erro ao gravar registo financeiro.");
+            // A nova API usa RFC 9457 (detail / errors)
+            const detailMsg = errJson.detail || errJson.title || errJson.message || "Erro ao gravar registo financeiro.";
+            throw new Error(detailMsg);
         }
 
-        refresh(); // Atualiza os dados globalmente de forma imediata
+        refresh();
         return await res.json();
     };
 
     /* ==========================================
-           DERIVED STATE (CALCULATIONS)
-           ========================================== */
+       DERIVED STATE (CALCULATIONS)
+       ========================================== */
     const balance = useMemo(() => {
-        if (!bankAccounts.length && !financialRecords.length) return 0;
-
-        const totalInitial = bankAccounts.reduce((acc, account) => {
+        // 1. Somamos o saldo inicial de todas as contas bancárias
+        const totalBanks = bankAccounts.reduce((acc, account) => {
             const initial = account.initialBalance ?? account.initial_balance ?? 0;
             return acc + Number(initial);
         }, 0);
 
+        // 2. Se o endpoint oficial /balance respondeu, usamos o cashflow do servidor + saldo dos bancos
+        if (dashboardBalance !== null) {
+            return totalBanks + dashboardBalance;
+        }
+
+        // 3. Fallback: Se não houver registos e o servidor falhar, devolve só o dinheiro dos bancos
+        if (!financialRecords.length) return totalBanks;
+
+        // 4. Fallback local respeitando as regras da nova API
         const totalRecords = financialRecords.reduce((acc, record) => {
-            const price = Number(record.price || 0);
-
-            let typeName = "";
-            if (record.recordType?.name) {
-                typeName = record.recordType.name.toLowerCase();
-            } else {
-                const rt = recordTypes.find((t: any) => t.id === record.recordTypeId);
-                if (rt) typeName = rt.name.toLowerCase();
+            if (record.status !== 'paid' && record.status !== 'settled') {
+                return acc;
             }
 
-            const isExpense = typeName.includes('despesa') || typeName.includes('expense');
+            const amount = Number(record.converted?.amount ?? record.price ?? 0);
+            const rtId = record.record_type_id || record.recordTypeId;
+            const rt = recordTypes.find((t: any) => (t.record_type_id || t.id) === rtId);
 
-            if (isExpense) {
-                return acc - Math.abs(price);
-            } else {
-                return acc + Math.abs(price);
-            }
+            const kind = rt?.kind || record.record_type?.kind;
+
+            if (kind === 'expense') return acc - Math.abs(amount);
+            if (kind === 'income') return acc + Math.abs(amount);
+            return acc;
         }, 0);
 
-        return totalInitial + totalRecords;
-    }, [bankAccounts, financialRecords, recordTypes]);
+        return totalBanks + totalRecords;
+    }, [dashboardBalance, financialRecords, recordTypes, bankAccounts]);
+    
 
     return (
         <FinancialContext.Provider value={{
@@ -221,11 +243,15 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
             loading,
             error,
             refresh,
-            addFinancialRecord // Exportamos a função!
+            addFinancialRecord
         }}>
             {children}
         </FinancialContext.Provider>
     );
 }
 
-export const useFinancial = () => useContext(FinancialContext);
+export const useFinancial = () => {
+    const context = useContext(FinancialContext);
+    if (!context) throw new Error("useFinancial tem de ser usado dentro de um FinancialProvider");
+    return context;
+};

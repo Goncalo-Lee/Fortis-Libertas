@@ -29,7 +29,7 @@ import autoTable from "jspdf-autotable"
 type ReportType = "statement" | "expenses_by_category" | "monthly_balance"
 
 export default function ReportsGeneratorPage() {
-    const { financialRecords, categories, paymentMethods } = useFinancial()
+    const { financialRecords, categories, paymentMethods, recordTypes } = useFinancial()
 
     // Controlos de Filtro
     const [reportType, setReportType] = useState<ReportType>("statement")
@@ -41,24 +41,34 @@ export default function ReportsGeneratorPage() {
     const [previewData, setPreviewData] = useState<any[] | null>(null)
 
     // ============================================================================
-    // HELPERS ROBUSTOS (Lidam com objectos aninhados ou IDs)
+    // HELPERS ROBUSTOS (Lidam com objectos aninhados e IDs da nova API)
     // ============================================================================
     const getCategoryName = (r: any) => {
-        if (r.category?.name) return r.category.name;
-        const id = r.categoryId || r.category_id;
-        return categories?.find((c: any) => c.id === id)?.name || "Sem categoria";
+        if (r.category?.name) return r.category.name
+        const id = r.category_id || r.categoryId
+        return categories?.find((c: any) => (c.category_id || c.id) === id)?.name || "Sem categoria"
     }
 
     const getAccountName = (r: any) => {
-        if (r.paymentMethod?.name) return r.paymentMethod.name;
-        const id = r.paymentMethodId || r.payment_method_id;
-        return paymentMethods?.find((p: any) => p.id === id)?.name || "Conta Desconhecida";
+        if (r.paymentMethod?.name) return r.paymentMethod.name
+        if (r.payment_method?.name) return r.payment_method.name
+        const id = r.payment_method_id || r.paymentMethodId
+        return paymentMethods?.find((p: any) => (p.payment_method_id || p.id) === id)?.name || "Conta Desconhecida"
+    }
+
+    const isIncomeRecord = (r: any) => {
+        const rtId = r.record_type_id || r.recordTypeId || r.recordType?.record_type_id || r.recordType?.id
+        const rt = (recordTypes || []).find((t: any) => (t.record_type_id || t.id) === rtId)
+        const kind = rt?.kind || r.record_type?.kind
+        const typeName = (rt?.name || r.recordType?.name || r.record_type_name || "").toLowerCase()
+
+        return kind === "income" || typeName.includes("income") || typeName.includes("receita") || typeName.includes("rendimento")
     }
 
     const availableYears = useMemo(() => {
         if (!financialRecords || financialRecords.length === 0) return [new Date().getFullYear()]
-        const years = financialRecords.map((r: any) => new Date(r.paymentDate || r.payment_date).getFullYear())
-        return Array.from(new Set(years)).sort((a, b) => b - a)
+        const years = financialRecords.map((r: any) => new Date(r.payment_date || r.paymentDate).getFullYear())
+        return Array.from(new Set(years)).sort((a: number, b: number) => b - a)
     }, [financialRecords])
 
     // ============================================================================
@@ -72,26 +82,29 @@ export default function ReportsGeneratorPage() {
 
         setTimeout(() => {
             const filteredRecords = financialRecords.filter((r: any) => {
-                const d = new Date(r.paymentDate || r.payment_date)
+                const dateVal = r.payment_date || r.paymentDate
+                if (!dateVal) return false
+                const d = new Date(dateVal)
                 return d.getMonth() + 1 === parseInt(selectedMonth) && d.getFullYear() === parseInt(selectedYear)
             })
 
             let generatedData: any[] = []
 
             if (reportType === "statement") {
-                generatedData = filteredRecords.map((r: any) => ({
-                    Data: new Date(r.paymentDate || r.payment_date).toLocaleDateString("pt-PT"),
-                    Descrição: r.name,
-                    Tipo: r.recordType?.name === "INCOME" || r.record_type_name === "INCOME" ? "Receita" : "Despesa",
-                    Categoria: getCategoryName(r),
-                    Conta: getAccountName(r),
-                    "Valor (€)": Number(r.price || 0).toFixed(2),
-                }))
+                generatedData = filteredRecords.map((r: any) => {
+                    const isIncome = isIncomeRecord(r)
+                    return {
+                        Data: new Date(r.payment_date || r.paymentDate).toLocaleDateString("pt-PT"),
+                        Descrição: r.name,
+                        Tipo: isIncome ? "Receita" : "Despesa",
+                        Categoria: getCategoryName(r),
+                        Conta: getAccountName(r),
+                        "Valor (€)": Number(r.price || 0).toFixed(2),
+                    }
+                })
             }
             else if (reportType === "expenses_by_category") {
-                const expenses = filteredRecords.filter((r: any) =>
-                    r.recordType?.name === "EXPENSE" || r.record_type_name === "EXPENSE"
-                )
+                const expenses = filteredRecords.filter((r: any) => !isIncomeRecord(r))
                 const grouped = expenses.reduce((acc: any, r: any) => {
                     const cat = getCategoryName(r)
                     acc[cat] = (acc[cat] || 0) + Number(r.price || 0)
@@ -106,7 +119,7 @@ export default function ReportsGeneratorPage() {
                 let totalExpense = 0
                 filteredRecords.forEach((r: any) => {
                     const amount = Number(r.price || 0)
-                    if (r.recordType?.name === "INCOME" || r.record_type_name === "INCOME") {
+                    if (isIncomeRecord(r)) {
                         totalIncome += amount
                     } else {
                         totalExpense += amount
@@ -134,7 +147,6 @@ export default function ReportsGeneratorPage() {
         const headers = Object.keys(previewData[0])
         const csvRows = []
 
-        // Usa ponto e vírgula para separar as colunas (Padrão Excel PT)
         csvRows.push(headers.join(";"))
 
         for (const row of previewData) {
@@ -159,6 +171,7 @@ export default function ReportsGeneratorPage() {
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
+        URL.revokeObjectURL(url)
 
         toast.success("CSV gerado com sucesso.")
     }
@@ -205,7 +218,7 @@ export default function ReportsGeneratorPage() {
 
                 {/* CABEÇALHO */}
                 <div className="flex flex-col space-y-1">
-                    <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                    <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2">
                         Gerador de Relatórios
                     </h2>
                     <p className="text-muted-foreground text-xs sm:text-sm">
@@ -298,7 +311,7 @@ export default function ReportsGeneratorPage() {
                                         </div>
                                     </div>
 
-                                    <Button type="submit" disabled={isGenerating} className="w-full gap-2">
+                                    <Button type="submit" disabled={isGenerating} className="w-full gap-2 cursor-pointer">
                                         {isGenerating ? "A processar..." : "Gerar Pré-visualização"}
                                     </Button>
                                 </form>
@@ -324,7 +337,7 @@ export default function ReportsGeneratorPage() {
                                         variant="outline"
                                         onClick={handleExportCSV}
                                         disabled={!previewData || previewData.length === 0}
-                                        className="gap-2 border-emerald-200 hover:bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:hover:bg-emerald-950 dark:text-emerald-400"
+                                        className="gap-2 border-emerald-200 hover:bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:hover:bg-emerald-950 dark:text-emerald-400 cursor-pointer"
                                     >
                                         <Download className="w-4 h-4"/> CSV / Excel
                                     </Button>
@@ -332,7 +345,7 @@ export default function ReportsGeneratorPage() {
                                         variant="outline"
                                         onClick={handleExportPDF}
                                         disabled={!previewData || previewData.length === 0}
-                                        className="gap-2 border-rose-200 hover:bg-rose-50 text-rose-700 dark:border-rose-800 dark:hover:bg-rose-950 dark:text-rose-400"
+                                        className="gap-2 border-rose-200 hover:bg-rose-50 text-rose-700 dark:border-rose-800 dark:hover:bg-rose-950 dark:text-rose-400 cursor-pointer"
                                     >
                                         <FileDown className="w-4 h-4"/> PDF
                                     </Button>

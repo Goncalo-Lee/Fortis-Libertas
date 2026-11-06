@@ -1,10 +1,9 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo } from "react"
 import {
     Card,
     CardContent,
-    CardDescription,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
@@ -22,7 +21,6 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import {
     Receipt,
-    FilePlus,
     UploadCloud,
     Download,
     Trash2,
@@ -30,12 +28,12 @@ import {
     FileText,
     Link as LinkIcon,
     Loader2,
-    CheckCircle2, Plus
+    CheckCircle2,
+    Plus
 } from "lucide-react"
 import { toast } from "sonner"
 import { useFinancial } from "@/contexts/FinancialContext"
 
-// Interface adaptada para quando ligares ao backend
 interface InvoiceItem {
     id: string
     date: string
@@ -47,14 +45,13 @@ interface InvoiceItem {
 }
 
 export default function InvoicesPage() {
-    const { financialRecords } = useFinancial()
+    const { financialRecords, recordTypes } = useFinancial()
 
     const [searchQuery, setSearchQuery] = useState("")
     const [isUploadOpen, setIsUploadOpen] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
-    // Estado limpo, sem hardcoded!
-    // Futuramente, substituis isto por um useEffect que faz fetch das faturas à BD.
+    // Estado local para faturas
     const [invoices, setInvoices] = useState<InvoiceItem[]>([])
 
     // Estados do Formulário de Upload
@@ -67,10 +64,21 @@ export default function InvoicesPage() {
     const recentExpenses = useMemo(() => {
         if (!financialRecords) return []
         return financialRecords
-            .filter((r: any) => r.recordType?.name === "EXPENSE" || r.record_type_name === "EXPENSE")
-            .sort((a: any, b: any) => new Date(b.paymentDate || b.payment_date).getTime() - new Date(a.paymentDate || a.payment_date).getTime())
+            .filter((r: any) => {
+                const rtId = r.record_type_id || r.recordTypeId || r.recordType?.record_type_id || r.recordType?.id
+                const rt = (recordTypes || []).find((t: any) => (t.record_type_id || t.id) === rtId)
+                const kind = rt?.kind || r.record_type?.kind
+                const typeName = (rt?.name || r.recordType?.name || "").toLowerCase()
+
+                return kind === "expense" || typeName.includes("expense") || typeName.includes("despesa")
+            })
+            .sort((a: any, b: any) => {
+                const dateB = new Date(b.payment_date || b.paymentDate || 0).getTime()
+                const dateA = new Date(a.payment_date || a.paymentDate || 0).getTime()
+                return dateB - dateA
+            })
             .slice(0, 30)
-    }, [financialRecords])
+    }, [financialRecords, recordTypes])
 
     // Filtrar faturas pela barra de pesquisa
     const filteredInvoices = invoices.filter(inv =>
@@ -90,11 +98,6 @@ export default function InvoicesPage() {
         setIsSubmitting(true)
 
         try {
-            // AQUI ENTRARÁ O TEU ENDPOINT REAL:
-            // const res = await fetch('/api/v1/invoices', { method: 'POST', body: ... })
-            // const data = await res.json()
-
-            // Lógica provisória apenas para a UI não quebrar enquanto não ligas o backend
             const newInvoice: InvoiceItem = {
                 id: crypto.randomUUID(),
                 date: newInvDate,
@@ -121,8 +124,7 @@ export default function InvoicesPage() {
     }
 
     const handleDelete = async (id: string) => {
-        if(confirm("Tens a certeza que queres eliminar este documento?")) {
-            // AQUI ENTRARÁ O DELETE À BD
+        if (confirm("Tens a certeza que queres eliminar este documento?")) {
             setInvoices(prev => prev.filter(inv => inv.id !== id))
             toast.success("Fatura eliminada do arquivo.")
         }
@@ -144,11 +146,11 @@ export default function InvoicesPage() {
                     </div>
 
                     <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-                        <DialogTrigger
-                            render={<Button className="gap-2 shrink-0" />}
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span>Nova Fatura</span>
+                        <DialogTrigger asChild>
+                            <Button className="gap-2 shrink-0 cursor-pointer">
+                                <Plus className="w-4 h-4" />
+                                <span>Nova Fatura</span>
+                            </Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-md font-poppins">
                             <DialogHeader>
@@ -214,11 +216,15 @@ export default function InvoicesPage() {
                                             className="w-full h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 text-sm"
                                         >
                                             <option value="">-- Não associar para já --</option>
-                                            {recentExpenses.map((r: any) => (
-                                                <option key={r.id} value={r.id}>
-                                                    {new Date(r.paymentDate || r.payment_date).toLocaleDateString("pt-PT")} - {r.name} (€{Number(r.price).toFixed(2)})
-                                                </option>
-                                            ))}
+                                            {recentExpenses.map((r: any, idx: number) => {
+                                                const recordId = r.financial_record_id || r.id || idx
+                                                const recordDate = r.payment_date || r.paymentDate
+                                                return (
+                                                    <option key={recordId} value={recordId}>
+                                                        {recordDate ? new Date(recordDate).toLocaleDateString("pt-PT") : "Sem data"} - {r.name} (€{Number(r.price || 0).toFixed(2)})
+                                                    </option>
+                                                )
+                                            })}
                                         </select>
                                     </div>
                                 </div>

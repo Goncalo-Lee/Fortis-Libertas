@@ -14,7 +14,11 @@ export function FinanceCalendar() {
   const [currentDate, setCurrentDate] = React.useState(new Date())
 
   // Estado para o Modal interno
-  const [selectedDayInfo, setSelectedDayInfo] = React.useState<{ date: Date, incomes: any[], expenses: any[] } | null>(null)
+  const [selectedDayInfo, setSelectedDayInfo] = React.useState<{
+    date: Date
+    incomes: any[]
+    expenses: any[]
+  } | null>(null)
 
   // Cálculos do mês atual
   const firstDayOfMonth = startOfMonth(currentDate)
@@ -27,7 +31,6 @@ export function FinanceCalendar() {
 
   return (
       <Card className="relative flex h-full w-full flex-col gap-2 py-3 font-poppins shadow-sm overflow-hidden">
-
         {/* CABEÇALHO COM TÍTULO CENTRADO */}
         <CardHeader className="relative flex shrink-0 flex-row items-center justify-center px-3 pb-2 pt-1">
           <CardTitle className="text-sm sm:text-base capitalize font-bold text-slate-900 dark:text-slate-100">
@@ -46,7 +49,13 @@ export function FinanceCalendar() {
         <CardContent className="flex min-h-0 flex-1 flex-col px-3 pb-3">
           {/* DIAS DA SEMANA */}
           <div className="mb-2 grid shrink-0 grid-cols-7 gap-1 text-center text-[10px] sm:text-xs font-semibold text-muted-foreground">
-            <div>D</div><div>S</div><div>T</div><div>Q</div><div>Q</div><div>S</div><div>S</div>
+            <div>D</div>
+            <div>S</div>
+            <div>T</div>
+            <div>Q</div>
+            <div>Q</div>
+            <div>S</div>
+            <div>S</div>
           </div>
 
           {/* GRELHA DO CALENDÁRIO */}
@@ -69,15 +78,18 @@ export function FinanceCalendar() {
               const expenses: any[] = []
 
               dayMovements.forEach((m: any) => {
-                let typeName = m.recordType?.name || ""
-                if (!typeName) {
-                  const typeId = m.recordTypeId || m.record_type_id
-                  const rt = (recordTypes || []).find((t: any) => t.id === typeId)
-                  if (rt) typeName = rt.name
+                const rtId = m.record_type_id || m.recordTypeId
+                const rt = (recordTypes || []).find((t: any) => (t.record_type_id || t.id) === rtId)
+                const kind = rt?.kind || m.record_type?.kind
+                const typeName = (rt?.name || m.record_type?.name || "").toLowerCase()
+
+                const isExpense = kind === "expense" || typeName.includes("despesa") || typeName.includes("expense")
+
+                if (isExpense) {
+                  expenses.push(m)
+                } else {
+                  incomes.push(m)
                 }
-                const isExpense = typeName.toLowerCase().includes("despesa") || typeName.toLowerCase().includes("expense")
-                if (isExpense) expenses.push(m)
-                else incomes.push(m)
               })
 
               const hasMovements = incomes.length > 0 || expenses.length > 0
@@ -89,13 +101,17 @@ export function FinanceCalendar() {
                       onClick={() => hasMovements && setSelectedDayInfo({ date: day, incomes, expenses })}
                       disabled={!hasMovements}
                       className={`relative flex min-h-0 flex-col items-center justify-center overflow-hidden rounded-md border text-[10px] sm:text-xs leading-none transition-all duration-200 
-                          ${isToday ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 font-bold shadow-sm" : "border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600"}
-                          ${hasMovements ? "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800" : "cursor-default opacity-80 shadow-none"}
-                      `}
+                  ${
+                          isToday
+                              ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 font-bold shadow-sm"
+                              : "border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600"
+                      }
+                  ${hasMovements ? "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800" : "cursor-default opacity-80 shadow-none"}
+                `}
                   >
                     <span className="font-medium z-10">{format(day, "d")}</span>
 
-                    {/* Contentor das bolinhas */}
+                    {/* Contentor dos indicadores */}
                     <div className="mt-1 flex gap-1 h-1.5 items-center z-10">
                       {incomes.length > 0 && (
                           <span className="size-1.5 sm:size-2 rounded-full bg-emerald-500 shadow-sm" />
@@ -117,41 +133,54 @@ export function FinanceCalendar() {
                 <h3 className="font-bold text-slate-900 dark:text-slate-100">
                   {format(selectedDayInfo.date, "dd 'de' MMMM", { locale: pt })}
                 </h3>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-900 hover:bg-slate-200" onClick={() => setSelectedDayInfo(null)}>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-900 hover:bg-slate-200"
+                    onClick={() => setSelectedDayInfo(null)}
+                >
                   <X className="w-4 h-4" />
                 </Button>
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+                {/* ENTRADAS */}
                 {selectedDayInfo.incomes.length > 0 && (
                     <div className="space-y-2">
                       <h4 className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Entradas</h4>
-                      {selectedDayInfo.incomes.map((inc) => (
-                          <div key={inc.id} className="flex justify-between items-center bg-emerald-50/50 dark:bg-emerald-950/20 p-2.5 rounded-lg border border-emerald-100 dark:border-emerald-900/50">
-                                    <span className="text-sm font-medium flex items-center gap-2">
-                                        <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500" />
-                                      {inc.name}
-                                    </span>
+                      {selectedDayInfo.incomes.map((inc: any, index: number) => (
+                          <div
+                              key={inc.financial_record_id || inc.id || index}
+                              className="flex justify-between items-center bg-emerald-50/50 dark:bg-emerald-950/20 p-2.5 rounded-lg border border-emerald-100 dark:border-emerald-900/50"
+                          >
+                    <span className="text-sm font-medium flex items-center gap-2">
+                      <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500" />
+                      {inc.name}
+                    </span>
                             <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                                        + €{Number(inc.price || 0).toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
-                                    </span>
+                      + €{Number(inc.price || 0).toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
+                    </span>
                           </div>
                       ))}
                     </div>
                 )}
 
+                {/* SAÍDAS */}
                 {selectedDayInfo.expenses.length > 0 && (
                     <div className="space-y-2">
                       <h4 className="text-[11px] font-bold text-red-600 uppercase tracking-wider">Saídas</h4>
-                      {selectedDayInfo.expenses.map((exp) => (
-                          <div key={exp.id} className="flex justify-between items-center bg-red-50/50 dark:bg-red-950/20 p-2.5 rounded-lg border border-red-100 dark:border-red-900/50">
-                                    <span className="text-sm font-medium flex items-center gap-2">
-                                        <ArrowDownRight className="w-3.5 h-3.5 text-red-500" />
-                                      {exp.name}
-                                    </span>
+                      {selectedDayInfo.expenses.map((exp: any, index: number) => (
+                          <div
+                              key={exp.financial_record_id || exp.id || index}
+                              className="flex justify-between items-center bg-red-50/50 dark:bg-red-950/20 p-2.5 rounded-lg border border-red-100 dark:border-red-900/50"
+                          >
+                    <span className="text-sm font-medium flex items-center gap-2">
+                      <ArrowDownRight className="w-3.5 h-3.5 text-red-500" />
+                      {exp.name}
+                    </span>
                             <span className="text-sm font-bold text-red-600 dark:text-red-400">
-                                        - €{Number(exp.price || 0).toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
-                                    </span>
+                      - €{Number(exp.price || 0).toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
+                    </span>
                           </div>
                       ))}
                     </div>

@@ -51,17 +51,18 @@ export default function IncomesPage() {
         if (!financialRecords || !recordTypes) return []
 
         return financialRecords.filter((record: any) => {
-            let typeName = record.recordType?.name || ""
-            if (!typeName) {
-                const typeId = record.recordTypeId || record.record_type_id
-                const rt = recordTypes.find((t: any) => t.id === typeId)
-                if (rt) typeName = rt.name
-            }
-            return typeName.toUpperCase() === "INCOME"
+            const rtId = record.record_type_id || record.recordTypeId || record.recordType?.record_type_id || record.recordType?.id
+            const rt = recordTypes.find((t: any) => (t.record_type_id || t.id) === rtId)
+
+            const kind = rt?.kind || record.record_type?.kind
+            const typeName = (rt?.name || record.recordType?.name || "").toLowerCase()
+
+            return kind === "income" || typeName.includes("receita") || typeName.includes("rendimento") || typeName.includes("income")
         }).map((record: any) => {
-            const catId = record.categoryId || record.category_id
-            const categoryObj = categories.find((c: any) => c.id === catId)
-            const searchName = (categoryObj?.name || record.name).toLowerCase()
+            const recordId = record.financial_record_id || record.id
+            const catId = record.category_id || record.categoryId || record.category?.category_id || record.category?.id
+            const categoryObj = categories.find((c: any) => (c.category_id || c.id) === catId)
+            const searchName = (categoryObj?.name || record.name || "").toLowerCase()
 
             let uiCategory = "extra"
             if (searchName.includes("refeição") || searchName.includes("meal") || searchName.includes("alimentação")) {
@@ -71,11 +72,11 @@ export default function IncomesPage() {
             }
 
             return {
-                id: record.id,
+                id: recordId,
                 title: record.name,
                 amount: Number(record.price || 0),
                 category: uiCategory,
-                date: record.paymentDate || record.payment_date,
+                date: record.payment_date || record.paymentDate,
                 recurring: uiCategory !== "extra",
             }
         })
@@ -87,30 +88,62 @@ export default function IncomesPage() {
     const extraTotal = incomes.filter((i: any) => i.category === "extra").reduce((acc: number, curr: any) => acc + curr.amount, 0)
     const totalIncome = fixedTotal + mealCardTotal + extraTotal
     const fixedPercentage = totalIncome > 0 ? Math.round(((fixedTotal + mealCardTotal) / totalIncome) * 100) : 0
-    const extraPercentage = totalIncome > 0 ? 100 - fixedPercentage : 0
-
+    const extraPercentage = totalIncome > 0 ? Math.max(0, 100 - fixedPercentage) : 0
 
     // 2. FUNÇÃO PARA CRIAR NOVA CATEGORIA
     async function handleCreateCategory() {
         if (!newCategoryName.trim()) return
+        if (categories.length >= 20) return toast.error("Limite de 20 categorias atingido.")
+        if (!activeDashboard?.dashboard_id) return toast.error("Sem dashboard ativo.")
+
         setIsSubmittingCategory(true)
 
         try {
+            const sampleCat = categories[0]
+            const payload: Record<string, any> = {
+                name: newCategoryName.trim(),
+                description: `Categoria ${newCategoryName.trim()}`,
+            }
+
+            if (sampleCat?.color_id) payload.color_id = sampleCat.color_id
+            if (sampleCat?.icon_id) payload.icon_id = sampleCat.icon_id
+
             const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/categories`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: newCategoryName.trim() })
+                credentials: "include",
+                body: JSON.stringify(payload)
             })
 
-            if (!res.ok) throw new Error("Erro ao criar categoria")
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}))
+                throw new Error(errData.detail || errData.message || "Erro ao criar categoria.")
+            }
+
+            const data = await res.json()
+            const createdCat = data.data || data
+            const createdCatId = createdCat.category_id || createdCat.id
+
+            // Liga a categoria ao tipo INCOME para evitar erro 422 na validação de relação
+            const incomeType = recordTypes.find((rt: any) => rt.kind === "income")
+            if (incomeType && createdCatId) {
+                const incTypeId = incomeType.record_type_id || incomeType.id
+                await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/record-types/${incTypeId}/categories`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({ category_id: createdCatId })
+                }).catch(() => {})
+            }
 
             refresh()
-            toast.success(`Categoria "${newCategoryName}" criada!`)
+            toast.success(`Categoria "${newCategoryName}" criada e associada a Rendimentos!`)
+            if (createdCatId) setNewCategoryId(createdCatId)
             setNewCategoryName("")
             setIsAddingCategory(false)
-        } catch (error) {
+        } catch (error: any) {
             console.error(error)
-            toast.error("Não foi possível criar a categoria.")
+            toast.error(error.message || "Não foi possível criar a categoria.")
         } finally {
             setIsSubmittingCategory(false)
         }
@@ -119,11 +152,13 @@ export default function IncomesPage() {
     // 2.1 FUNÇÃO PARA APAGAR CATEGORIA
     async function handleDeleteCategory(categoryId: string) {
         if (!confirm("Tens a certeza que queres eliminar esta categoria? Os registos associados a ela poderão ficar sem categoria.")) return
+        if (!activeDashboard?.dashboard_id) return
 
         setIsSubmittingCategory(true)
         try {
             const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/categories/${categoryId}`, {
-                method: "DELETE"
+                method: "DELETE",
+                credentials: "include"
             })
 
             if (!res.ok) throw new Error("Erro ao apagar categoria")
@@ -131,7 +166,6 @@ export default function IncomesPage() {
             refresh()
             toast.success("Categoria eliminada com sucesso.")
 
-            // Se a categoria apagada era a que estava selecionada, limpa a seleção
             if (newCategoryId === categoryId) {
                 setNewCategoryId("")
             }
@@ -143,7 +177,7 @@ export default function IncomesPage() {
         }
     }
 
-    // 3. FUNÇÃO PARA GUARDAR A RECEITA (USANDO O CONTEXTO!)
+    // 3. FUNÇÃO PARA GUARDAR A RECEITA
     async function handleAddIncome(e: React.FormEvent) {
         e.preventDefault()
         const parsedAmount = parseFloat(newAmount)
@@ -184,8 +218,13 @@ export default function IncomesPage() {
     // 4. FUNÇÃO PARA APAGAR REGISTO
     async function handleDelete(id: string) {
         if (!confirm("Tens a certeza que queres eliminar este registo?")) return
+        if (!activeDashboard?.dashboard_id) return
+
         try {
-            const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/financial-records/${id}`, { method: "DELETE" })
+            const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/financial-records/${id}`, {
+                method: "DELETE",
+                credentials: "include"
+            })
             if (!res.ok) throw new Error("Falha ao eliminar")
 
             refresh()
@@ -265,7 +304,7 @@ export default function IncomesPage() {
                                 />
                             </div>
 
-                            {/* CATEGORIA (COM CRIAÇÃO RÁPIDA E ELIMINAÇÃO) */}
+                            {/* CATEGORIA */}
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs font-medium text-muted-foreground">Categoria</label>
                                 {isAddingCategory ? (
@@ -294,12 +333,12 @@ export default function IncomesPage() {
                                             required={!isAddingCategory}
                                         >
                                             <option value="" disabled>Selecionar...</option>
-                                            {categories.map((c: any) => (
-                                                <option key={c.id} value={c.id}>{c.name}</option>
-                                            ))}
+                                            {categories.map((c: any) => {
+                                                const catId = c.category_id || c.id
+                                                return <option key={catId} value={catId}>{c.name}</option>
+                                            })}
                                         </select>
 
-                                        {/* Botão de Apagar (só aparece se uma categoria estiver selecionada) */}
                                         {newCategoryId && (
                                             <button
                                                 type="button"
@@ -334,9 +373,10 @@ export default function IncomesPage() {
                                     required
                                 >
                                     <option value="" disabled>Escolhe a conta...</option>
-                                    {paymentMethods.map((p: any) => (
-                                        <option key={p.id} value={p.id}>{p.name}</option>
-                                    ))}
+                                    {paymentMethods.map((p: any) => {
+                                        const payId = p.payment_method_id || p.id
+                                        return <option key={payId} value={payId}>{p.name}</option>
+                                    })}
                                 </select>
                             </div>
 
@@ -492,38 +532,41 @@ export default function IncomesPage() {
                     <CardContent className="space-y-2.5">
                         {incomes.length === 0 ? (
                             <div className="text-center text-sm text-muted-foreground py-10">Ainda não tens rendimentos registados.</div>
-                        ) : incomes.map((item: any) => (
-                            <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                                <div className="flex items-center gap-3">
-                                    <div className={`p-2 rounded-md ${item.category === "fixed" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600" : item.category === "meal_card" ? "bg-orange-100 dark:bg-orange-900/30 text-orange-600" : "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600"}`}>
-                                        {item.category === "fixed" && <Briefcase className="w-4 h-4" />}
-                                        {item.category === "meal_card" && <CreditCard className="w-4 h-4" />}
-                                        {item.category === "extra" && <Sparkles className="w-4 h-4" />}
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{item.title}</p>
+                        ) : incomes.map((item: any, index: number) => {
+                            const itemId = item.id || index
+                            return (
+                                <div key={itemId} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-md ${item.category === "fixed" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600" : item.category === "meal_card" ? "bg-orange-100 dark:bg-orange-900/30 text-orange-600" : "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600"}`}>
+                                            {item.category === "fixed" && <Briefcase className="w-4 h-4" />}
+                                            {item.category === "meal_card" && <CreditCard className="w-4 h-4" />}
+                                            {item.category === "extra" && <Sparkles className="w-4 h-4" />}
                                         </div>
-                                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                                            <Calendar className="w-3 h-3" />
-                                            {item.date ? new Date(item.date).toLocaleDateString("pt-PT") : "Sem data"}
-                                        </p>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{item.title}</p>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                                <Calendar className="w-3 h-3" />
+                                                {item.date ? new Date(item.date).toLocaleDateString("pt-PT") : "Sem data"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-sm sm:text-base font-bold text-emerald-600 dark:text-emerald-400">
+                                            + € {item.amount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDelete(item.id)}
+                                            className="p-1.5 text-slate-400 hover:text-red-500 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    <span className="text-sm sm:text-base font-bold text-emerald-600 dark:text-emerald-400">
-                                        + € {item.amount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleDelete(item.id)}
-                                        className="p-1.5 text-slate-400 hover:text-red-500 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </CardContent>
                 </Card>
             </div>

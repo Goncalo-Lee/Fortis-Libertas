@@ -31,7 +31,7 @@ type GoalHorizon = "short" | "medium" | "long"
 
 export default function FinancialGoalsPage() {
     const { activeDashboard } = useDashboard()
-    const { installmentPlans, financialRecords, refresh } = useFinancial()
+    const { installmentPlans, financialRecords, categories, recordTypes, refresh } = useFinancial()
 
     // Estado do Formulário de Criação
     const [isAdding, setIsAdding] = useState(false)
@@ -68,28 +68,32 @@ export default function FinancialGoalsPage() {
         if (!installmentPlans) return []
 
         return installmentPlans.map((plan: any) => {
-            // O backend devolve totalAmount (ou total_amount)
+            const planId = plan.installment_plan_id || plan.id
+
             const targetAmount = Number(
-                plan.totalAmount ?? plan.total_amount ?? plan.amount ?? plan.price ?? 0
+                plan.total_amount ?? plan.totalAmount ?? plan.amount ?? plan.price ?? 0
             )
 
             const savedAmount = (financialRecords || [])
-                .filter((r: any) => (r.installmentPlanId || r.installment_plan_id) === plan.id)
+                .filter((r: any) => (r.installment_plan_id || r.installmentPlanId) === planId)
                 .reduce((acc: number, r: any) => acc + Number(r.price || 0), 0)
 
             return {
                 ...plan,
+                id: planId,
+                installment_plan_id: planId,
                 targetAmount,
                 savedAmount,
-                monthsRemaining: Number(plan.totalInstallments ?? plan.total_installments ?? 6),
+                monthsRemaining: Number(plan.total_installments ?? plan.totalInstallments ?? 6),
                 status: plan.status || "pending",
-                createdAt: plan.createdAt || plan.created_at || new Date().toISOString()
+                createdAt: plan.created_at || plan.createdAt || new Date().toISOString()
             }
         })
     }, [installmentPlans, financialRecords])
 
-    const activeGoals = enrichedPlans.filter((p: any) => p.status !== "completed" && p.status !== "cancelled")
-    const completedGoals = enrichedPlans.filter((p: any) => p.status === "completed")
+    // Na nova API o status concluído é 'paid'
+    const activeGoals = enrichedPlans.filter((p: any) => p.status !== "paid" && p.status !== "cancelled")
+    const completedGoals = enrichedPlans.filter((p: any) => p.status === "paid")
 
     // Apanha o plano selecionado (ou o primeiro ativo como fallback)
     const selectedGoal = useMemo(() => {
@@ -111,6 +115,11 @@ export default function FinancialGoalsPage() {
     // ==========================================
     async function handleCreateGoal(e: React.FormEvent) {
         e.preventDefault()
+        if (!activeDashboard?.dashboard_id) {
+            toast.error("Sem dashboard ativo selecionado.")
+            return
+        }
+
         const target = parseFloat(newTarget)
         const months = parseInt(newMonths, 10) || 1
 
@@ -122,23 +131,37 @@ export default function FinancialGoalsPage() {
         calculatedDueDate.setMonth(calculatedDueDate.getMonth() + months)
         const dueDateString = calculatedDueDate.toISOString().split("T")[0] // "YYYY-MM-DD"
 
+        // Referências obrigatórias para a nova API
+        const expenseType = (recordTypes || []).find((rt: any) => rt.kind === "expense") || recordTypes?.[0]
+        const defaultCategory = categories?.[0]
+
+        const payload: Record<string, any> = {
+            name: newTitle.trim(),
+            description: `Meta a ${newHorizon === "short" ? "curto" : newHorizon === "medium" ? "médio" : "longo"} prazo`,
+            total_amount: target.toFixed(2),
+            total_installments: months,
+            due_date: dueDateString,
+            status: "pending",
+        }
+
+        if (defaultCategory) {
+            payload.category_id = defaultCategory.category_id || defaultCategory.id
+        }
+        if (expenseType) {
+            payload.record_type_id = expenseType.record_type_id || expenseType.id
+        }
+
         try {
             const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: newTitle.trim(),
-                    description: `Meta a ${newHorizon === "short" ? "curto" : newHorizon === "medium" ? "médio" : "longo"} prazo`,
-                    total_amount: target.toFixed(2), // "1200.00"
-                    total_installments: months,      // número inteiro de meses/prestações
-                    due_date: dueDateString,         // "YYYY-MM-DD"
-                    status: "pending"                // Status válido ("pending" | "paid" | "cancelled" | "late")
-                })
+                credentials: "include",
+                body: JSON.stringify(payload)
             })
 
             if (!res.ok) {
                 const errData = await res.json().catch(() => ({}))
-                throw new Error(errData.message || "Falha ao criar plano! Tento outro nome ou um valor maior...")
+                throw new Error(errData.detail || errData.message || "Falha ao criar plano!")
             }
 
             refresh()
@@ -156,14 +179,15 @@ export default function FinancialGoalsPage() {
     }
 
     function openEditModal(goal: any) {
-        setEditingGoal({ id: goal.id, name: goal.name, targetAmount: goal.targetAmount })
+        const goalId = goal.installment_plan_id || goal.id
+        setEditingGoal({ id: goalId, name: goal.name, targetAmount: goal.targetAmount })
         setEditName(goal.name)
         setEditTarget(String(goal.targetAmount))
     }
 
     async function handleSaveEdit(e: React.FormEvent) {
         e.preventDefault()
-        if (!editingGoal) return
+        if (!editingGoal || !activeDashboard?.dashboard_id) return
 
         const target = parseFloat(editTarget)
         if (!editName.trim() || isNaN(target) || target <= 0) {
@@ -175,6 +199,7 @@ export default function FinancialGoalsPage() {
             const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${editingGoal.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
+                credentials: "include",
                 body: JSON.stringify({
                     name: editName.trim(),
                     total_amount: target.toFixed(2)
@@ -183,7 +208,7 @@ export default function FinancialGoalsPage() {
 
             if (!res.ok) {
                 const errData = await res.json().catch(() => ({}))
-                throw new Error(errData.message || "Erro ao atualizar dados da meta.")
+                throw new Error(errData.detail || errData.message || "Erro ao atualizar dados da meta.")
             }
 
             refresh()
@@ -198,11 +223,13 @@ export default function FinancialGoalsPage() {
     }
 
     async function handleCompleteGoal(goalId: string) {
+        if (!activeDashboard?.dashboard_id) return
         try {
             const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${goalId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status: "completed" })
+                credentials: "include",
+                body: JSON.stringify({ status: "paid" })
             })
             if (!res.ok) throw new Error("Falha ao concluir")
 
@@ -219,10 +246,12 @@ export default function FinancialGoalsPage() {
     }
 
     async function handleDeleteGoal(id: string) {
+        if (!activeDashboard?.dashboard_id) return
         if (!confirm("Tens a certeza? Os registos associados não serão apagados, mas perderão a ligação a esta meta.")) return
         try {
             const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${id}`, {
-                method: "DELETE"
+                method: "DELETE",
+                credentials: "include"
             })
             if (!res.ok) throw new Error("Falha ao eliminar")
 
@@ -414,7 +443,7 @@ export default function FinancialGoalsPage() {
                 </Card>
             )}
 
-            {/* LINHA 1: CARTÕES DE RESUMO (AGORA COM FOCO NA META SELECIONADA) */}
+            {/* LINHA 1: CARTÕES DE RESUMO */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
                 {/* Cartão 1: Meta Selecionada / Destaque */}
@@ -514,16 +543,17 @@ export default function FinancialGoalsPage() {
                         {activeGoals.length === 0 && (
                             <p className="text-sm text-center text-muted-foreground py-6">Não tens metas em curso.</p>
                         )}
-                        {activeGoals.map((goal: any) => {
+                        {activeGoals.map((goal: any, index: number) => {
+                            const goalId = goal.installment_plan_id || goal.id
                             const pct = Math.min(Math.round((goal.savedAmount / goal.targetAmount) * 100), 100)
                             const remaining = Math.max(0, goal.targetAmount - goal.savedAmount)
                             const monthlyNeeded = Math.ceil(remaining / Math.max(1, goal.monthsRemaining))
                             const isReadyToComplete = pct >= 100
-                            const isPrimary = (selectedGoal?.id === goal.id)
+                            const isPrimary = (selectedGoal?.id === goalId)
 
                             return (
                                 <div
-                                    key={goal.id}
+                                    key={goalId || index}
                                     className={`p-4 rounded-xl border space-y-3 transition-all ${
                                         isPrimary
                                             ? "border-blue-400/80 dark:border-blue-500/60 bg-blue-50/20 dark:bg-blue-950/20 shadow-sm"
@@ -546,7 +576,7 @@ export default function FinancialGoalsPage() {
                                                 <Clock className="w-3 h-3" />
                                                 {isReadyToComplete
                                                     ? "Objetivo alcançado! Pronto para ser concluído."
-                                                    : `Faltam € ${remaining.toLocaleString("pt-PT")} • Esforço: € ${monthlyNeeded}/mês`}
+                                                    : `Faltam € ${remaining.toLocaleString("pt-PT")} | Esforço: € ${monthlyNeeded}/mês`}
                                             </p>
                                         </div>
 
@@ -592,7 +622,7 @@ export default function FinancialGoalsPage() {
                                             {!isPrimary && (
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleSetPrimaryGoal(goal.id)}
+                                                    onClick={() => handleSetPrimaryGoal(goalId)}
                                                     className="text-[11px] font-medium px-2.5 py-1 rounded-md text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors border border-blue-200 dark:border-blue-900/50"
                                                 >
                                                     Destacar
@@ -610,7 +640,7 @@ export default function FinancialGoalsPage() {
                                             ) : (
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleCompleteGoal(goal.id)}
+                                                    onClick={() => handleCompleteGoal(goalId)}
                                                     className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
                                                 >
                                                     <CheckCircle2 className="w-3.5 h-3.5" />
@@ -620,7 +650,7 @@ export default function FinancialGoalsPage() {
 
                                             <button
                                                 type="button"
-                                                onClick={() => handleDeleteGoal(goal.id)}
+                                                onClick={() => handleDeleteGoal(goalId)}
                                                 aria-label="Eliminar meta"
                                                 className="p-1 text-slate-400 hover:text-red-500 rounded-md transition-colors"
                                             >
@@ -646,30 +676,33 @@ export default function FinancialGoalsPage() {
                             {completedGoals.length === 0 && (
                                 <p className="text-xs text-center text-muted-foreground py-4">Ainda não concluíste nenhuma meta.</p>
                             )}
-                            {completedGoals.map((item: any) => (
-                                <div
-                                    key={item.id}
-                                    className="flex items-center justify-between p-3 rounded-lg border border-emerald-200/50 dark:border-emerald-900/40 bg-emerald-50/30 dark:bg-emerald-950/10"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
-                                            <CheckCircle2 className="w-4 h-4" />
+                            {completedGoals.map((item: any, index: number) => {
+                                const itemId = item.installment_plan_id || item.id
+                                return (
+                                    <div
+                                        key={itemId || index}
+                                        className="flex items-center justify-between p-3 rounded-lg border border-emerald-200/50 dark:border-emerald-900/40 bg-emerald-50/30 dark:bg-emerald-950/10"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
+                                                <CheckCircle2 className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                                    {item.name}
+                                                </p>
+                                                <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                                    <Calendar className="w-3 h-3" />
+                                                    {new Date(item.createdAt).toLocaleDateString("pt-PT")}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                                                {item.name}
-                                            </p>
-                                            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                                                <Calendar className="w-3 h-3" />
-                                                {new Date(item.createdAt).toLocaleDateString("pt-PT")}
-                                            </p>
-                                        </div>
+                                        <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                                            € {item.targetAmount.toLocaleString("pt-PT")}
+                                        </span>
                                     </div>
-                                    <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
-                                        € {item.targetAmount.toLocaleString("pt-PT")}
-                                    </span>
-                                </div>
-                            ))}
+                                )
+                            })}
                         </CardContent>
                     </Card>
                 </div>

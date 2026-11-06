@@ -22,7 +22,6 @@ import {
     Trash2,
     Sparkles,
     AlertTriangle,
-    Loader2
 } from "lucide-react"
 import { toast } from "sonner"
 import { useDashboard } from "@/contexts/DashboardContext"
@@ -32,7 +31,7 @@ type MovementType = "deposit" | "withdrawal"
 
 export default function MoneyPillowPage() {
     const { activeDashboard } = useDashboard()
-    const { installmentPlans, financialRecords, paymentMethods, recordTypes, tags, refresh } = useFinancial()
+    const { installmentPlans, financialRecords, paymentMethods, recordTypes, categories, tags, refresh, addFinancialRecord } = useFinancial()
 
     // Controlo de painéis
     const [isConfiguring, setIsConfiguring] = useState(false)
@@ -64,13 +63,14 @@ export default function MoneyPillowPage() {
     }, [installmentPlans])
 
     // Extrair parâmetros do plano encontrado
-    const { monthlyEssentialCost, targetMonths, idealPillowTarget } = useMemo(() => {
+    const { monthlyEssentialCost, targetMonths, idealPillowTarget, pillowPlanId } = useMemo(() => {
         if (!pillowPlan) {
-            return { monthlyEssentialCost: 750, targetMonths: 6, idealPillowTarget: 4500 }
+            return { monthlyEssentialCost: 750, targetMonths: 6, idealPillowTarget: 4500, pillowPlanId: null }
         }
 
-        const months = Number(pillowPlan.totalInstallments ?? pillowPlan.total_installments ?? 6)
-        const total = Number(pillowPlan.totalAmount ?? pillowPlan.total_amount ?? pillowPlan.amount ?? 4500)
+        const planId = pillowPlan.installment_plan_id || pillowPlan.id
+        const months = Number(pillowPlan.total_installments ?? pillowPlan.totalInstallments ?? 6)
+        const total = Number(pillowPlan.total_amount ?? pillowPlan.totalAmount ?? pillowPlan.amount ?? 4500)
 
         let cost = months > 0 ? Math.round(total / months) : 750
         if (pillowPlan.description && pillowPlan.description.includes("Custo:")) {
@@ -81,7 +81,8 @@ export default function MoneyPillowPage() {
         return {
             monthlyEssentialCost: cost,
             targetMonths: months > 0 ? months : 6,
-            idealPillowTarget: total
+            idealPillowTarget: total,
+            pillowPlanId: planId
         }
     }, [pillowPlan])
 
@@ -97,38 +98,36 @@ export default function MoneyPillowPage() {
     // 2. PROCESSAR MOVIMENTOS REAIS DA BASE DE DADOS
     // ==========================================
     const movements = useMemo(() => {
-        if (!financialRecords || !pillowPlan) return []
+        if (!financialRecords || !pillowPlanId) return []
 
         return financialRecords
-            .filter((r: any) => (r.installmentPlanId || r.installment_plan_id) === pillowPlan.id)
+            .filter((r: any) => (r.installment_plan_id || r.installmentPlanId) === pillowPlanId)
             .map((r: any) => {
-                let typeName = r.recordType?.name?.toLowerCase() || ""
-                if (!typeName && recordTypes) {
-                    const rt = recordTypes.find((t: any) => t.id === (r.recordTypeId || r.record_type_id))
-                    if (rt) typeName = rt.name.toLowerCase()
-                }
+                const rtId = r.record_type_id || r.recordTypeId || r.recordType?.record_type_id || r.recordType?.id
+                const rt = (recordTypes || []).find((t: any) => (t.record_type_id || t.id) === rtId)
+                const kind = rt?.kind || r.record_type?.kind
+                const typeName = (rt?.name || r.recordType?.name || "").toLowerCase()
 
-                // Despesas associadas ao plano representam dinheiro guardado (Reforço)
-                // Receitas associadas representam dinheiro devolvido à conta (Uso de Emergência)
                 const isWithdrawal =
+                    kind === "income" ||
                     typeName.includes("receita") ||
                     typeName.includes("income") ||
-                    r.name.toLowerCase().includes("uso de emergência") ||
-                    r.name.toLowerCase().includes("reserva")
+                    r.name?.toLowerCase().includes("uso de emergência") ||
+                    r.name?.toLowerCase().includes("reserva")
 
                 const tagName = r.tags && r.tags.length > 0 ? r.tags[0].name : (isWithdrawal ? "Emergência" : "Reforço")
 
                 return {
-                    id: r.id,
+                    id: r.financial_record_id || r.id,
                     title: r.name,
                     amount: Number(r.price || 0),
                     type: (isWithdrawal ? "withdrawal" : "deposit") as MovementType,
-                    date: r.paymentDate || r.payment_date || new Date().toISOString(),
+                    date: r.payment_date || r.paymentDate || new Date().toISOString(),
                     categoryTag: tagName
                 }
             })
             .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    }, [financialRecords, pillowPlan, recordTypes])
+    }, [financialRecords, pillowPlanId, recordTypes])
 
     // Cálculos da Visão Geral
     const totalDeposits = movements
@@ -156,6 +155,8 @@ export default function MoneyPillowPage() {
     // ==========================================
     async function handleSaveConfig(e: React.FormEvent) {
         e.preventDefault()
+        if (!activeDashboard?.dashboard_id) return toast.error("Sem dashboard ativo.")
+
         const parsedCost = parseFloat(tempCost)
         const parsedMonths = parseInt(tempMonths, 10) || 6
 
@@ -169,11 +170,12 @@ export default function MoneyPillowPage() {
 
         setIsSubmitting(true)
         try {
-            if (pillowPlan) {
+            if (pillowPlanId) {
                 // Atualiza plano existente
-                const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${pillowPlan.id}`, {
+                const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${pillowPlanId}`, {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
+                    credentials: "include",
                     body: JSON.stringify({
                         name: pillowPlan.name || "Pé de Meia",
                         total_amount: calculatedTarget,
@@ -183,20 +185,32 @@ export default function MoneyPillowPage() {
                 })
                 if (!res.ok) throw new Error("Falha ao atualizar parâmetros.")
             } else {
-                // Cria novo plano do Pé de Meia
+                // Cria novo plano do Pé de Meia com dependências obrigatórias
+                const defaultCat = categories?.[0]
+                const expenseType = (recordTypes || []).find((rt: any) => rt.kind === "expense") || recordTypes?.[0]
+
+                const payload: Record<string, any> = {
+                    name: "Pé de Meia",
+                    description: `[PILLOW] Custo: ${parsedCost} | Meses: ${parsedMonths}`,
+                    total_amount: calculatedTarget,
+                    total_installments: parsedMonths,
+                    due_date: dueDate.toISOString().split("T")[0],
+                    status: "pending"
+                }
+
+                if (defaultCat) payload.category_id = defaultCat.category_id || defaultCat.id
+                if (expenseType) payload.record_type_id = expenseType.record_type_id || expenseType.id
+
                 const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        name: "Pé de Meia",
-                        description: `[PILLOW] Custo: ${parsedCost} | Meses: ${parsedMonths}`,
-                        total_amount: calculatedTarget,
-                        total_installments: parsedMonths,
-                        due_date: dueDate.toISOString().split("T")[0],
-                        status: "pending"
-                    })
+                    credentials: "include",
+                    body: JSON.stringify(payload)
                 })
-                if (!res.ok) throw new Error("Falha ao criar almofada financeira.")
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}))
+                    throw new Error(errData.detail || errData.message || "Falha ao criar almofada financeira.")
+                }
             }
 
             refresh()
@@ -214,32 +228,42 @@ export default function MoneyPillowPage() {
     // ==========================================
     async function handleAddMovement(e: React.FormEvent) {
         e.preventDefault()
-        if (!movementMode) return
+        if (!movementMode || !activeDashboard?.dashboard_id) return
 
-        let activePillow = pillowPlan
+        let activePillowId = pillowPlanId
 
         // Se ainda não existir plano na BD, cria automaticamente antes do movimento
-        if (!activePillow) {
+        if (!activePillowId) {
             const defaultTarget = (750 * 6).toFixed(2)
             const dueDate = new Date()
             dueDate.setMonth(dueDate.getMonth() + 6)
 
+            const defaultCat = categories?.[0]
+            const expenseType = (recordTypes || []).find((rt: any) => rt.kind === "expense") || recordTypes?.[0]
+
+            const payload: Record<string, any> = {
+                name: "Pé de Meia",
+                description: `[PILLOW] Custo: 750 | Meses: 6`,
+                total_amount: defaultTarget,
+                total_installments: 6,
+                due_date: dueDate.toISOString().split("T")[0],
+                status: "pending"
+            }
+
+            if (defaultCat) payload.category_id = defaultCat.category_id || defaultCat.id
+            if (expenseType) payload.record_type_id = expenseType.record_type_id || expenseType.id
+
             const initRes = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: "Pé de Meia",
-                    description: `[PILLOW] Custo: 750 | Meses: 6`,
-                    total_amount: defaultTarget,
-                    total_installments: 6,
-                    due_date: dueDate.toISOString().split("T")[0],
-                    status: "pending"
-                })
+                credentials: "include",
+                body: JSON.stringify(payload)
             })
 
             if (initRes.ok) {
                 const initData = await initRes.json()
-                activePillow = initData.data || initData
+                const createdPlan = initData.data || initData
+                activePillowId = createdPlan.installment_plan_id || createdPlan.id
             } else {
                 return toast.error("Configura a almofada primeiro antes de registar movimentos.")
             }
@@ -254,7 +278,9 @@ export default function MoneyPillowPage() {
             return toast.error(`Não podes retirar mais do que o saldo atual (€ ${currentBalance.toLocaleString("pt-PT")}).`)
         }
 
-        const selectedMethod = movPaymentMethodId || paymentMethods?.[0]?.id
+        const fallbackMethod = paymentMethods?.[0]
+        const fallbackMethodId = fallbackMethod?.payment_method_id || fallbackMethod?.id
+        const selectedMethod = movPaymentMethodId || fallbackMethodId
         if (!selectedMethod) {
             return toast.error("Não tens contas de pagamento registadas para debitar/creditar.")
         }
@@ -262,12 +288,13 @@ export default function MoneyPillowPage() {
         setIsSubmitting(true)
         try {
             // Garante ou associa a Tag da categoria escolhida
-            let matchedTag = tags?.find((t: any) => t.name.toLowerCase() === movTag.toLowerCase())
+            let matchedTag = (tags || []).find((t: any) => t.name?.toLowerCase() === movTag.toLowerCase())
             if (!matchedTag && movTag) {
                 const tagRes = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/tags`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ name: movTag })
+                    credentials: "include",
+                    body: JSON.stringify({ name: movTag, description: `Tag ${movTag}` })
                 })
                 if (tagRes.ok) {
                     const tagData = await tagRes.json()
@@ -275,25 +302,38 @@ export default function MoneyPillowPage() {
                 }
             }
 
-            const recordType = movementMode === "deposit" ? "EXPENSE" : "INCOME"
+            const targetKind = movementMode === "deposit" ? "expense" : "income"
+            const matchedType = (recordTypes || []).find((rt: any) => rt.kind === targetKind) ||
+                (recordTypes || []).find((rt: any) => targetKind === "expense" ? rt.name?.toUpperCase().includes("EXPENSE") : rt.name?.toUpperCase().includes("INCOME"))
+
+            const defaultCat = categories?.[0]
+            const categoryId = defaultCat?.category_id || defaultCat?.id
+            const tagId = matchedTag?.tag_id || matchedTag?.id
+
+            const recordPayload: Record<string, any> = {
+                name: movTitle.trim(),
+                price: parsedAmount.toFixed(2),
+                record_type_id: matchedType?.record_type_id || matchedType?.id,
+                category_id: categoryId,
+                payment_method_id: selectedMethod,
+                installment_plan_id: activePillowId,
+                status: "paid",
+                payment_date: new Date().toISOString()
+            }
+
+            if (tagId) recordPayload.tag_ids = [tagId]
 
             const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/financial-records`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: movTitle.trim(),
-                    price: parsedAmount,
-                    record_type_name: recordType,
-                    payment_method_id: selectedMethod,
-                    installment_plan_id: activePillow.id,
-                    tag_ids: matchedTag ? [matchedTag.id] : [],
-                    currency: "EUR",
-                    status: "paid",
-                    payment_date: new Date().toISOString()
-                })
+                credentials: "include",
+                body: JSON.stringify(recordPayload)
             })
 
-            if (!res.ok) throw new Error("Erro ao registar movimento no servidor.")
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}))
+                throw new Error(errData.detail || errData.message || "Erro ao registar movimento no servidor.")
+            }
 
             refresh()
             toast.success(
@@ -317,10 +357,12 @@ export default function MoneyPillowPage() {
     // ==========================================
     async function handleDeleteMovement(id: string) {
         if (!confirm("Tens a certeza que queres eliminar este movimento do registo?")) return
+        if (!activeDashboard?.dashboard_id) return
 
         try {
             const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/financial-records/${id}`, {
-                method: "DELETE"
+                method: "DELETE",
+                credentials: "include"
             })
             if (!res.ok) throw new Error("Falha ao eliminar registo")
 
@@ -527,9 +569,10 @@ export default function MoneyPillowPage() {
                                     onChange={(e) => setMovPaymentMethodId(e.target.value)}
                                     className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs sm:text-sm"
                                 >
-                                    {(paymentMethods || []).map((pm: any) => (
-                                        <option key={pm.id} value={pm.id}>{pm.name}</option>
-                                    ))}
+                                    {(paymentMethods || []).map((pm: any) => {
+                                        const pmId = pm.payment_method_id || pm.id
+                                        return <option key={pmId} value={pmId}>{pm.name}</option>
+                                    })}
                                 </select>
                             </div>
 
@@ -735,70 +778,73 @@ export default function MoneyPillowPage() {
                                 Ainda não há movimentos registados no teu Pé de Meia.
                             </p>
                         )}
-                        {movements.map((mov) => (
-                            <div
-                                key={mov.id}
-                                className="flex items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div
-                                        className={`p-2 rounded-md ${
-                                            mov.type === "deposit"
-                                                ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
-                                                : "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
-                                        }`}
-                                    >
-                                        {mov.type === "deposit" ? (
-                                            <ArrowUpRight className="w-4 h-4" />
-                                        ) : (
-                                            <ArrowDownRight className="w-4 h-4" />
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                                                {mov.title}
-                                            </p>
-                                            <span
-                                                className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                                                    mov.type === "deposit"
-                                                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300"
-                                                        : "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300"
-                                                }`}
-                                            >
-                                                {mov.categoryTag}
-                                            </span>
+                        {movements.map((mov, index) => {
+                            const movId = mov.id || index
+                            return (
+                                <div
+                                    key={movId}
+                                    className="flex items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div
+                                            className={`p-2 rounded-md ${
+                                                mov.type === "deposit"
+                                                    ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
+                                                    : "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
+                                            }`}
+                                        >
+                                            {mov.type === "deposit" ? (
+                                                <ArrowUpRight className="w-4 h-4" />
+                                            ) : (
+                                                <ArrowDownRight className="w-4 h-4" />
+                                            )}
                                         </div>
-                                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                                            <Calendar className="w-3 h-3" />
-                                            {new Date(mov.date).toLocaleDateString("pt-PT")}
-                                        </p>
+
+                                        <div>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                                    {mov.title}
+                                                </p>
+                                                <span
+                                                    className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                                                        mov.type === "deposit"
+                                                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                                            : "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300"
+                                                    }`}
+                                                >
+                                                    {mov.categoryTag}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                                <Calendar className="w-3 h-3" />
+                                                {new Date(mov.date).toLocaleDateString("pt-PT")}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3">
+                                        <span
+                                            className={`text-sm sm:text-base font-bold ${
+                                                mov.type === "deposit"
+                                                    ? "text-emerald-600 dark:text-emerald-400"
+                                                    : "text-amber-600 dark:text-amber-400"
+                                            }`}
+                                        >
+                                            {mov.type === "deposit" ? "+" : "-"} €{" "}
+                                            {mov.amount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDeleteMovement(mov.id)}
+                                            aria-label="Apagar registo"
+                                            className="p-1.5 text-slate-400 hover:text-red-500 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
                                     </div>
                                 </div>
-
-                                <div className="flex items-center gap-3">
-                                    <span
-                                        className={`text-sm sm:text-base font-bold ${
-                                            mov.type === "deposit"
-                                                ? "text-emerald-600 dark:text-emerald-400"
-                                                : "text-amber-600 dark:text-amber-400"
-                                        }`}
-                                    >
-                                        {mov.type === "deposit" ? "+" : "-"} €{" "}
-                                        {mov.amount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleDeleteMovement(mov.id)}
-                                        aria-label="Apagar registo"
-                                        className="p-1.5 text-slate-400 hover:text-red-500 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </CardContent>
                 </Card>
 

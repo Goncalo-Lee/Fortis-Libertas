@@ -33,16 +33,15 @@ export default function ChartRadial() {
     const [primaryGoalId, setPrimaryGoalId] = useState<string | null>(null)
     const [isSelectorOpen, setIsSelectorOpen] = useState(false)
 
-    // Sincroniza com a meta destacada no localStorage
     useEffect(() => {
         const saved = localStorage.getItem("primaryFinancialGoal")
         if (saved) setPrimaryGoalId(saved)
     }, [])
 
-    // Lista de planos ativos filtrada e enriquecida
+    // Lista de planos ativos filtrada e enriquecida (nova API usa 'paid' em vez de 'completed')
     const activePlans = useMemo(() => {
         return (installmentPlans || []).filter(
-            (p: any) => p.status !== "completed" && p.status !== "cancelled"
+            (p: any) => p.status !== "paid" && p.status !== "cancelled"
         )
     }, [installmentPlans])
 
@@ -58,21 +57,15 @@ export default function ChartRadial() {
             }
         }
 
-        // Seleciona a meta guardada ou faz fallback para a primeira da lista
-        const activePlan = activePlans.find((p: any) => p.id === primaryGoalId) || activePlans[0]
+        // Seleciona a meta guardada ou faz fallback para a primeira da lista (usando installment_plan_id)
+        const activePlan = activePlans.find((p: any) => p.installment_plan_id === primaryGoalId) || activePlans[0]
 
-        // Lê com prioridade totalAmount / total_amount (nomes reais da tua BD/Drizzle)
-        const target = Number(
-            activePlan.totalAmount ??
-            activePlan.total_amount ??
-            activePlan.amount ??
-            activePlan.target_amount ??
-            activePlan.price ??
-            0
-        )
+        // Lê diretamente do campo total_amount da nova BD
+        const target = Number(activePlan.total_amount ?? 0)
 
+        // Calcula os registos associados a este plano
         const current = (financialRecords || [])
-            .filter((r: any) => (r.installmentPlanId || r.installment_plan_id) === activePlan.id)
+            .filter((r: any) => r.installment_plan_id === activePlan.installment_plan_id)
             .reduce((acc: number, r: any) => acc + Number(r.price || 0), 0)
 
         const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0
@@ -83,7 +76,7 @@ export default function ChartRadial() {
             percentage: pct,
             planName: activePlan.name || "Meta Financeira",
             hasPlans: true,
-            activePlanId: activePlan.id,
+            activePlanId: activePlan.installment_plan_id,
         }
     }, [financialRecords, activePlans, primaryGoalId])
 
@@ -220,15 +213,17 @@ export default function ChartRadial() {
                     </div>
 
                     <div className="flex-1 overflow-y-auto space-y-1.5 pr-0.5">
-                        {activePlans.map((plan: any) => {
-                            const isSelected = plan.id === activePlanId
-                            const target = Number(plan.totalAmount ?? plan.total_amount ?? plan.amount ?? 0)
+                        {/* ADICIONADO O INDEX CORRETO AQUI */}
+                        {activePlans.map((plan: any, index: number) => {
+                            const planId = plan.installment_plan_id;
+                            const isSelected = planId === activePlanId;
+                            const target = Number(plan.total_amount ?? 0);
 
                             return (
                                 <button
-                                    key={plan.id}
+                                    key={planId || index}
                                     type="button"
-                                    onClick={(e) => handleSelectGoal(plan.id, e)}
+                                    onClick={(e) => handleSelectGoal(planId, e)}
                                     className={`w-full flex items-center justify-between p-2 rounded-lg text-left text-xs transition-colors border ${
                                         isSelected
                                             ? "border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100 font-medium"

@@ -24,7 +24,15 @@ import { useProfile } from "@/contexts/ProfileContext"
 
 export default function ExportationsPage() {
     const { profile: rawProfile } = useProfile()
-    const { financialRecords, installmentPlans, categories, tags, paymentMethods } = useFinancial()
+    const {
+        financialRecords,
+        installmentPlans,
+        categories,
+        tags,
+        paymentMethods,
+        recordTypes,
+        bankAccounts
+    } = useFinancial()
 
     const [isExporting, setIsExporting] = useState<string | null>(null)
 
@@ -39,15 +47,18 @@ export default function ExportationsPage() {
                 metadata: {
                     generated_at: new Date().toISOString(),
                     app: "Fortis Libertas",
-                    type: "Full Account Backup"
+                    type: "Full Account Backup",
+                    version: "2.0-uuid"
                 },
-                user_profile: rawProfile?.data || rawProfile,
+                user_profile: rawProfile || null,
                 financial_data: {
-                    records: financialRecords || [],
-                    installment_plans: installmentPlans || [],
+                    bank_accounts: bankAccounts || [],
+                    payment_methods: paymentMethods || [],
+                    record_types: recordTypes || [],
                     categories: categories || [],
                     tags: tags || [],
-                    payment_methods: paymentMethods || []
+                    installment_plans: installmentPlans || [],
+                    financial_records: financialRecords || []
                 }
             }
 
@@ -61,6 +72,7 @@ export default function ExportationsPage() {
             document.body.appendChild(link)
             link.click()
             document.body.removeChild(link)
+            URL.revokeObjectURL(url)
 
             toast.success("Backup completo (JSON) descarregado com sucesso.")
             setIsExporting(null)
@@ -79,25 +91,44 @@ export default function ExportationsPage() {
                 return toast.error("Não existem registos financeiros para exportar.")
             }
 
-            // Cabeçalhos (Nomes exatos das colunas da BD)
-            const headers = ["ID", "Data", "Nome", "Tipo", "Valor", "Moeda", "Categoria_ID", "Metodo_Pagamento_ID", "Plano_Prestacoes_ID", "Estado"]
+            // Cabeçalhos alinhados com os nomes da nova BD
+            const headers = [
+                "financial_record_id",
+                "payment_date",
+                "name",
+                "record_type",
+                "price",
+                "currency",
+                "category_id",
+                "payment_method_id",
+                "installment_plan_id",
+                "status"
+            ]
             const csvRows = [headers.join(";")]
 
             financialRecords.forEach((r: any) => {
+                // Resolve o nome do tipo (EXPENSE, INCOME, etc.)
+                let typeName = r.record_type?.name || r.recordType?.name || ""
+                if (!typeName && recordTypes) {
+                    const rtId = r.record_type_id || r.recordTypeId
+                    const rt = recordTypes.find((t: any) => (t.record_type_id || t.id) === rtId)
+                    if (rt) typeName = rt.name
+                }
+
                 const values = [
-                    r.id,
-                    r.paymentDate || r.payment_date,
-                    r.name,
-                    r.recordType?.name || r.record_type_name,
-                    r.price,
-                    r.currency || "EUR",
-                    r.categoryId || r.category_id || "",
-                    r.paymentMethodId || r.payment_method_id || "",
-                    r.installmentPlanId || r.installment_plan_id || "",
+                    r.financial_record_id || r.id || "",
+                    r.payment_date || r.paymentDate || "",
+                    r.name || "",
+                    typeName || (r.record_type_id ? "DESPESA" : ""),
+                    r.price || "0.00",
+                    r.currency || r.currency_code || "EUR",
+                    r.category_id || r.categoryId || "",
+                    r.payment_method_id || r.paymentMethodId || "",
+                    r.installment_plan_id || r.installmentPlanId || "",
                     r.status || "paid"
                 ]
 
-                const escapedValues = values.map(val => `"${String(val || "").replace(/"/g, '""')}"`)
+                const escapedValues = values.map(val => `"${String(val ?? "").replace(/"/g, '""')}"`)
                 csvRows.push(escapedValues.join(";"))
             })
 
@@ -111,6 +142,7 @@ export default function ExportationsPage() {
             document.body.appendChild(link)
             link.click()
             document.body.removeChild(link)
+            URL.revokeObjectURL(url)
 
             toast.success("Dump de transações (CSV) descarregado.")
             setIsExporting(null)
@@ -157,7 +189,7 @@ export default function ExportationsPage() {
                                 Backup Completo (JSON)
                             </CardTitle>
                             <CardDescription className="text-xs">
-                                Uma cópia exata e total da tua conta. Inclui perfil, categorias, metas, pé de meia e todas as transações. Ideal para programadores ou portabilidade de conta.
+                                Uma cópia exata e total da tua conta. Inclui perfil, contas bancárias, categorias, metas, pé de meia e todas as transações.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -169,7 +201,7 @@ export default function ExportationsPage() {
                                 <Button
                                     onClick={handleExportFullJSON}
                                     disabled={isExporting !== null}
-                                    className="w-full gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+                                    className="w-full gap-2 bg-purple-600 hover:bg-purple-700 text-white cursor-pointer"
                                 >
                                     {isExporting === "json" ? (
                                         <><Loader2 className="w-4 h-4 animate-spin" /> A compilar ficheiros...</>
@@ -204,7 +236,7 @@ export default function ExportationsPage() {
                                     onClick={handleExportRawCSV}
                                     disabled={isExporting !== null}
                                     variant="outline"
-                                    className="w-full gap-2 border-blue-200 hover:bg-blue-50 text-blue-700 dark:border-blue-900 dark:hover:bg-blue-950 dark:text-blue-400"
+                                    className="w-full gap-2 border-blue-200 hover:bg-blue-50 text-blue-700 dark:border-blue-900 dark:hover:bg-blue-950 dark:text-blue-400 cursor-pointer"
                                 >
                                     {isExporting === "csv" ? (
                                         <><Loader2 className="w-4 h-4 animate-spin" /> A extrair dados da DB...</>

@@ -3,7 +3,12 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 // Tipos para typescript
-type Dashboard = { dashboard_id: string; name: string };
+type Dashboard = {
+    dashboard_id: string;
+    name: string;
+    is_active?: boolean;
+    role?: 'owner' | 'editor' | 'viewer';
+};
 type DashboardContextType = {
     dashboards: Dashboard[];
     activeDashboard: Dashboard | null;
