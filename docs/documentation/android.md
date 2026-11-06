@@ -37,8 +37,12 @@ android/app/src/main/java/pt/fortislibertas/
 ├── di/                      AppContainer: the ONLY place that picks Fake or Remote
 └── ui/                      One folder per screen (feature)
     ├── navigation/          Routes and the bottom bar destinations
-    └── <feature>/           <Feature>Screen, <Feature>ViewModel, <Feature>UiState, + dialogs/forms
+    └── <feature>/           <Feature>Screen, <Feature>Content, <Feature>ViewModel, <Feature>UiState
+        └── components/      Pieces used only by this feature (sections, dialogs, forms)
 ```
+
+Split a screen file when it mixes several parts (header, cards, dialogs...) or passes ~250 lines.
+The pieces go to `ui/<feature>/components/`, one composable per file.
 
 Rule of thumb: **data flows in one direction**.
 
@@ -64,6 +68,7 @@ Api / Fake data → Repository → ViewModel → UiState → Screen
 | Retrofit interface | `<Name>Api` | `HomeApi` |
 | DTO file | `<Name>Dtos.kt` (plural, one file per API) | `HomeDtos.kt` |
 | Fake data | `Fake<Name>Data` | `FakeHomeData` |
+| Feature component (in `ui/<feature>/components/`) | `<Feature><Name>`, always with the feature prefix | `ProfileHeader`, `ProfileDialogs` |
 | Reusable component | `Fortis<Name>` when it wraps a Material component, otherwise a plain name | `FortisTopBar`, `CardStack` |
 | String resources file | `strings_<feature>.xml` | `strings_home.xml` |
 
