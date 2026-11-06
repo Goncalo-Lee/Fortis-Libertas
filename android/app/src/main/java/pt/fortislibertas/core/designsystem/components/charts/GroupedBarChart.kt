@@ -34,6 +34,9 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.floor
 import kotlin.math.log10
 import kotlin.math.pow
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
+import pt.fortislibertas.core.designsystem.theme.FortisTheme
 
 /** One chart group: the label below and the two values. */
 data class BarGroup(val label: String, val income: Float, val expense: Float)
@@ -156,4 +159,27 @@ private fun niceMax(value: Float): Float {
         else -> 10.0
     }
     return (nice * magnitude).toFloat()
+}
+
+@FortisPreviews
+@Composable
+private fun GroupedBarChartPreview() {
+    FortisPreviewTheme {
+        GroupedBarChart(
+            groups = listOf(
+                BarGroup("Mon", income = 120f, expense = 40f),
+                BarGroup("Tue", income = 0f, expense = 85f),
+                BarGroup("Wed", income = 300f, expense = 20f),
+                BarGroup("Thu", income = 0f, expense = 0f),
+                BarGroup("Fri", income = 50f, expense = 150f),
+                BarGroup("Sat", income = 0f, expense = 60f),
+                BarGroup("Sun", income = 0f, expense = 0f),
+            ),
+            incomeColor = FortisTheme.colors.income,
+            expenseColor = FortisTheme.colors.expense,
+            axisLabel = { "${it.toInt()} €" },
+            contentDescription = "Week chart",
+            modifier = Modifier.padding(16.dp),
+        )
+    }
 }
