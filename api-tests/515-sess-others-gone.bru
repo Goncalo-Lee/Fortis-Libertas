@@ -1,0 +1,19 @@
+meta {
+  name: Sessions - other device signed out
+  type: http
+  seq: 515
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2c}}
+}
+
+assert {
+  res.status: eq 401
+}

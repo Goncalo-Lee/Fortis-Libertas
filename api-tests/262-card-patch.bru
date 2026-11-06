@@ -1,0 +1,27 @@
+meta {
+  name: Cards - patch
+  type: http
+  seq: 262
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/cards/{{cardId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "cardholder_name": "Renamed", "expiry_date": null }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("updated", function () { expect(res.body.data.cardholder_name).to.equal("Renamed"); expect(res.body.data.expiry_date).to.equal(null); });
+}

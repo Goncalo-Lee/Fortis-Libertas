@@ -1,0 +1,19 @@
+meta {
+  name: Activity logs - second delete is 404
+  type: http
+  seq: 578
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/tags/{{logTag}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 404
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Transactions - non-member gets 404
+  type: http
+  seq: 572
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/transactions
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 404
+}

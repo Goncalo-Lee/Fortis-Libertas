@@ -1,0 +1,27 @@
+meta {
+  name: Financial records - setup cash payment method
+  type: http
+  seq: 392
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/payment-methods
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"name": "Cash"}
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("frPmCash", res.body.data.payment_method_id);
+}
+
+assert {
+  res.status: eq 201
+}

@@ -96,6 +96,35 @@ export const user = mysqlTable("user", {
     suspendedAt: t.datetime("suspended_at", { fsp: 3 }),
 
     /**
+     * User role for Better Auth Admin Plugin
+     *
+     * Defines the authorization level of the user.
+     * Default is 'user', but can be upgraded to 'admin'.
+     */
+    role: t.varchar("role", { length: 50 }).default("user"),
+
+    /**
+     * Ban status for Better Auth Admin Plugin
+     *
+     * Boolean flag to quickly block access without deleting the account.
+     */
+    banned: t.boolean("banned").default(false),
+
+    /**
+     * Reason for account ban for Better Auth Admin Plugin
+     *
+     * Optional text explaining why the user was banned.
+     */
+    banReason: t.text("ban_reason"),
+
+    /**
+     * Ban expiration for Better Auth Admin Plugin
+     *
+     * Optional datetime for temporary bans (FSP 3 para consistência com suas outras datas).
+     */
+    banExpires: t.datetime("ban_expires", { fsp: 3 }),
+
+    /**
      * Soft delete metadata (reversible deletion pattern)
      *
      * Adds deleted_at column (DATETIME)

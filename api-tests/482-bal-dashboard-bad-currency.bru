@@ -1,0 +1,19 @@
+meta {
+  name: Balances - bad currency format
+  type: http
+  seq: 482
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/balance?currency=eur
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 422
+}

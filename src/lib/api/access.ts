@@ -1,4 +1,8 @@
-import { findMembership, type Role } from "@/db/queries/dashboards";
+// src/lib/api/access.ts
+import { findMembership } from "@/db/queries/dashboards";
+import type { Role } from "@/db/queries/type";
+import { findBankAccountMembership } from "@/db/queries/bank-accounts";
+import { getCard } from "@/db/queries/cards";
 import { requireSession } from "./auth";
 import { ApiError } from "./errors";
 
@@ -33,17 +37,17 @@ type Options = {
  * 3. Role sufficiency      -> 403 FORBIDDEN
  * 4. Dashboard active-ness -> 409 DASHBOARD_INACTIVE (conditional)
  *
- * @param request - Incoming request (for session resolution)
- * @param dashboardId - Target dashboard
- * @param minRole - Minimum role required ("viewer" | "editor" | "owner")
- * @param options.requireActive - Override the default active-check behavior
+ * @param request Incoming request (for session resolution)
+ * @param dashboardId Target dashboard
+ * @param minRole Minimum role required ("viewer" | "editor" | "owner")
+ * @param options.requireActive Override the default active-check behavior
  * @returns { session, dashboard, role } for use in the handler
  */
 export async function requireDashboardRole(
-  request: Request,
-  dashboardId: string,
-  minRole: Role,
-  options: Options = {},
+    request: Request,
+    dashboardId: string,
+    minRole: Role,
+    options: Options = {},
 ) {
   // 1. Authenticate — throws 401 (no session/deleted) or 403 (suspended)
   const session = await requireSession(request);
@@ -73,4 +77,67 @@ export async function requireDashboardRole(
 
   // Return everything the handler needs, avoiding a second lookup.
   return { session, dashboard: membership.dashboard, role: membership.role };
+}
+
+/**
+ * Authorizes a request against a bank account by verifying membership and role.
+ *
+ * Layered checks (each fails fast):
+ * 1. Authentication        -> 401/403 via requireSession
+ * 2. Membership existence  -> 404 (deliberately NOT 403 to prevent enumeration)
+ * 3. Role sufficiency      -> 403 FORBIDDEN
+ *
+ * @param request Incoming request (for session resolution)
+ * @param bankAccountId Target bank account
+ * @param minRole Minimum role required ("viewer" | "editor" | "owner")
+ * @returns { session, bankAccount, role } for use in the handler
+ */
+export async function requireBankAccountRole(
+    request: Request,
+    bankAccountId: string,
+    minRole: Role
+) {
+  // 1. Authenticate — throws 401/403 via requireSession
+  const session = await requireSession(request);
+
+  // 2. Resolve membership — joins Bank_Account__User + Bank_Account
+  const membership = await findBankAccountMembership(bankAccountId, session.user.id);
+
+  // 3. Enumeration defense: return 404 instead of 403 for non-members[cite: 1]
+  if (!membership) throw new ApiError("NOT_FOUND");
+
+  // 4. Rank comparison — verify if the user has sufficient privileges[cite: 2]
+  if (RANK[membership.role] < RANK[minRole]) throw new ApiError("FORBIDDEN");
+
+  // Note: Bank accounts don't have an "isActive" flag like dashboards, 
+  // they only have a "frozenAt" flag which is checked at the endpoint level if needed[cite: 2].
+
+  // Return everything the handler needs
+  return {
+    session,
+    bankAccount: membership.bankAccount,
+    role: membership.role
+  };
+}
+
+/**
+ * Authorizes a request against a card.
+ *
+ * - Not an active member of the card's bank account (or card deleted) -> 404
+ * - `manage: true` (PATCH, DELETE, freeze, unfreeze) additionally requires being the card owner
+ *   or an `owner` of the bank account -> 403
+ *
+ * @returns { session, card } where `card.role` is the caller's role on the bank account
+ */
+export async function requireCardAccess(request: Request, cardId: string, options: { manage?: boolean } = {}) {
+  const session = await requireSession(request);
+
+  const found = await getCard(cardId, session.user.id);
+  if (!found) throw new ApiError("NOT_FOUND");
+
+  if (options.manage && found.userId !== session.user.id.toLowerCase() && found.role !== "owner") {
+    throw new ApiError("FORBIDDEN");
+  }
+
+  return { session, card: found };
 }

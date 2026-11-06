@@ -1,13 +1,11 @@
 "use client"
 
-import { TrendingUp, TrendingDown, Smile } from "lucide-react"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
 
 import {
     Card,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
@@ -46,19 +44,19 @@ export function IncomeExpenseChart() {
     const isPositive = lastMonth.entradas > lastMonth.saidas
 
     return (
-        <Card className="w-full max-w-2xl shadow-sm border-slate-200">
-            <CardHeader>
-                <CardTitle className="text-xl font-semibold text-slate-800">
+        <Card className="flex h-full min-h-0 w-full flex-col gap-3 overflow-hidden py-4 shadow-sm font-poppins">
+            <CardHeader className="shrink-0 px-4 pb-0">
+                <CardTitle className="text-xl font-semibold text-cyan-800 flex items-center gap-2">
                     Entradas vs Saídas
                 </CardTitle>
-                <CardDescription className="text-slate-500">
+                <CardDescription className="text-cyan-700">
                     O teu histórico dos últimos 6 meses
                 </CardDescription>
             </CardHeader>
 
-            <CardContent>
-                <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
-                    <BarChart accessibilityLayer data={chartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
+            <CardContent className="min-h-0 flex-1 px-4">
+                <ChartContainer config={chartConfig} className="aspect-auto h-full w-full">
+                    <BarChart accessibilityLayer data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
                         <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.5} />
                         <XAxis
                             dataKey="month"
@@ -71,8 +69,8 @@ export function IncomeExpenseChart() {
                             cursor={false}
                             content={<ChartTooltipContent indicator="dashed" />}
                         />
-                        <Bar dataKey="entradas" fill="var(--color-entradas)" radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="saidas" fill="var(--color-saidas)" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="entradas" fill="var(--app-gains)" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="saidas" fill="var(--app-loses)" radius={[4, 4, 0, 0]} />
                     </BarChart>
                 </ChartContainer>
             </CardContent>

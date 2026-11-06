@@ -1,0 +1,23 @@
+meta {
+  name: Cards - setup add token2 user as viewer
+  type: http
+  seq: 241
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{cardBaId}}/members
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "user_id": "{{userId2}}", "role": "viewer" }
+}
+
+assert {
+  res.status: eq 201
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Sessions - bad uuid
+  type: http
+  seq: 512
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/me/sessions/not-a-uuid
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 400
+}

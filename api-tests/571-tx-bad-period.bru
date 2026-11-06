@@ -1,0 +1,19 @@
+meta {
+  name: Transactions - period out of order
+  type: http
+  seq: 571
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/transactions?occurred_from=2026-10-31T00:00:00.000Z&occurred_to=2026-10-01T00:00:00.000Z
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 422
+}

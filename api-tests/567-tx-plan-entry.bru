@@ -1,0 +1,31 @@
+meta {
+  name: Transactions - entry of the new plan
+  type: http
+  seq: 567
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/transactions?source_type=installment_plan&per_page=100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("snapshot of the plan", function () {
+    const t = res.body.data.find((x) => x.source_id === bru.getVar("histPlan"));
+    expect(t).to.exist;
+    expect(t.amount).to.equal("600.00");
+    expect(t.occurred_at).to.equal("2027-06-30T00:00:00.000Z");
+  });
+  test("only plans", function () {
+    res.body.data.forEach((t) => expect(t.source_type).to.equal("installment_plan"));
+  });
+}

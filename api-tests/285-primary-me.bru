@@ -1,0 +1,23 @@
+meta {
+  name: Primary account - GET /me embeds it
+  type: http
+  seq: 285
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("embedded", function () { expect(res.body.data.profile.primary_bank_account_id).to.equal(bru.getVar("primBaId")); });
+}

@@ -1,0 +1,24 @@
+meta {
+  name: Record types - Income cannot take a free color
+  type: http
+  seq: 88
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{rtDashboardId}}/record-types/{{incomeTypeId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "color_id": "{{color10}}" }
+}
+
+assert {
+  res.status: eq 422
+  res.body.code: eq VALIDATION_ERROR
+}

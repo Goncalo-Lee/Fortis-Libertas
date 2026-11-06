@@ -1,0 +1,27 @@
+meta {
+  name: Payment methods - editor creates own
+  type: http
+  seq: 322
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  { "name": "Editor method" }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("pmId3", res.body.data.payment_method_id);
+}
+
+assert {
+  res.status: eq 201
+}

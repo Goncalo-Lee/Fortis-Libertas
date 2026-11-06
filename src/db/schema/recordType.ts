@@ -9,6 +9,10 @@ export const recordType = mysqlTable("record_type", {
     dashboardId: uuidBinary("dashboard_id").notNull(),
     name: t.varchar("name", { length: 50 }).notNull(),
     description: t.text("description"),
+    colorId: uuidBinary("color_id").notNull(),
+    iconId: uuidBinary("icon_id").notNull(),
+    // What a record of this type does to a balance. Set at creation and never changed, so history stays valid.
+    kind: t.mysqlEnum("kind", ["income", "expense", "neutral"]).notNull().default("neutral"),
     ...softDelete,
     ...timestamps,
 }, (table) => [
@@ -18,6 +22,20 @@ export const recordType = mysqlTable("record_type", {
         foreignColumns: [s.dashboard.id],
     }).onDelete("cascade"),
 
+    t.foreignKey({
+        name: "fk_record_type_color",
+        columns: [table.colorId],
+        foreignColumns: [s.color.id],
+    }).onDelete("restrict"),
+
+    t.foreignKey({
+        name: "fk_record_type_icon",
+        columns: [table.iconId],
+        foreignColumns: [s.icon.id],
+    }).onDelete("restrict"),
+
     t.uniqueIndex("idx_record_type_dashboard_name").on(table.dashboardId, table.name),
+    t.uniqueIndex("idx_record_type_dashboard_color").on(table.dashboardId, table.colorId),
     t.index("idx_record_type_dashboard_id").on(table.dashboardId),
+    t.index("idx_record_type_icon_id").on(table.iconId),
 ]);

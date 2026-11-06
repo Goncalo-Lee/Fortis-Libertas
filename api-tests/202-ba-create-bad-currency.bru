@@ -1,0 +1,27 @@
+meta {
+  name: Bank accounts - create unknown currency
+  type: http
+  seq: 202
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "X", "initial_balance": "0", "currency": "ZZZ" }
+}
+
+assert {
+  res.status: eq 422
+}
+
+tests {
+  test("points at currency", function () { expect(res.body.errors.map((e) => e.pointer)).to.include("/currency"); });
+}

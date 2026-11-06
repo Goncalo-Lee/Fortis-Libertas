@@ -1,0 +1,23 @@
+meta {
+  name: Delete me - share it with the second user
+  type: http
+  seq: 520
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboard3}}/members
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token3}}
+}
+
+body:json {
+  { "email": "{{email2}}", "role": "viewer" }
+}
+
+assert {
+  res.status: eq 201
+}

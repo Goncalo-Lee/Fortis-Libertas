@@ -1,0 +1,23 @@
+meta {
+  name: Installment plans - viewer cannot create
+  type: http
+  seq: 349
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  { "name": "Laptop", "category_id": "{{ipCatId}}", "total_amount": "1200.00", "total_installments": 12, "due_date": "2027-12-31", "tag_ids": ["{{ipTagA}}"] }
+}
+
+assert {
+  res.status: eq 403
+}

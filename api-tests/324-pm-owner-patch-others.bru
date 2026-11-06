@@ -1,0 +1,23 @@
+meta {
+  name: Payment methods - owner patches editor method
+  type: http
+  seq: 324
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods/{{pmId3}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Renamed by owner" }
+}
+
+assert {
+  res.status: eq 200
+}

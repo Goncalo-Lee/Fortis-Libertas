@@ -1,0 +1,23 @@
+meta {
+  name: Installment plans - get with progress
+  type: http
+  seq: 360
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans/{{ipId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("progress", function () { expect(res.body.data.records_count).to.equal(0); expect(res.body.data.records_total).to.equal("0.00"); });
+}

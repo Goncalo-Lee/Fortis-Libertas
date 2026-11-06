@@ -1,7 +1,9 @@
-import { and, count, desc, asc, eq, isNotNull, isNull, like, or } from "drizzle-orm";
-import { db } from "../..";
-import { dashboard, userDashboard, user } from "../../schema";
+import { and, count, desc, asc, eq, inArray, ne, sql, isNotNull, isNull, like, or } from "drizzle-orm";
+import { currency, financialRecord, recordType, dashboard, userDashboard, user } from "@/db/schema";
+import { convertAmount, todayUtc } from "@/lib/exchange";
+import { addDecimal } from "@/lib/exchange/decimal";
 import { ListFiltersDashboards } from "./type";
+import { db } from "@/db"; // Ajusta o caminho
 
 /* ======
   READ
@@ -86,16 +88,16 @@ export async function findUser(params: {
   const conditions = [
     params.userId ? eq(user.id, params.userId) : undefined,
     params.email ? eq(user.email, params.email.toLowerCase()) : undefined,
-    params.userName ? eq(user.userName, params.userName) : undefined,
+    params.userName ? eq(user.username, params.userName) : undefined,
   ].filter(Boolean);
 
   if (conditions.length === 0) return null;
 
   const [row] = await db
-    .select({ id: user.id })
-    .from(user)
-    .where(and(or(...conditions), isNull(user.deletedAt)))
-    .limit(1);
+      .select({ id: user.id })
+      .from(user)
+      .where(and(or(...conditions), isNull(user.deletedAt)))
+      .limit(1);
 
   return row ?? null;
 }
@@ -196,4 +198,50 @@ export async function listDashboards(userId: string, f: ListFiltersDashboards) {
     .where(where);
 
   return { rows, total: totalRow?.total ?? 0 };
+}
+
+/**
+ * Balance of a dashboard in `target` currency: the net of its own financial records (income minus expense) with
+ * status `paid` or `settled`. Bank accounts are independent of dashboards, so initial balances do not belong here.
+ *
+ * Amounts in other currencies are converted with the rate of the payment day (the latest rate for a day still
+ * ahead). A group of records whose rate is not available is left out rather than failing the request.
+ *
+ * @returns Decimal string, e.g. "-12.50"
+ */
+export async function getDashboardBalance(dashboardId: string, target: string) {
+  const day = sql<string>`DATE_FORMAT(${financialRecord.paymentDate}, '%Y-%m-%d')`;
+  const rows = await db
+    .select({
+      currency: currency.code,
+      kind: recordType.kind,
+      day,
+      total: sql<string>`SUM(${financialRecord.price})`,
+    })
+    .from(financialRecord)
+    .innerJoin(recordType, eq(financialRecord.recordTypeId, recordType.id))
+    .innerJoin(currency, eq(currency.id, financialRecord.currencyId))
+    .where(
+      and(
+        eq(financialRecord.dashboardId, dashboardId),
+        isNull(financialRecord.deletedAt),
+        inArray(financialRecord.status, ["paid", "settled"]),
+        ne(recordType.kind, "neutral"),
+      ),
+    )
+    .groupBy(currency.code, recordType.kind, day);
+
+  const today = todayUtc();
+  let balance = "0.00";
+  for (const row of rows) {
+    let amount: string | null = String(row.total);
+    if (row.currency !== target) {
+      const converted = await convertAmount(amount, row.currency, target, row.day >= today ? "current" : row.day);
+      amount = converted?.amount ?? null;
+    }
+    if (amount === null) continue;
+
+    balance = addDecimal(balance, row.kind === "expense" ? `-${amount}` : amount);
+  }
+  return balance;
 }

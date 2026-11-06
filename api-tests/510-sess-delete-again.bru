@@ -1,0 +1,19 @@
+meta {
+  name: Sessions - revoke again is 404
+  type: http
+  seq: 510
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/me/sessions/{{sessionOther2}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 404
+}

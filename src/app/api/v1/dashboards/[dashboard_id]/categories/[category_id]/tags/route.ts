@@ -20,17 +20,19 @@ async function ids({ params }: Ctx) {
 export const GET = withErrors(async (request: NextRequest, ctx: Ctx) => {
   const { dashboardId, id } = await ids(ctx);
   await requireDashboardRole(request, dashboardId, "viewer");
-  if (!(await getCategory(dashboardId, id))) throw new ApiError("NOT_FOUND");
 
+  if (!(await getCategory(dashboardId, id))) throw new ApiError("NOT_FOUND");
   return ok((await listCategoryTags(id)).map((t) => serializeTag(t)));
 });
 
 export const PUT = withErrors(async (request: NextRequest, ctx: Ctx) => {
   const { dashboardId, id } = await ids(ctx);
   await requireDashboardRole(request, dashboardId, "editor");
+
   if (!(await getCategory(dashboardId, id))) throw new ApiError("NOT_FOUND");
 
   const { tag_ids } = await parseJson(request, setCategoryTagsSchema);
   await setCategoryTags(dashboardId, id, tag_ids);
+
   return ok((await listCategoryTags(id)).map((t) => serializeTag(t)));
 });

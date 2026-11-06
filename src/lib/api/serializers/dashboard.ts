@@ -1,6 +1,6 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { dashboard } from "../../../db/schema";
-import type { Role } from "../../../db/queries/dashboards";
+import type { Role } from "../../../db/queries/type";
 import { toIso } from "./common";
 
 // Inferred type of a raw dashboard row from the DB.

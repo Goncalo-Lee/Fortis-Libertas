@@ -1,0 +1,23 @@
+meta {
+  name: Cards - freeze
+  type: http
+  seq: 268
+}
+
+post {
+  url: {{baseUrl}}/api/v1/cards/{{cardId}}/freeze
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("frozen", function () { expect(res.body.data.frozen_at).to.be.a("string"); });
+}

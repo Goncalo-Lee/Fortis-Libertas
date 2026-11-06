@@ -1,0 +1,19 @@
+meta {
+  name: Delete me - token no longer works
+  type: http
+  seq: 525
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token3}}
+}
+
+assert {
+  res.status: eq 401
+}

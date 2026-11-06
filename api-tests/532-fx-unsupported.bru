@@ -1,0 +1,20 @@
+meta {
+  name: Exchange rates - currency not in the catalog
+  type: http
+  seq: 532
+}
+
+get {
+  url: {{baseUrl}}/api/v1/exchange-rates?base=USD&quote=JPY
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 422
+  res.body.errors[0].pointer: eq /quote
+}

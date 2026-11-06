@@ -1,0 +1,38 @@
+meta {
+  name: Notifications - list
+  type: http
+  seq: 537
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me/notifications
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+script:post-response {
+  if (res.status === 200 && res.body.data.length) bru.setVar("notificationId", res.body.data[0].notification_id);
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isArray
+  res.body.meta.total: gte 1
+}
+
+tests {
+  test("newest first", function () {
+    const d = res.body.data.map((n) => n.created_at);
+    expect(d).to.deep.equal([...d].sort().reverse());
+  });
+  test("member_added carries who added and the role", function () {
+    const n = res.body.data.find((x) => x.type === "dashboard.member_added");
+    expect(n.data).to.have.property("dashboard_id");
+    expect(n.data).to.have.property("role");
+    expect(n.data).to.have.property("added_by");
+  });
+}

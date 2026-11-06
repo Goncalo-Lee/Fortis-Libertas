@@ -1,0 +1,20 @@
+meta {
+  name: Color swap - Expenses now has Income's old color
+  type: http
+  seq: 618
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{swapDash}}/record-types/{{expensesRt}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.color_id: eq {{incomeColor}}
+}

@@ -1,0 +1,36 @@
+meta {
+  name: Home - upcoming installments
+  type: http
+  seq: 614
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/home
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("the plan due in 10 days is there", function () {
+    const ids = res.body.data.upcoming_installments.map((p) => p.installment_plan_id);
+    expect(ids).to.include(bru.getVar("soonPlan"));
+  });
+  test("the plan due in 2027 is not (test 566)", function () {
+    const ids = res.body.data.upcoming_installments.map((p) => p.installment_plan_id);
+    expect(ids).to.not.include(bru.getVar("histPlan"));
+  });
+  test("only pending or late, soonest first", function () {
+    const list = res.body.data.upcoming_installments;
+    list.forEach((p) => expect(["pending", "late"]).to.include(p.status));
+    const due = list.map((p) => p.due_date);
+    expect(due).to.deep.equal([...due].sort());
+  });
+}

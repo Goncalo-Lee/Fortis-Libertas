@@ -1,0 +1,19 @@
+meta {
+  name: Payment methods - get bad uuid
+  type: http
+  seq: 313
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods/nope
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 400
+}

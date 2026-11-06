@@ -1,0 +1,23 @@
+meta {
+  name: Bank accounts - viewer reads
+  type: http
+  seq: 219
+}
+
+get {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{baId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("role", function () { expect(res.body.data.role).to.equal("viewer"); });
+}

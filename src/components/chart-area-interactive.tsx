@@ -165,7 +165,7 @@ export function ChartAreaInteractive() {
   })
 
   return (
-    <Card className="@container/card">
+    <Card className="@container/card font-poppins">
       <CardHeader>
         <CardTitle>Total Visitors</CardTitle>
         <CardDescription>

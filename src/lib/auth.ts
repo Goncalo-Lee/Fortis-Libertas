@@ -1,11 +1,13 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
-import {betterAuth} from "better-auth";
-import {twoFactor, username} from "better-auth/plugins";
+import { betterAuth} from "better-auth";
+import {admin, bearer, twoFactor} from "better-auth/plugins";
 import { db } from "../db";
 import * as schema from "../db/schema";
 import { generateId } from "../db/types";
+import { getDefaultProfileCatalogIds } from "../db/queries/catalogs";
 import {nextCookies} from "better-auth/next-js";
 import nodemailer from "nodemailer";
+import { onAccountUpdated, onSessionCreated, onSessionDeleted, onUserUpdated } from "./auth-activity";
 import {error} from "better-auth/api";
 
 /**
@@ -45,10 +47,15 @@ export const auth = betterAuth({
   }),
 
   emailVerification: {
-    sendOnSignUp: true,
+    sendOnSignUp: false,
     autoSignInAfterVerification: true,
 
     sendVerificationEmail: async ({ user, url }) => {
+      if (process.env.SEEDING === "true") {
+        console.log(`Bypassing email verification for: ${user.email}`);
+        return;
+      }
+
       await transporter.sendMail({
         from: '"Fortis Libertas" <no-reply@fortislibertas.com>',
         to: user.email,
@@ -67,7 +74,7 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 8,
     maxPasswordLength: 32,
-    requireEmailVerification: true,
+    requireEmailVerification: false,
 
     sendResetPassword: async ({ user, url }) => {
       await transporter.sendMail({
@@ -78,25 +85,56 @@ export const auth = betterAuth({
       })
     },
   },
+  user: {
+    additionalFields: {
+      suspendedAt: { type: "date", required: false, input: false },
+      deletedAt: { type: "date", required: false, input: false},
+    },
+  },
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      callbackURL: "/dashboard",
+      errorCallbackURL: "/sign-in",
     },
   },
   advanced: {
     database: {
       // Enforces application-wide UUIDv7 generation for all Better Auth models
-      generateId: () => {
-        const novoId = crypto.randomUUID();
-        console.log("🚨 BETTER AUTH PEDIU UM ID NOVO! Gerei o UUID:", novoId);
-        return novoId;
+      generateId: () => generateId(),
+      joins: false,
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (createdUser) => {
+          // Currency and language are required: new profiles start with the defaults (EUR, pt-PT).
+          const { currencyId, languageId } = await getDefaultProfileCatalogIds()
+          await db.insert(schema.profile).values({
+            userId: createdUser.id,
+            currencyId,
+            languageId,
+          })
+        }
       },
-      joins: true,
+      // 2FA switched on/off -> activity log (see auth-activity.ts).
+      update: { after: (user, ctx) => onUserUpdated(user, ctx) },
+    },
+    // Sign-up, sign-in and sign-out -> activity log.
+    session: {
+      create: { after: (session, ctx) => onSessionCreated(session, ctx) },
+      delete: { after: (session, ctx) => onSessionDeleted(session, ctx) },
+    },
+    // Password change or reset -> activity log.
+    account: {
+      update: { after: (account, ctx) => onAccountUpdated(account, ctx) },
     },
   },
   appName: "FortisLibertas",
   plugins: [
+      bearer(),
     twoFactor({
       issuer: "Fortis Libertas", // Name shown in the authenticator app (Google Auth, Authy, etc.)
       totpOptions: {
@@ -105,6 +143,7 @@ export const auth = betterAuth({
         window: 1,  // Allows ±1 step (30s grace) to handle client/server clock drift
       },
     }),
+      admin(),
     nextCookies(),
   ],
 });

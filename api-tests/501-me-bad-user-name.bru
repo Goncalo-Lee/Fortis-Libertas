@@ -1,0 +1,24 @@
+meta {
+  name: Me - user_name with invalid characters
+  type: http
+  seq: 501
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/me
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "user_name": "bad name!" }
+}
+
+assert {
+  res.status: eq 422
+  res.body.errors[0].pointer: eq /user_name
+}

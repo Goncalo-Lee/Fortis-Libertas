@@ -1,0 +1,21 @@
+meta {
+  name: Balances - dashboard balance
+  type: http
+  seq: 480
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/balance
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.balance: matches ^749\.50$
+  res.body.data.currency: isString
+}

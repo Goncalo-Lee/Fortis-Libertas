@@ -1,0 +1,19 @@
+meta {
+  name: Financial records - bad sort
+  type: http
+  seq: 424
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records?sort=foo
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 422
+}

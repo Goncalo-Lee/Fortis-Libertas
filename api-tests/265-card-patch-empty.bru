@@ -1,0 +1,23 @@
+meta {
+  name: Cards - patch empty
+  type: http
+  seq: 265
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/cards/{{cardId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {}
+}
+
+assert {
+  res.status: eq 422
+}

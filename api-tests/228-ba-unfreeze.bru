@@ -1,0 +1,23 @@
+meta {
+  name: Bank accounts - unfreeze
+  type: http
+  seq: 228
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{baId}}/unfreeze
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("not frozen", function () { expect(res.body.data.frozen_at).to.equal(null); });
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Installment plans - viewer cannot set tags
+  type: http
+  seq: 376
+}
+
+put {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans/{{ipId}}/tags
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+body:json {
+  { "tag_ids": [] }
+}
+
+assert {
+  res.status: eq 403
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Cards - list frozen=true
+  type: http
+  seq: 270
+}
+
+get {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{cardBaId}}/cards?frozen=true
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("one", function () { expect(res.body.data.length).to.equal(1); });
+}

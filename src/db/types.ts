@@ -2,6 +2,7 @@ import { customType } from "drizzle-orm/mysql-core";
 import { parse as uuidParse, stringify as uuidStringify, validate as uuidValidate } from "uuid";
 import { v7 as uuid7 } from "uuid";
 
+
 /**
  * Generates a time-ordered UUID version 7 (UUIDv7) string.
  *
@@ -20,6 +21,20 @@ export const generateId = (): string => {
     return Bun.randomUUIDv7();
   }
   return uuid7();
+};
+
+
+
+// Prefix MySQL uses for binary values inside JSON (JSON_OBJECT / JSON_ARRAYAGG), which is how
+// Better Auth joins return ids. Kept while the joins may be used; with `joins: false` it is not produced.
+const JSON_BINARY_PREFIX = "base64:type254:";
+
+// 16 bytes -> "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx". Throws instead of returning a wrong id.
+const bytesToUuid = (bytes: Uint8Array): string => {
+  if (bytes.length !== 16) {
+    throw new Error(`Invalid binary UUID: expected 16 bytes, got ${bytes.length}.`);
+  }
+  return uuidStringify(bytes);
 };
 
 /**
@@ -41,9 +56,6 @@ export const generateId = (): string => {
  * });
  * ```
  */
-
-
-
 export const uuidBinary = customType<{
   data: string;
   driverData: Buffer;
@@ -52,37 +64,34 @@ export const uuidBinary = customType<{
     return "binary(16)";
   },
 
+  // A value that is not a UUID is a bug in the caller (routes validate ids with `parseUuid`), so it fails
+  // loudly instead of being replaced by a zero UUID that would silently match or write the wrong row.
   toDriver(value: string): Buffer {
-    // 1. THE SAFETY NET: Prevents the app from crashing on bad data
-    if (typeof value === "string" && value.startsWith("base64:type254:")) {
-      const base64Part = value.substring("base64:type254:".length);
-      return Buffer.from(base64Part, "base64");
+    if (typeof value === "string" && value.startsWith(JSON_BINARY_PREFIX)) {
+      const bytes = Buffer.from(value.slice(JSON_BINARY_PREFIX.length), "base64");
+      if (bytes.length !== 16) throw new Error(`Invalid binary UUID: expected 16 bytes, got ${bytes.length}.`);
+      return bytes;
     }
 
-    if (!uuidValidate(value)) {
-      console.warn(`[WARNING] Invalid UUID received: "${value}". Falling back to zero-UUID.`);
-      return Buffer.from(uuidParse("00000000-0000-0000-0000-000000000000"));
+    if (typeof value !== "string" || !uuidValidate(value)) {
+      throw new Error(`Invalid UUID: ${JSON.stringify(value)}.`);
     }
 
-    // 2. THE HAPPY PATH: Wraps the Uint8Array securely in a Buffer
     return Buffer.from(uuidParse(value));
   },
 
+  // Same rule when reading: an unreadable value is an error, not an empty string.
   fromDriver(value: unknown): string {
-    if (Buffer.isBuffer(value)) {
-      return uuidStringify(value);
-    }
+    if (value instanceof Uint8Array) return bytesToUuid(value); // Buffer is a Uint8Array
 
     if (typeof value === "string") {
-      // Handle PlanetScale/Serverless base64 prefixed binary strings
-      if (value.startsWith("base64:type254:")) {
-        const base64Part = value.substring("base64:type254:".length);
-        return uuidStringify(Buffer.from(base64Part, "base64"));
+      if (value.startsWith(JSON_BINARY_PREFIX)) {
+        return bytesToUuid(Buffer.from(value.slice(JSON_BINARY_PREFIX.length), "base64"));
       }
-      return value;
+      if (uuidValidate(value)) return value.toLowerCase();
     }
 
-    return uuidStringify(value as Uint8Array);
+    throw new Error(`Invalid UUID value from the database: ${JSON.stringify(value)}.`);
   },
 });
 

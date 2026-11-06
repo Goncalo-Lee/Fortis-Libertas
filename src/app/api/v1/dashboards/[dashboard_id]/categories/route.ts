@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { createCategory, getTagsByCategory, listCategories } from "@/db/queries/categories";
+import { createCategory, listCategories, loadCategoryExtras } from "@/db/queries/categories";
 import { requireDashboardRole } from "@/lib/api/access";
 import { parseJson } from "@/lib/api/body";
 import { ApiError, withErrors } from "@/lib/api/errors";
@@ -19,22 +19,22 @@ export const GET = withErrors(async (request: NextRequest, { params }: Ctx) => {
 
   const { searchParams } = request.nextUrl;
   const { page, perPage, offset } = parsePagination(searchParams);
-  const { include, tag_id, ...filters } = listCategoriesQuery.parse(
+  const { include, tag_id, record_type_id, ...filters } = listCategoriesQuery.parse(
     Object.fromEntries(searchParams),
   );
 
   const { rows, total } = await listCategories(dashboardId, {
     ...filters,
     tagId: tag_id?.toLowerCase(),
+    recordTypeId: record_type_id?.toLowerCase(),
     limit: perPage,
     offset,
   });
 
-  const tags =
-    include === "tags" ? await getTagsByCategory(rows.map((r) => r.id)) : undefined;
+  const extras = await loadCategoryExtras(rows.map((r) => r.id), include === "tags");
 
   return paginated(
-    rows.map((r) => serializeCategory(r, tags ? (tags.get(r.id.toLowerCase()) ?? []) : undefined)),
+    rows.map((r) => serializeCategory(r, extras.recordTypesOf(r.id), extras.tagsOf?.(r.id))),
     { page, perPage, total },
   );
 });
@@ -44,11 +44,20 @@ export const POST = withErrors(async (request: NextRequest, { params }: Ctx) => 
   await requireDashboardRole(request, dashboardId, "editor");
 
   const input = await parseJson(request, createCategorySchema);
-  const row = await createCategory(dashboardId, input);
+  const row = await createCategory(dashboardId, {
+    name: input.name,
+    description: input.description,
+    tagIds: input.tag_ids,
+    colorId: input.color_id,
+    iconId: input.icon_id,
+    recordTypeIds: input.record_type_ids,
+  });
   if (!row) throw new ApiError("INTERNAL_ERROR");
 
+  const extras = await loadCategoryExtras([row.id], false);
+
   return created(
-    serializeCategory(row),
+    serializeCategory(row, extras.recordTypesOf(row.id)),
     `/api/v1/dashboards/${dashboardId}/categories/${row.id}`,
   );
 });

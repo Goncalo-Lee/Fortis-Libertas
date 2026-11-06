@@ -1,0 +1,31 @@
+meta {
+  name: Bank accounts - create with currency
+  type: http
+  seq: 201
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Dollars", "initial_balance": "0", "currency": "USD" }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("baId2", res.body.data.bank_account_id);
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("USD", function () { expect(res.body.data.currency).to.equal("USD"); });
+}

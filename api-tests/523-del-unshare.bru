@@ -1,0 +1,19 @@
+meta {
+  name: Delete me - remove the second user
+  type: http
+  seq: 523
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/dashboards/{{dashboard3}}/members/{{userId2}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token3}}
+}
+
+assert {
+  res.status: eq 204
+}

@@ -1,0 +1,27 @@
+meta {
+  name: Installment plans - clear tags
+  type: http
+  seq: 372
+}
+
+put {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans/{{ipId}}/tags
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "tag_ids": [] }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("none", function () { expect(res.body.data.tags.length).to.equal(0); });
+}

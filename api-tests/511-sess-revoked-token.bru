@@ -1,0 +1,19 @@
+meta {
+  name: Sessions - revoked token no longer works
+  type: http
+  seq: 511
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2b}}
+}
+
+assert {
+  res.status: eq 401
+}

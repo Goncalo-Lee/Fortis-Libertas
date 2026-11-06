@@ -1,0 +1,19 @@
+meta {
+  name: Cards - viewer gets card
+  type: http
+  seq: 259
+}
+
+get {
+  url: {{baseUrl}}/api/v1/cards/{{cardId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token2}}
+}
+
+assert {
+  res.status: eq 200
+}

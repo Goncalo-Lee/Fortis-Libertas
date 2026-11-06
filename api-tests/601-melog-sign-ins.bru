@@ -1,0 +1,28 @@
+meta {
+  name: My activity log - sign-ins only
+  type: http
+  seq: 601
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me/activity-logs?action=sign_in
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("only sign-ins, with the method", function () {
+    res.body.data.forEach((x) => {
+      expect(x.action).to.equal("sign_in");
+      expect(x.metadata.method).to.be.a("string");
+    });
+  });
+}

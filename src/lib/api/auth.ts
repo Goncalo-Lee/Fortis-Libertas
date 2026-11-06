@@ -1,5 +1,6 @@
 import { auth } from "../auth";
 import { ApiError } from "./errors";
+import { setRequestUser } from "./request-context";
 
 /**
  * Middleware to enforce authentication and account status checks.
@@ -34,6 +35,9 @@ export async function requireSession(request: Request) {
   if (session.user.suspendedAt) {
     throw new ApiError("ACCOUNT_SUSPENDED");
   }
+
+  // Remember who is making this request, for the activity log (see request-context.ts).
+  setRequestUser(session.user.id);
 
   // Return the full session object if all checks pass
   // Structure depends on auth lib, typically: { session: {...}, user: {...} }

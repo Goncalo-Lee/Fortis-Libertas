@@ -1,0 +1,23 @@
+meta {
+  name: Payment methods - patch to existing name
+  type: http
+  seq: 316
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/payment-methods/{{pmId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Cash" }
+}
+
+assert {
+  res.status: eq 409
+}

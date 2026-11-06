@@ -1,8 +1,10 @@
 import type { NextRequest } from "next/server";
-import { getMe } from "@/db/queries/me";
+import { deleteAccount, getMe, updateUser } from "@/db/queries/me";
 import { requireSession } from "@/lib/api/auth";
+import { parseJson } from "@/lib/api/body";
 import { ApiError, withErrors } from "@/lib/api/errors";
-import { ok } from "@/lib/api/responses";
+import { noContent, ok } from "@/lib/api/responses";
+import { updateMeSchema } from "@/lib/api/schemas/user";
 import { serializeUser } from "@/lib/api/serializers/user";
 
 // Force Node.js runtime instead of Edge Runtime.
@@ -10,8 +12,15 @@ import { serializeUser } from "@/lib/api/serializers/user";
 // that aren't available in the Edge Runtime.
 export const runtime = "nodejs";
 
+/** Reads the caller with their profile and serializes it; 404 if the user row vanished (edge case). */
+async function respondWithMe(userId: string) {
+  const me = await getMe(userId);
+  if (!me) throw new ApiError("NOT_FOUND");
+  return ok(serializeUser(me.user, me.profile));
+}
+
 /**
- * GET /api/me
+ * GET /api/v1/me
  *
  * Returns the authenticated user's full profile.
  *
@@ -26,25 +35,48 @@ export const runtime = "nodejs";
  * - 403 ACCOUNT_SUSPENDED: user is suspended
  * - 404 NOT_FOUND: session valid but user row missing (edge case)
  * - 500 INTERNAL_ERROR: unexpected failures (caught by withErrors)
- *
- * @param request - NextRequest containing session cookies/headers
- * @returns 200 with { data: SerializedUser }
  */
 export const GET = withErrors(async (request: NextRequest) => {
-  // Step 1: Authenticate. Throws ApiError if session invalid/deleted/suspended.
-  // Destructure only 'user' since we don't need session metadata here.
-  const { user: sessionUser } = await requireSession(request);
+  const { user } = await requireSession(request);
+  return respondWithMe(user.id);
+});
 
-  // Step 2: Fetch user + profile from DB.
-  // getMe handles the "create profile if missing" invariant internally.
-  const me = await getMe(sessionUser.id);
+/**
+ * PATCH /api/v1/me
+ *
+ * Updates `user_name`, `full_name` and/or `image` of the caller (endpoints.md, section 3.4).
+ *
+ * Pipeline: requireSession -> parseJson(updateMeSchema) -> updateUser -> respond with the fresh user
+ *
+ * Errors:
+ * - 400 MALFORMED_REQUEST: body is not valid JSON
+ * - 401 / 403: no valid session / suspended account
+ * - 409 USER_NAME_TAKEN: another user has that user_name
+ * - 422 VALIDATION_ERROR: unknown key, empty body, or a field out of its limits
+ *
+ * @returns 200 with the same shape as GET /me, so the client can replace its cached user
+ */
+export const PATCH = withErrors(async (request: NextRequest) => {
+  const { user } = await requireSession(request);
+  const changes = await parseJson(request, updateMeSchema);
 
-  // Step 3: Guard against orphaned sessions.
-  // If the session is valid but the user row was hard-deleted from the DB,
-  // getMe returns null. We surface this as 404 rather than crashing.
-  if (!me) throw new ApiError("NOT_FOUND");
+  await updateUser(user.id, changes);
+  return respondWithMe(user.id);
+});
 
-  // Step 4: Serialize and respond.
-  // serializeUser maps DB fields to API contract (snake_case, ISO dates, nested profile).
-  return ok(serializeUser(me.user, me.profile));
+/**
+ * DELETE /api/v1/me
+ *
+ * Soft-deletes the caller's account and signs them out of every device (endpoints.md, section 3.8).
+ *
+ * Errors:
+ * - 401 / 403: no valid session / suspended account
+ * - 409 LAST_OWNER: the user is the only owner of a dashboard or bank account that has other members
+ *
+ * @returns 204 No Content. The session used for this request no longer exists afterwards.
+ */
+export const DELETE = withErrors(async (request: NextRequest) => {
+  const { user } = await requireSession(request);
+  await deleteAccount(user.id);
+  return noContent();
 });

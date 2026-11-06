@@ -1,0 +1,30 @@
+meta {
+  name: Transactions - deleted entries are kept
+  type: http
+  seq: 563
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/transactions?deleted=true&per_page=100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("entry kept with deleted_at", function () {
+    const t = res.body.data.find((t) => t.source_id === bru.getVar("histRec"));
+    expect(t).to.exist;
+    expect(t.deleted_at).to.be.a("string");
+  });
+  test("only deleted ones", function () {
+    res.body.data.forEach((t) => expect(t.deleted_at).to.not.equal(null));
+  });
+}

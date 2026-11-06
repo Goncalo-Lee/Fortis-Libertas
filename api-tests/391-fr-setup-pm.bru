@@ -1,0 +1,27 @@
+meta {
+  name: Financial records - setup payment method
+  type: http
+  seq: 391
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/payment-methods
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"name": "Visa", "card_id": "{{frCardId}}"}
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("frPm", res.body.data.payment_method_id);
+}
+
+assert {
+  res.status: eq 201
+}

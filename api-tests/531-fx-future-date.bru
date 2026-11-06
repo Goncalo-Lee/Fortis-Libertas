@@ -1,0 +1,20 @@
+meta {
+  name: Exchange rates - future date
+  type: http
+  seq: 531
+}
+
+get {
+  url: {{baseUrl}}/api/v1/exchange-rates?base=USD&quote=EUR&date=2099-01-01
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 422
+  res.body.errors[0].pointer: eq /date
+}

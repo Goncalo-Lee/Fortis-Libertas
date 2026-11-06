@@ -1,6 +1,7 @@
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "../..";
-import { tag, tagCategory } from "../../schema";
+import { financialRecord, installmentPlan, recordType, recordTypeCategory, tag, tagCategory } from "../../schema";
+import { attachColorIcon } from "../catalogs";
 import { ApiError } from "../../../lib/api/errors";
 
 /* ======
@@ -28,7 +29,44 @@ export async function assertTagsInDashboard(dashboardId: string, tagIds: string[
   const missing = tagIds.filter((id) => !found.has(id));
   if (missing.length > 0) {
     throw new ApiError("VALIDATION_ERROR", "Some tags do not exist in this dashboard.", [
-      { pointer: "/tag_ids", detail: `Unknown tag ids: ${missing.join(", ")}` },
+      { pointer: "/tag_ids", message: `Unknown tag ids: ${missing.join(", ")}` },
+    ]);
+  }
+}
+
+/**
+ * Ensures a non-empty list of record type IDs exists, is not soft-deleted, and belongs to the dashboard.
+ *
+ * @param dashboardId - The unique identifier of the dashboard the record types must belong to
+ * @param recordTypeIds - The record type IDs to validate. Must contain at least one
+ * @throws {ApiError} `VALIDATION_ERROR` pointing at `/record_type_ids` when empty or when some are unknown
+ *
+ * @example
+ * await assertRecordTypesInDashboard("dash_123", ["rt_1", "rt_2"]);
+ */
+export async function assertRecordTypesInDashboard(dashboardId: string, recordTypeIds: string[]) {
+  if (recordTypeIds.length === 0) {
+    throw new ApiError("VALIDATION_ERROR", "One or more fields are invalid.", [
+      { pointer: "/record_type_ids", message: "At least one record type is required." },
+    ]);
+  }
+
+  const rows = await db
+    .select({ id: recordType.id })
+    .from(recordType)
+    .where(
+      and(
+        eq(recordType.dashboardId, dashboardId),
+        isNull(recordType.deletedAt),
+        inArray(recordType.id, recordTypeIds),
+      ),
+    );
+
+  const found = new Set(rows.map((r) => r.id.toLowerCase()));
+  const missing = recordTypeIds.filter((id) => !found.has(id));
+  if (missing.length > 0) {
+    throw new ApiError("VALIDATION_ERROR", "Some record types do not exist in this dashboard.", [
+      { pointer: "/record_type_ids", message: `Unknown record type ids: ${missing.join(", ")}` },
     ]);
   }
 }
@@ -161,4 +199,164 @@ export async function unlinkTag(categoryId: string, tagId: string) {
   await db
     .delete(tagCategory)
     .where(and(eq(tagCategory.categoryId, categoryId), eq(tagCategory.tagId, tagId)));
+}
+
+/* ===================
+  RECORD TYPE LINKS
+==================== */
+
+type RecordTypeRow = typeof recordType.$inferSelect;
+type WithCatalogs<T> = Awaited<ReturnType<typeof attachColorIcon<T & { colorId: string; iconId: string }>>>[number];
+
+/**
+ * Retrieves the active record types linked to each of the given categories, with color and icon.
+ * Ordered by name. Categories without links are absent from the map (keys are lowercase ids).
+ */
+export async function getRecordTypesByCategory(categoryIds: string[]) {
+  const map = new Map<string, WithCatalogs<RecordTypeRow>[]>();
+  if (categoryIds.length === 0) return map;
+
+  const rows = await db
+    .select({ categoryId: recordTypeCategory.categoryId, recordType })
+    .from(recordTypeCategory)
+    .innerJoin(recordType, eq(recordType.id, recordTypeCategory.recordTypeId))
+    .where(and(inArray(recordTypeCategory.categoryId, categoryIds), isNull(recordType.deletedAt)))
+    .orderBy(asc(recordType.name));
+
+  const full = await attachColorIcon(rows.map((r) => r.recordType));
+
+  rows.forEach((r, i) => {
+    const key = r.categoryId.toLowerCase();
+    map.set(key, [...(map.get(key) ?? []), full[i]!]);
+  });
+  return map;
+}
+
+/** Lists the active record types linked to one category. */
+export async function listCategoryRecordTypes(categoryId: string) {
+  const map = await getRecordTypesByCategory([categoryId]);
+  return map.get(categoryId.toLowerCase()) ?? [];
+}
+
+/**
+ * Loads what a category response needs besides the row itself: its record types (always) and its tags
+ * (only when requested). Returns lookup functions by category id.
+ */
+export async function loadCategoryExtras(categoryIds: string[], includeTags: boolean) {
+  const [recordTypes, tags] = await Promise.all([
+    getRecordTypesByCategory(categoryIds),
+    includeTags ? getTagsByCategory(categoryIds) : Promise.resolve(null),
+  ]);
+
+  return {
+    recordTypesOf: (id: string) => recordTypes.get(id.toLowerCase()) ?? [],
+    tagsOf: tags ? (id: string) => tags.get(id.toLowerCase()) ?? [] : undefined,
+  };
+}
+
+/**
+ * Throws `409 IN_USE` when a non-deleted financial record or installment plan uses the
+ * `(record type, category)` pair of any of the given record types.
+ */
+async function assertLinksUnused(categoryId: string, recordTypeIds: string[]) {
+  if (recordTypeIds.length === 0) return;
+
+  const [record] = await db
+    .select({ id: financialRecord.id })
+    .from(financialRecord)
+    .where(
+      and(
+        eq(financialRecord.categoryId, categoryId),
+        inArray(financialRecord.recordTypeId, recordTypeIds),
+        isNull(financialRecord.deletedAt),
+      ),
+    )
+    .limit(1);
+  if (record) throw new ApiError("IN_USE", "A financial record uses this record type with this category.");
+
+  const [plan] = await db
+    .select({ id: installmentPlan.id })
+    .from(installmentPlan)
+    .where(
+      and(
+        eq(installmentPlan.categoryId, categoryId),
+        inArray(installmentPlan.recordTypeId, recordTypeIds),
+        isNull(installmentPlan.deletedAt),
+      ),
+    )
+    .limit(1);
+  if (plan) throw new ApiError("IN_USE", "An installment plan uses this record type with this category.");
+}
+
+/**
+ * Replaces the full set of record types of a category in one transaction.
+ *
+ * @throws {ApiError} `VALIDATION_ERROR` when the list is empty or has unknown record types;
+ *   `IN_USE` when a removed link is still used by a record or plan
+ */
+export async function setCategoryRecordTypes(dashboardId: string, categoryId: string, recordTypeIds: string[]) {
+  await assertRecordTypesInDashboard(dashboardId, recordTypeIds);
+
+  await db.transaction(async (tx) => {
+    const existing = await tx
+      .select({ recordTypeId: recordTypeCategory.recordTypeId })
+      .from(recordTypeCategory)
+      .where(eq(recordTypeCategory.categoryId, categoryId));
+
+    const current = new Set(existing.map((r) => r.recordTypeId.toLowerCase()));
+    const wanted = new Set(recordTypeIds);
+    const toRemove = [...current].filter((id) => !wanted.has(id));
+    const toAdd = recordTypeIds.filter((id) => !current.has(id));
+
+    await assertLinksUnused(categoryId, toRemove);
+
+    if (toRemove.length > 0) {
+      await tx
+        .delete(recordTypeCategory)
+        .where(and(eq(recordTypeCategory.categoryId, categoryId), inArray(recordTypeCategory.recordTypeId, toRemove)));
+    }
+    if (toAdd.length > 0) {
+      await tx.insert(recordTypeCategory).values(toAdd.map((recordTypeId) => ({ recordTypeId, categoryId })));
+    }
+  });
+}
+
+/** Links one record type to a category (idempotent). `NOT_FOUND` if it is not an active record type of the dashboard. */
+export async function linkRecordType(dashboardId: string, categoryId: string, recordTypeId: string) {
+  const [found] = await db
+    .select({ id: recordType.id })
+    .from(recordType)
+    .where(and(eq(recordType.dashboardId, dashboardId), eq(recordType.id, recordTypeId), isNull(recordType.deletedAt)))
+    .limit(1);
+  if (!found) throw new ApiError("NOT_FOUND");
+
+  await db.insert(recordTypeCategory).ignore().values({ categoryId, recordTypeId });
+}
+
+/**
+ * Removes the link between a record type and a category (idempotent).
+ *
+ * @throws {ApiError} `IN_USE` while a record or plan uses the pair; `VALIDATION_ERROR` when it is the
+ *   last record type of the category
+ */
+export async function unlinkRecordType(categoryId: string, recordTypeId: string) {
+  const existing = await db
+    .select({ recordTypeId: recordTypeCategory.recordTypeId })
+    .from(recordTypeCategory)
+    .where(eq(recordTypeCategory.categoryId, categoryId));
+
+  const ids = existing.map((r) => r.recordTypeId.toLowerCase());
+  if (!ids.includes(recordTypeId.toLowerCase())) return;
+
+  if (ids.length === 1) {
+    throw new ApiError("VALIDATION_ERROR", "A category must stay linked to at least one record type.", [
+      { pointer: "/record_type_id", message: "This is the last record type of the category." },
+    ]);
+  }
+
+  await assertLinksUnused(categoryId, [recordTypeId]);
+
+  await db
+    .delete(recordTypeCategory)
+    .where(and(eq(recordTypeCategory.categoryId, categoryId), eq(recordTypeCategory.recordTypeId, recordTypeId)));
 }

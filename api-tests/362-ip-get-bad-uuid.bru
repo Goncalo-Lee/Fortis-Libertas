@@ -1,0 +1,19 @@
+meta {
+  name: Installment plans - get bad uuid
+  type: http
+  seq: 362
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans/nope
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 400
+}

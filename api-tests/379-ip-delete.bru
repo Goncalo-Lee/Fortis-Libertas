@@ -1,0 +1,19 @@
+meta {
+  name: Installment plans - delete
+  type: http
+  seq: 379
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans/{{ipId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 204
+}

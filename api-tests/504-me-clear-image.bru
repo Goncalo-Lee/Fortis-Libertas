@@ -1,0 +1,24 @@
+meta {
+  name: Me - clear image
+  type: http
+  seq: 504
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/me
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "image": null }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.image: isNull
+}

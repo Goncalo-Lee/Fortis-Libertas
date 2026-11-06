@@ -1,0 +1,23 @@
+meta {
+  name: Primary account - unknown account
+  type: http
+  seq: 288
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/me/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "primary_bank_account_id": "00000000-0000-7000-8000-000000000000" }
+}
+
+assert {
+  res.status: eq 422
+}

@@ -1,0 +1,19 @@
+meta {
+  name: My activity log - bad sort
+  type: http
+  seq: 604
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me/activity-logs?sort=ip
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 422
+}

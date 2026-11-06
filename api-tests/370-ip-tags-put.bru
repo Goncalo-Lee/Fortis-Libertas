@@ -1,0 +1,27 @@
+meta {
+  name: Installment plans - replace tags
+  type: http
+  seq: 370
+}
+
+put {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans/{{ipId}}/tags
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "tag_ids": ["{{ipTagA}}", "{{ipTagB}}"] }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("two tags", function () { expect(res.body.data.tags.length).to.equal(2); });
+}

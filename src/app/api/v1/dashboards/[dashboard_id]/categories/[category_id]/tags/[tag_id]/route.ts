@@ -21,8 +21,8 @@ async function ids({ params }: Ctx) {
 export const POST = withErrors(async (request: NextRequest, ctx: Ctx) => {
   const { dashboardId, categoryId, tagId } = await ids(ctx);
   await requireDashboardRole(request, dashboardId, "editor");
-  if (!(await getCategory(dashboardId, categoryId))) throw new ApiError("NOT_FOUND");
 
+  if (!(await getCategory(dashboardId, categoryId))) throw new ApiError("NOT_FOUND");
   await linkTag(dashboardId, categoryId, tagId);
   return noContent();
 });
@@ -30,8 +30,8 @@ export const POST = withErrors(async (request: NextRequest, ctx: Ctx) => {
 export const DELETE = withErrors(async (request: NextRequest, ctx: Ctx) => {
   const { dashboardId, categoryId, tagId } = await ids(ctx);
   await requireDashboardRole(request, dashboardId, "editor");
-  if (!(await getCategory(dashboardId, categoryId))) throw new ApiError("NOT_FOUND");
 
+  if (!(await getCategory(dashboardId, categoryId))) throw new ApiError("NOT_FOUND");
   await unlinkTag(categoryId, tagId);
   return noContent();
 });

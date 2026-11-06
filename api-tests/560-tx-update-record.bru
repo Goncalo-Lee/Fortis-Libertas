@@ -1,0 +1,23 @@
+meta {
+  name: Transactions - update the record
+  type: http
+  seq: 560
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/financial-records/{{histRec}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "History-Renamed", "price": "20" }
+}
+
+assert {
+  res.status: eq 200
+}

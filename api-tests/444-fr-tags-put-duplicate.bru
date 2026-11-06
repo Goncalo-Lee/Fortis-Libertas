@@ -1,0 +1,23 @@
+meta {
+  name: Financial records - duplicate tag ids
+  type: http
+  seq: 444
+}
+
+put {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records/{{frId}}/tags
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {"tag_ids": ["{{frTagA}}", "{{frTagA}}"]}
+}
+
+assert {
+  res.status: eq 422
+}

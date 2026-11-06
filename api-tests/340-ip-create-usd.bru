@@ -1,0 +1,31 @@
+meta {
+  name: Installment plans - create with currency and status
+  type: http
+  seq: 340
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{ipDashId}}/installment-plans
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Trip", "category_id": "{{ipCatId}}", "currency": "USD", "total_amount": "300", "total_installments": 3, "due_date": "2027-03-01", "status": "late" }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("ipId2", res.body.data.installment_plan_id);
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("usd", function () { expect(res.body.data.currency).to.equal("USD"); expect(res.body.data.status).to.equal("late"); });
+}

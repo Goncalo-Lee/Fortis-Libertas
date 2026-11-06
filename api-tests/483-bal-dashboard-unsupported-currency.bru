@@ -1,0 +1,19 @@
+meta {
+  name: Balances - unsupported currency
+  type: http
+  seq: 483
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{fbDash}}/balance?currency=ZZZ
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 422
+}

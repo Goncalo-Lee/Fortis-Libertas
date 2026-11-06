@@ -1,0 +1,23 @@
+meta {
+  name: Payment methods - setup add token2 user as editor
+  type: http
+  seq: 294
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{pmDashId}}/members
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "user_id": "{{userId2}}", "role": "editor" }
+}
+
+assert {
+  res.status: eq 201
+}

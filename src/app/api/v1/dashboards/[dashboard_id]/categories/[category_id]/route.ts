@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import {
   getCategory,
-  listCategoryTags,
+  loadCategoryExtras,
   softDeleteCategory,
   updateCategory,
 } from "@/db/queries/categories";
@@ -25,23 +25,31 @@ async function ids({ params }: Ctx) {
 export const GET = withErrors(async (request: NextRequest, ctx: Ctx) => {
   const { dashboardId, id } = await ids(ctx);
   await requireDashboardRole(request, dashboardId, "viewer");
+
   const { include } = getCategoryQuery.parse(Object.fromEntries(request.nextUrl.searchParams));
 
   const row = await getCategory(dashboardId, id);
   if (!row) throw new ApiError("NOT_FOUND");
 
-  const tags = include === "tags" ? await listCategoryTags(id) : undefined;
-  return ok(serializeCategory(row, tags));
+  const extras = await loadCategoryExtras([row.id], include === "tags");
+  return ok(serializeCategory(row, extras.recordTypesOf(row.id), extras.tagsOf?.(row.id)));
 });
 
 export const PATCH = withErrors(async (request: NextRequest, ctx: Ctx) => {
   const { dashboardId, id } = await ids(ctx);
   await requireDashboardRole(request, dashboardId, "editor");
 
-  const changes = await parseJson(request, updateCategorySchema);
-  const row = await updateCategory(dashboardId, id, changes);
+  const input = await parseJson(request, updateCategorySchema);
+  const row = await updateCategory(dashboardId, id, {
+    name: input.name,
+    description: input.description,
+    colorId: input.color_id,
+    iconId: input.icon_id,
+  });
   if (!row) throw new ApiError("NOT_FOUND");
-  return ok(serializeCategory(row));
+
+  const extras = await loadCategoryExtras([row.id], false);
+  return ok(serializeCategory(row, extras.recordTypesOf(row.id)));
 });
 
 export const DELETE = withErrors(async (request: NextRequest, ctx: Ctx) => {

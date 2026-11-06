@@ -1,53 +1,41 @@
 import { and, asc, count, desc, eq, inArray, isNull, like } from "drizzle-orm";
-import { db } from "../..";
-import { category, tagCategory } from "../../schema";
-import { escapeLike } from "../../utils";
-import type { ListFiltersCategory } from "./type";
+import { db } from "@/db";
+import { category, recordTypeCategory, tagCategory } from "@/db/schema";
+import { escapeLike } from "@/db/utils";
+import { attachColorIcon } from "../catalogs";
 import { inDashboard } from "../utils";
+import type { ListFiltersCategory } from "./type";
 
 /* ======
   READ
 ======= */
 
 /**
- * Retrieves a single active category by its ID within a specific dashboard.
+ * Retrieves a single active category of a dashboard, with its color and icon.
  *
- * @param dashboardId - The unique identifier of the dashboard owning the category
- * @param id - The unique identifier of the category
- * @returns The category record if found and not soft-deleted, or `null` otherwise
- *
- * @example
- * const category = await getCategory("dash_123", "cat_456");
- * if (category) {
- *   console.log(`Category found: ${category.name}`);
- * } else {
- *   console.log("Category not found or soft-deleted.");
- * }
+ * @returns The category, or `null` when it does not exist, is soft-deleted or belongs to another dashboard
  */
 export async function getCategory(dashboardId: string, id: string) {
-  const [row] = await db.select().from(category).where(inDashboard(category, dashboardId, id)).limit(1);
-  return row ?? null;
+  const [row] = await db
+    .select()
+    .from(category)
+    .where(inDashboard(category, dashboardId, id))
+    .limit(1);
+
+  if (!row) return null;
+
+  const [full] = await attachColorIcon([row]);
+  return full ?? null;
 }
 
 /**
- * Lists active categories of a dashboard with optional search, tag filter, sorting and pagination.
+ * Lists the active categories of a dashboard.
  *
- * Filters are combined with AND. `q` performs a partial match on the name, and `tagId` keeps only
- * categories linked to that tag. Results are sorted by the requested field, with `id` as a
- * tie-breaker so pagination stays stable.
+ * Filters are combined with AND: `q` matches the name, `tagId` keeps categories linked to that tag and
+ * `recordTypeId` keeps categories usable with that record type. `id` is the sort tie-breaker so
+ * pagination stays stable.
  *
- * @param dashboardId - The unique identifier of the dashboard to list categories from
- * @param f - Filters, sort order and pagination options (see `ListFilters`)
- * @returns The current page of `rows` and the `total` number of matching categories
- *
- * @example
- * const { rows, total } = await listCategories("dash_123", {
- *   q: "food",
- *   sort: "-created_at",
- *   limit: 20,
- *   offset: 0,
- * });
- * console.log(`Showing ${rows.length} of ${total} categories.`);
+ * @returns The current page of `rows` (with color and icon) and the `total` of matching categories
  */
 export async function listCategories(dashboardId: string, f: ListFiltersCategory) {
   const where = and(
@@ -57,10 +45,16 @@ export async function listCategories(dashboardId: string, f: ListFiltersCategory
     f.tagId
       ? inArray(
           category.id,
+          db.select({ id: tagCategory.categoryId }).from(tagCategory).where(eq(tagCategory.tagId, f.tagId)),
+        )
+      : undefined,
+    f.recordTypeId
+      ? inArray(
+          category.id,
           db
-            .select({ id: tagCategory.categoryId })
-            .from(tagCategory)
-            .where(eq(tagCategory.tagId, f.tagId)),
+            .select({ id: recordTypeCategory.categoryId })
+            .from(recordTypeCategory)
+            .where(eq(recordTypeCategory.recordTypeId, f.recordTypeId)),
         )
       : undefined,
   );
@@ -81,5 +75,6 @@ export async function listCategories(dashboardId: string, f: ListFiltersCategory
     .offset(f.offset);
 
   const [totalRow] = await db.select({ total: count() }).from(category).where(where);
-  return { rows, total: totalRow?.total ?? 0 };
+
+  return { rows: await attachColorIcon(rows), total: totalRow?.total ?? 0 };
 }

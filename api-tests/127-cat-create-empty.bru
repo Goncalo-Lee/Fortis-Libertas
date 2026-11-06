@@ -1,0 +1,24 @@
+meta {
+  name: Categories - empty name
+  type: http
+  seq: 127
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboards/{{catDashboardId}}/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "", "color_id": "{{color4}}", "icon_id": "{{icon1}}", "record_type_ids": ["{{catRtExpenses}}"] }
+}
+
+assert {
+  res.status: eq 422
+  res.body.errors[0].pointer: eq /name
+}

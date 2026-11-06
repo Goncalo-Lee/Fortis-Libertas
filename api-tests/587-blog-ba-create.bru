@@ -1,0 +1,27 @@
+meta {
+  name: Bank account log - create an account
+  type: http
+  seq: 587
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "Log-Bank", "initial_balance": "0.00" }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("logBank", res.body.data.bank_account_id);
+}
+
+assert {
+  res.status: eq 201
+}

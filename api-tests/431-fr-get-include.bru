@@ -1,0 +1,20 @@
+meta {
+  name: Financial records - get with include
+  type: http
+  seq: 431
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboards/{{frDashId}}/financial-records/{{frId}}?include=installment_plan
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.installment_plan: isNull
+}
