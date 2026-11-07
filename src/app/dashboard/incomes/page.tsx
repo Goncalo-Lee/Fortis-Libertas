@@ -8,6 +8,7 @@ import { useFinancial } from "@/contexts/FinancialContext"
 import { useDashboard } from "@/contexts/DashboardContext"
 import { CreateCategoryModal } from "@/components/CreateCategoryModal"
 import { DynamicIcon } from "@/components/DynamicIcon"
+import {OpenBankingButton} from "@/components/OpenBankingButton";
 
 export default function IncomesPage() {
     const { activeDashboard } = useDashboard()
@@ -21,7 +22,8 @@ export default function IncomesPage() {
     const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0])
     const [newCategoryId, setNewCategoryId] = useState("")
     const [newPaymentMethodId, setNewPaymentMethodId] = useState("")
-    const [newInstallmentPlanId, setNewInstallmentPlanId] = useState("") // NOVO: Associação a Meta/Objetivo
+    const [newInstallmentPlanId, setNewInstallmentPlanId] = useState("")
+    const { deleteFinancialRecord, deleteCategory } = useFinancial()
 
     // Estado do Modal
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
@@ -155,10 +157,9 @@ export default function IncomesPage() {
 
     async function handleDelete(id: string) {
         if (!confirm("Tens a certeza que queres eliminar este registo?")) return
-        if (!activeDashboard?.dashboard_id) return
+
         try {
-            await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/financial-records/${id}`, { method: "DELETE", credentials: "include" })
-            refresh()
+            await deleteFinancialRecord(id)
             toast.success("Registo eliminado.")
         } catch (error) {
             toast.error("Erro ao eliminar o registo.")
@@ -167,13 +168,13 @@ export default function IncomesPage() {
 
     async function handleDeleteCategory(categoryId: string) {
         if (!confirm("Tens a certeza que queres eliminar esta categoria?")) return
+
         try {
-            await fetch(`/api/v1/dashboards/${activeDashboard?.dashboard_id}/categories/${categoryId}`, { method: "DELETE", credentials: "include" })
-            refresh()
+            await deleteCategory(categoryId)
             toast.success("Categoria eliminada.")
             if (newCategoryId === categoryId) setNewCategoryId("")
         } catch (error) {
-            toast.error("Não foi possível eliminar.")
+            toast.error("Não foi possível eliminar a categoria.")
         }
     }
 

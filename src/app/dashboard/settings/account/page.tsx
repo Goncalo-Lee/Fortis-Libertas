@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { User, KeyRound, ShieldCheck, Loader2, Save, Mail } from "lucide-react";
+import { User, KeyRound, ShieldCheck, Loader2, Save, Mail, Landmark } from "lucide-react";
 import { toast } from "sonner";
 import { useProfile } from "@/contexts/ProfileContext";
 import { authClient } from "@/lib/auth-client";
@@ -28,6 +28,10 @@ export default function AccountSettingsPage() {
     const [phone, setPhone] = useState("");
     const [birthDate, setBirthDate] = useState("");
     const [savingProfile, setSavingProfile] = useState(false);
+
+    // Estados da simulação de Open Banking
+    const [isConnectingBank, setIsConnectingBank] = useState(false);
+    const [isBankConnected, setIsBankConnected] = useState(false);
 
     // Sincronizar dados vindos do ProfileContext
     useEffect(() => {
@@ -82,6 +86,16 @@ export default function AccountSettingsPage() {
         }
     };
 
+    // Função que simula o consentimento bancário
+    const handleConnectBank = async () => {
+        setIsConnectingBank(true);
+        // Simula o tempo de redirecionamento para o login do banco e retorno
+        await new Promise(resolve => setTimeout(resolve, 2500));
+        setIsBankConnected(true);
+        setIsConnectingBank(false);
+        toast.success("Consentimento OAuth concedido via Nordigen (GoCardless)!");
+    };
+
     const is2FAEnabled = Boolean(session?.user?.twoFactorEnabled || userData.two_factor_enabled);
 
     if (loading) {
@@ -103,16 +117,16 @@ export default function AccountSettingsPage() {
                         Conta do Utilizador
                     </h2>
                     <p className="text-muted-foreground text-xs sm:text-sm">
-                        Gere a identidade da tua conta, credenciais e segurança de acesso.
+                        Gere a tua identidade, credenciais, integrações e segurança de acesso.
                     </p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-                    {/* COLUNA ESQUERDA: Perfil e Email */}
+                    {/* COLUNA ESQUERDA: Perfil, Email e Integrações */}
                     <div className="lg:col-span-7 flex flex-col gap-6">
 
-                        {/* NOVO CARTÃO SEPARADO: Gestão de Email (Fora do Form Principal) */}
+                        {/* CARTÃO: Gestão de Email */}
                         <Card className="shadow-sm border-slate-200/80 dark:border-slate-800">
                             <CardHeader>
                                 <CardTitle className="text-base sm:text-lg flex items-center gap-2">
@@ -141,7 +155,7 @@ export default function AccountSettingsPage() {
                             </CardContent>
                         </Card>
 
-                        {/* CARTÃO: Perfil Público (O formulário original limpo) */}
+                        {/* CARTÃO: Perfil Público */}
                         <Card className="shadow-sm border-slate-200/80 dark:border-slate-800">
                             <CardHeader>
                                 <CardTitle className="text-base sm:text-lg flex items-center gap-2">
@@ -213,6 +227,61 @@ export default function AccountSettingsPage() {
                                         </Button>
                                     </div>
                                 </form>
+                            </CardContent>
+                        </Card>
+
+                        {/* NOVO CARTÃO COMPACTO: OPEN BANKING */}
+                        <Card className="shadow-sm border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
+                            <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-md text-purple-600 dark:text-purple-400">
+                                            <Landmark className="w-4 h-4" />
+                                        </div>
+                                        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                            Integração Open Banking
+                                        </h3>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground leading-relaxed max-w-sm">
+                                        Associa a tua conta através da API gratuita da Nordigen (GoCardless) para sincronizar despesas e receitas automaticamente.
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-xs font-medium text-slate-900 dark:text-slate-100">
+                                            Estado:
+                                        </span>
+                                        <span
+                                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                                isBankConnected
+                                                    ? "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300"
+                                                    : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                                            }`}
+                                        >
+                                            {isBankConnected ? "Autorizado" : "Não Configurado"}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="flex-shrink-0 self-start sm:self-center">
+                                    <Button
+                                        variant={isBankConnected ? "outline" : "default"}
+                                        disabled={isConnectingBank}
+                                        onClick={handleConnectBank}
+                                        className="gap-2 text-xs h-9 w-full sm:w-auto"
+                                    >
+                                        {isConnectingBank ? (
+                                            <>
+                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                <span>A Redirecionar...</span>
+                                            </>
+                                        ) : isBankConnected ? (
+                                            <span>Gerir Ligação</span>
+                                        ) : (
+                                            <>
+                                                <Landmark className="w-3.5 h-3.5" />
+                                                <span>Ligar Banco</span>
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
                             </CardContent>
                         </Card>
 

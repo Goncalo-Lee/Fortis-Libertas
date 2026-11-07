@@ -3,8 +3,11 @@
 import { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import { useDashboard } from './DashboardContext';
 
+
 const FinancialContext = createContext<any>(undefined);
 
+
+ 
 async function safeFetch(url: string) {
     try {
         const res = await fetch(url, { credentials: 'include' });
@@ -18,6 +21,7 @@ async function safeFetch(url: string) {
 export function FinancialProvider({ children }: { children: ReactNode }) {
     const { activeDashboard, loading: dashLoading } = useDashboard();
 
+
     const [bankAccounts, setBankAccounts] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
     const [tags, setTags] = useState<any[]>([]);
@@ -29,21 +33,28 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
     const [globalIcons, setGlobalIcons] = useState<any[]>([]);
     const [dashboardBalance, setDashboardBalance] = useState<number | null>(null);
 
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [refreshKey, setRefreshKey] = useState(0);
 
+
     const refresh = () => setRefreshKey(prev => prev + 1);
+
 
     useEffect(() => {
         if (dashLoading) return;
-        if (!activeDashboard) return setLoading(false);
+        if (!activeDashboard) {
+            setLoading(false);
+            return;
+        }
 
         setLoading(true);
         const dashId = activeDashboard.dashboard_id;
 
         async function fetchEcosystem() {
             try {
+                // Vai buscar tudo ao mesmo tempo para ser super rápido
                 const [
                     banksData, catsData, tagsData, paysData,
                     typesData, recordsData, plansData, balanceData,
@@ -64,25 +75,24 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
                 const fetchedTypes = typesData?.data || typesData || [];
                 setRecordTypes(fetchedTypes);
 
-                // PRÉ-PROCESSAMENTO DOS REGISTOS: Mastiga os dados para os componentes visuais não terem de o fazer!
+                // Prepara os registos para a interface ser mais fácil de programar
                 const rawRecords = recordsData?.data || recordsData || [];
                 const enrichedRecords = rawRecords.map((record: any) => {
                     const rtId = record.record_type_id || record.recordTypeId;
                     const rt = fetchedTypes.find((t: any) => (t.record_type_id || t.id) === rtId);
 
                     const kind = (rt?.kind || "").toLowerCase();
-                    const isIncome = kind === "income" || (rt?.name || "").toLowerCase().includes("receita");
-                    const isExpense = kind === "expense" || (rt?.name || "").toLowerCase().includes("despesa");
 
                     return {
                         ...record,
-                        isIncome,
-                        isExpense,
-                        amount: Number(record.price || 0), // Preço limpo numérico
-                        date: record.payment_date || record.paymentDate // Data limpa
+                        isIncome: kind === "income" || (rt?.name || "").toLowerCase().includes("receita"),
+                        isExpense: kind === "expense" || (rt?.name || "").toLowerCase().includes("despesa"),
+                        amount: Number(record.price || 0),
+                        date: record.payment_date || record.paymentDate
                     };
                 });
 
+                // Guarda tudo nas gavetas
                 setFinancialRecords(enrichedRecords);
                 setInstallmentPlans(plansData?.data || []);
                 setBankAccounts(banksData?.data || []);
@@ -99,13 +109,17 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
                 setLoading(false);
             }
         }
+
         fetchEcosystem();
     }, [activeDashboard, dashLoading, refreshKey]);
 
-    const addFinancialRecord = async (payload: any) => {
+
+
+
+    // Adicionar novo Registo
+    async function addFinancialRecord(payload: any) {
         if (!activeDashboard?.dashboard_id) throw new Error("Sem dashboard ativo.");
 
-        // Transformação limpa para o formato esperado pela API (snake_case)
         const apiPayload = {
             name: payload.name,
             description: payload.description || null,
@@ -132,11 +146,36 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
 
         refresh();
         return await res.json();
-    };
+    }
 
-    // Saldo com base nos registos enriquecidos
+
+    async function deleteFinancialRecord(id: string) {
+        if (!activeDashboard?.dashboard_id) throw new Error("Sem dashboard ativo.");
+
+        const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/financial-records/${id}`, {
+            method: "DELETE",
+            credentials: "include"
+        });
+        if (!res.ok) throw new Error("Falha ao eliminar registo");
+        refresh();
+    }
+
+    // Apagar Categoria
+    async function deleteCategory(categoryId: string) {
+        if (!activeDashboard?.dashboard_id) throw new Error("Sem dashboard ativo.");
+
+        const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/categories/${categoryId}`, {
+            method: "DELETE",
+            credentials: "include"
+        });
+        if (!res.ok) throw new Error("Falha ao eliminar categoria");
+        refresh();
+    }
+
+
     const balance = useMemo(() => {
         const totalBanks = bankAccounts.reduce((acc, account) => acc + Number(account.initialBalance ?? account.initial_balance ?? 0), 0);
+
         if (dashboardBalance !== null) return totalBanks + dashboardBalance;
         if (!financialRecords.length) return totalBanks;
 
@@ -150,18 +189,26 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         return totalBanks + totalRecords;
     }, [dashboardBalance, financialRecords, bankAccounts]);
 
+
     return (
         <FinancialContext.Provider value={{
+            // Dados
             balance, bankAccounts, categories, tags, paymentMethods, recordTypes, financialRecords, installmentPlans,
-            globalColors, globalIcons, loading, error, refresh, addFinancialRecord
+            globalColors, globalIcons, loading, error,
+
+            refresh,
+            addFinancialRecord,
+            deleteFinancialRecord,
+            deleteCategory
         }}>
             {children}
         </FinancialContext.Provider>
     );
 }
 
+// 7. HOOK PARA USAR NAS PÁGINAS (ex: const { balance, deleteCategory } = useFinancial())
 export const useFinancial = () => {
     const context = useContext(FinancialContext);
-    if (!context) throw new Error("useFinancial error");
+    if (!context) throw new Error("useFinancial deve ser usado dentro do FinancialProvider");
     return context;
 };
