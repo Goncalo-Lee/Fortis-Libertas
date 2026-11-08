@@ -12,6 +12,10 @@ export default function FinancialGoalsPage() {
     const { activeDashboard } = useDashboard()
     const { installmentPlans, financialRecords, categories, recordTypes, paymentMethods, addFinancialRecord, refresh } = useFinancial()
 
+
+    console.log("Registos financeiros:", financialRecords);
+
+
     const [isAdding, setIsAdding] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [newTitle, setNewTitle] = useState("")
@@ -59,10 +63,8 @@ export default function FinancialGoalsPage() {
 
         return list.filter((c: any) => {
             if (tempCategory && (c.category_id || c.id) === tempCategory.id) return true;
-
             const rts = c.record_types || c.recordTypes || [];
             if (rts.length > 0) {
-                // Para metas e dívidas, geralmente são despesas ou neutros
                 return rts.some((rt: any) => rt.kind === "expense" || rt.kind === "neutral")
             }
             return false;
@@ -77,9 +79,14 @@ export default function FinancialGoalsPage() {
                 const planId = plan.installment_plan_id || plan.id
                 const targetAmount = Number(plan.total_amount ?? plan.totalAmount ?? plan.amount ?? 0)
 
+                // CORREÇÃO MAGISTRAL: Alargar a procura do ID e do campo de valor no registo financeiro!
                 const savedAmount = (financialRecords || [])
-                    .filter((r: any) => (r.installment_plan_id || r.installmentPlanId) === planId)
-                    .reduce((acc: number, r: any) => acc + Number(r.amount || r.price || 0), 0)
+                    .filter((r: any) =>
+                        r.installment_plan_id === planId ||
+                        r.installmentPlanId === planId ||
+                        r.plan_id === planId
+                    )
+                    .reduce((acc: number, r: any) => acc + Number(r.amount || r.price || r.value || 0), 0)
 
                 return {
                     ...plan,
@@ -108,7 +115,7 @@ export default function FinancialGoalsPage() {
         ? Math.min(Math.round((selectedGoal.savedAmount / selectedGoal.targetAmount) * 100), 100)
         : 0
 
-        // MATEMÁTICA CORRIGIDA (Sinal de menos)
+    // CORREÇÃO: Colocado o sinal de subtração que tinhas perdido
     const totalMonthlyEffort = activeGoals.reduce((acc: number, g: any) => {
         const remaining = Math.max(0, g.targetAmount - g.savedAmount)
         const months = Number(g.total_installments ?? g.totalInstallments ?? 6)
@@ -127,7 +134,7 @@ export default function FinancialGoalsPage() {
                 name: `Reforço: ${depositGoal.name}`,
                 description: "Depósito direto na Meta Financeira",
                 price: amount,
-                recordTypeName: "EXPENSE", // Cria Despesa Automática!
+                recordTypeName: "EXPENSE",
                 recordTypeId: defaultExpenseTypeId,
                 categoryId: depositGoal.categoryId,
                 paymentMethodId: depositPaymentMethodId,
@@ -152,7 +159,6 @@ export default function FinancialGoalsPage() {
         if (!activeDashboard?.dashboard_id) return toast.error("Sem dashboard ativo.")
         if (!newCategoryId) return toast.error("Seleciona uma categoria.")
 
-        // SALVAGUARDA DE SEGURANÇA: Se o dashboard não tem o tipo de despesa carregado no frontend
         if (!defaultExpenseTypeId) {
             return toast.error("Erro crítico: O teu dashboard atual não tem nenhum 'Record Type' de Despesa configurado. Vai à página de Despesas ou corre o seed.")
         }
@@ -172,12 +178,11 @@ export default function FinancialGoalsPage() {
         const payload = {
             name: newTitle.trim(),
             description: `Meta a ${months} meses`,
-            total_amount: target.toFixed(2), // <-- Voltou a ser String decimal (ex: "1000.00")
+            total_amount: target.toFixed(2),
             total_installments: months,
-            due_date: dueDateString,         // <-- Voltou a ser String "YYYY-MM-DD"
+            due_date: dueDateString,
             status: "pending",
             category_id: newCategoryId,
-            record_type_id: defaultExpenseTypeId
         }
 
         try {
@@ -190,7 +195,6 @@ export default function FinancialGoalsPage() {
 
             if (!res.ok) {
                 const rawText = await res.text()
-                console.error("Erro bruto do servidor:", rawText)
                 try {
                     const errorData = JSON.parse(rawText)
                     throw new Error(errorData.detail || errorData.message || "Erro na validação da API.")
@@ -304,11 +308,11 @@ export default function FinancialGoalsPage() {
                 recordTypeId={defaultExpenseTypeId}
                 typeLabel="Despesa"
                 onSuccess={(id, name, kind) => {
-                    const newCat = { 
-                        id, 
-                        category_id: id, 
-                        name, 
-                        record_types: [{ kind: kind || "expense" }] 
+                    const newCat = {
+                        id,
+                        category_id: id,
+                        name,
+                        record_types: [{ kind: kind || "expense" }]
                     };
                     setTempCategory(newCat);
                     setNewCategoryId(id);
@@ -527,7 +531,7 @@ export default function FinancialGoalsPage() {
                             const goalId = goal.installment_plan_id || goal.id
                             const pct = Math.min(Math.round((goal.savedAmount / goal.targetAmount) * 100), 100)
 
-                            // MATEMÁTICA CORRIGIDA (Sinal de menos)
+                            // CORREÇÃO: Colocado o sinal de subtração que tinhas perdido
                             const remaining = Math.max(0, goal.targetAmount - goal.savedAmount)
 
                             const months = Number(goal.total_installments ?? goal.totalInstallments ?? 6)

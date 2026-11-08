@@ -7,7 +7,6 @@ import { useDashboard } from './DashboardContext';
 const FinancialContext = createContext<any>(undefined);
 
 
- 
 async function safeFetch(url: string) {
     try {
         const res = await fetch(url, { credentials: 'include' });
@@ -129,8 +128,11 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
             payment_method_id: payload.paymentMethodId,
             status: "paid",
             payment_date: payload.paymentDate || new Date().toISOString(),
-            tag_ids: payload.tagIds || []
+            tag_ids: payload.tagIds || [],
+            // CORREÇÃO: Usar a palavra "payload" em vez de "data"
+            installment_plan_id: payload.installmentPlanId || payload.installment_plan_id
         };
+
 
         const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/financial-records`, {
             method: "POST",
