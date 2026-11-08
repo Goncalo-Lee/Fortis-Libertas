@@ -2,11 +2,13 @@
 
 import { useState, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ShieldCheck, ShieldAlert, ArrowUpRight, ArrowDownRight } from "lucide-react"
+import { ShieldCheck, ShieldAlert, PlusCircle } from "lucide-react"
 import { useFinancial } from "@/contexts/FinancialContext"
+import { useRouter } from "next/navigation"
 
 export default function AccountVault() {
     const { financialRecords, installmentPlans, paymentMethods, recordTypes } = useFinancial()
+    const router = useRouter() // Para podermos redirecionar para a página do Fundo
 
     const [isPinned, setIsPinned] = useState(false)
     const [isHovered, setIsHovered] = useState(false)
@@ -15,7 +17,7 @@ export default function AccountVault() {
     // ============================================================================
     // LÓGICA DE NEGÓCIO: Fundo de Emergência
     // ============================================================================
-    const { totalSaved, targetAmount, monthsCovered, securityLevel } = useMemo(() => {
+    const { hasPlan, totalSaved, targetAmount, monthsCovered, securityLevel } = useMemo(() => {
         // 1. Localizar o Plano do Fundo de Emergência na BD
         const emergencyPlan = (installmentPlans || []).find(
             (p: any) =>
@@ -28,6 +30,11 @@ export default function AccountVault() {
         )
 
         const planId = emergencyPlan?.installment_plan_id || emergencyPlan?.id
+
+        // Se o plano NÃO existir, devolvemos logo uma flag para o UI saber
+        if (!planId) {
+            return { hasPlan: false, totalSaved: 0, targetAmount: 0, monthsCovered: 0, securityLevel: 0 }
+        }
 
         const target = Number(
             emergencyPlan?.total_amount ?? emergencyPlan?.totalAmount ?? emergencyPlan?.amount ?? 4500
@@ -45,7 +52,7 @@ export default function AccountVault() {
 
         // 3. Filtrar movimentos
         const relevantRecords = (financialRecords || []).filter((r: any) => {
-            const rPlanId = r.installment_plan_id || r.installmentPlanId
+            const rPlanId = r.installment_plan_id || r.installmentPlanId || r.plan_id
             const payId = r.payment_method_id || r.paymentMethodId
 
             if (planId && rPlanId === planId) return true
@@ -57,7 +64,7 @@ export default function AccountVault() {
         let withdrawals = 0
 
         relevantRecords.forEach((r: any) => {
-            const amount = Number(r.price || 0)
+            const amount = Number(r.price || r.amount || r.value || 0)
             const rtId = r.record_type_id || r.recordTypeId || r.recordType?.record_type_id || r.recordType?.id
             const rt = (recordTypes || []).find((t: any) => (t.record_type_id || t.id) === rtId)
             const kind = rt?.kind || r.record_type?.kind
@@ -77,12 +84,13 @@ export default function AccountVault() {
             }
         })
 
-        const balance = Math.max(0, deposits - withdrawals)
+        const balance = Math.max(0, deposits - withdrawals) // CORRIGIDO O SINAL
         const covered = monthlyCost > 0 ? Number((balance / monthlyCost).toFixed(1)) : 0
         const completionPct = target > 0 ? Math.min(100, Math.round((balance / target) * 100)) : 0
         const level = Math.min(5, Math.max(1, Math.ceil((completionPct / 100) * 5)))
 
         return {
+            hasPlan: true,
             totalSaved: balance,
             targetAmount: target,
             monthsCovered: covered,
@@ -90,6 +98,50 @@ export default function AccountVault() {
         }
     }, [financialRecords, installmentPlans, paymentMethods, recordTypes])
 
+    // ============================================================================
+    // RENDERIZAÇÃO: ESTADO VAZIO (NÃO HÁ PLANO)
+    // ============================================================================
+    if (!hasPlan) {
+        return (
+            <Card
+                onClick={() => router.push("/dashboard/money-pillow")}
+                role="button"
+                tabIndex={0}
+                aria-label="Configurar fundo de emergência"
+                className="@container flex h-full w-full cursor-pointer select-none flex-col justify-between p-3 sm:p-4 font-poppins shadow-sm transition-all hover:border-amber-300 dark:hover:border-amber-700/60 hover:shadow-md bg-amber-50/20 dark:bg-amber-950/10 border-dashed"
+            >
+                <CardHeader className="p-0 pb-1 w-full z-10">
+                    <CardTitle className="text-xs @[180px]:text-sm sm:text-base font-semibold text-muted-foreground flex items-center justify-between gap-2">
+                        <span className="flex items-center gap-1.5 truncate">
+                            <div className="p-1.5 bg-amber-100 dark:bg-amber-950/50 rounded-lg shrink-0">
+                                <ShieldAlert className="w-3.5 h-3.5 @[200px]:w-4 @[200px]:h-4 text-amber-600 dark:text-amber-400" />
+                            </div>
+                            <span className="truncate">Fundo de Emergência</span>
+                        </span>
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 shrink-0">
+                            Pendente
+                        </span>
+                    </CardTitle>
+                </CardHeader>
+
+                <CardContent className="p-0 pt-2 flex flex-col items-center justify-center text-center gap-2 my-auto w-full">
+                    <div className="w-12 h-12 @[200px]:w-14 @[200px]:h-14 rounded-full bg-amber-100/50 dark:bg-amber-900/30 flex items-center justify-center mb-1">
+                        <PlusCircle className="w-6 h-6 text-amber-500 dark:text-amber-400 stroke-[1.5]" />
+                    </div>
+                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                        Ainda não tens proteção
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                        Clica para criar a tua reserva.
+                    </span>
+                </CardContent>
+            </Card>
+        )
+    }
+
+    // ============================================================================
+    // RENDERIZAÇÃO: ESTADO NORMAL (COM PLANO)
+    // ============================================================================
     return (
         <Card
             onClick={() => setIsPinned((prev) => !prev)}

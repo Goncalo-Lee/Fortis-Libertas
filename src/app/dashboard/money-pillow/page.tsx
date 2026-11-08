@@ -1,55 +1,44 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
-import {
-    ShieldCheck,
-    SlidersHorizontal,
-    ArrowUpRight,
-    Calendar,
-    Plus,
-    History,
-    Trash2,
-    Sparkles,
-} from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { ShieldCheck, SlidersHorizontal, ArrowUpRight, Plus, Trash2, Target } from "lucide-react"
 import { toast } from "sonner"
 import { useDashboard } from "@/contexts/DashboardContext"
 import { useFinancial } from "@/contexts/FinancialContext"
-
 import { CreateCategoryModal } from "@/components/CreateCategoryModal"
+import {useNotifications} from "@/contexts/NotificationContext";
 
 export default function EmergencyFundPage() {
     const { activeDashboard } = useDashboard()
-    const { installmentPlans, financialRecords, paymentMethods, recordTypes, categories, tags, refresh } = useFinancial()
+    const { createNotification } = useNotifications()
 
-    // Controlo de painéis simplificado
+    const {
+        installmentPlans, financialRecords, paymentMethods, recordTypes, categories, tags, refresh,
+        addFinancialRecord, deleteFinancialRecord, addInstallmentPlan, updateInstallmentPlan, deleteInstallmentPlan, addTag
+    } = useFinancial()
+
+    // Estados dos Modais/Painéis
     const [isConfiguring, setIsConfiguring] = useState(false)
     const [isAddingMovement, setIsAddingMovement] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
+    const [tempCategory, setTempCategory] = useState<any>(null)
 
-    // Estados do configurador de meta
+    // Estados para Configuração / Criação
     const [tempCost, setTempCost] = useState("750")
     const [tempMonths, setTempMonths] = useState("6")
+    const [setupCategoryId, setSetupCategoryId] = useState("")
 
-    // Estados do formulário de reforço
+    // Estados para Reforço (Depósito)
     const [movTitle, setMovTitle] = useState("")
     const [movAmount, setMovAmount] = useState("")
     const [movPaymentMethodId, setMovPaymentMethodId] = useState("")
     const [movTag, setMovTag] = useState("Reforço Mensal")
     const [movCategoryId, setMovCategoryId] = useState("")
 
-    // Estados do Modal de Categoria
-    const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
-    const [tempCategory, setTempCategory] = useState<any>(null)
-
     // ==========================================
-    // 1. LOCALIZAR O PLANO DO FUNDO DE EMERGÊNCIA
+    // 1. LOCALIZAR O PLANO DO FUNDO
     // ==========================================
     const emergencyPlan = useMemo(() => {
         if (!installmentPlans) return null
@@ -92,20 +81,15 @@ export default function EmergencyFundPage() {
     }, [recordTypes])
     const defaultExpenseTypeId = expenseRecordType?.record_type_id || expenseRecordType?.id
 
-    // FILTRO DE CATEGORIAS (Apenas Despesas, com injeção em tempo real)
     const availableCategories = useMemo(() => {
         let list = categories ? [...categories] : []
-
         if (tempCategory && !list.some((c: any) => (c.category_id || c.id) === tempCategory.id)) {
             list.push(tempCategory)
         }
-
         return list.filter((c: any) => {
             if (tempCategory && (c.category_id || c.id) === tempCategory.id) return true
-
             const rts = c.record_types || c.recordTypes || []
             if (rts.length === 0) return true
-
             return rts.some((rt: any) => rt.kind === "expense" || rt.kind === "neutral")
         })
     }, [categories, tempCategory])
@@ -118,20 +102,18 @@ export default function EmergencyFundPage() {
     }, [emergencyPlan, monthlyEssentialCost, targetMonths])
 
     // ==========================================
-    // 2. PROCESSAR MOVIMENTOS
+    // 2. CÁLCULO DE MOVIMENTOS
     // ==========================================
     const movements = useMemo(() => {
         if (!financialRecords || !emergencyPlanId) return []
-
         return financialRecords
-            .filter((r: any) => (r.installment_plan_id || r.installmentPlanId) === emergencyPlanId)
+            .filter((r: any) => (r.installment_plan_id || r.installmentPlanId || r.plan_id) === emergencyPlanId)
             .map((r: any) => {
                 const tagName = r.tags && r.tags.length > 0 ? r.tags[0].name : "Reforço"
-
                 return {
                     id: r.financial_record_id || r.id,
                     title: r.name,
-                    amount: Number(r.price || 0),
+                    amount: Number(r.price || r.amount || r.value || 0),
                     date: r.payment_date || r.paymentDate || new Date().toISOString(),
                     categoryTag: tagName
                 }
@@ -140,20 +122,18 @@ export default function EmergencyFundPage() {
     }, [financialRecords, emergencyPlanId])
 
     const totalDeposits = movements.reduce((acc, curr) => acc + curr.amount, 0)
-
-    // Como abolimos os levantamentos na UI, o saldo é o total depositado
     const currentBalance = totalDeposits
-
     const monthsCovered = monthlyEssentialCost > 0 ? Number((currentBalance / monthlyEssentialCost).toFixed(1)) : 0
     const completionPct = idealTarget > 0 ? Math.min(Math.round((currentBalance / idealTarget) * 100), 100) : 0
     const securityLevel = Math.min(5, Math.max(1, Math.ceil((completionPct / 100) * 5)))
 
     // ==========================================
-    // 3. GUARDAR / CONFIGURAR NA BD
+    // 3. CRIAR O FUNDO PELA PRIMEIRA VEZ
     // ==========================================
-    async function handleSaveConfig(e: React.FormEvent) {
+    async function handleCreateFund(e: React.FormEvent) {
         e.preventDefault()
         if (!activeDashboard?.dashboard_id) return toast.error("Sem dashboard ativo.")
+        if (!setupCategoryId) return toast.error("Escolhe uma categoria (ex: Poupança).")
 
         const parsedCost = parseFloat(tempCost)
         const parsedMonths = parseInt(tempMonths, 10) || 6
@@ -162,69 +142,82 @@ export default function EmergencyFundPage() {
             return toast.error("Introduz um custo mensal válido.")
         }
 
-        const calculatedTarget = parsedCost * parsedMonths
-        const dueDate = new Date()
-        dueDate.setMonth(dueDate.getMonth() + parsedMonths)
-
         setIsSubmitting(true)
         try {
-            if (emergencyPlanId) {
-                const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${emergencyPlanId}`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include",
-                    body: JSON.stringify({
-                        name: "Fundo de Emergência",
-                        total_amount: calculatedTarget,
-                        total_installments: parsedMonths,
-                        description: `[EMERGENCY] Custo: ${parsedCost} | Meses: ${parsedMonths}`
-                    })
-                })
-                if (!res.ok) throw new Error("Falha ao atualizar parâmetros.")
-            } else {
-                const defaultCat = categories?.[0]
+            const calculatedTarget = parsedCost * parsedMonths
+            const dueDate = new Date()
+            dueDate.setMonth(dueDate.getMonth() + parsedMonths)
 
-                const payload: Record<string, any> = {
-                    name: "Fundo de Emergência",
-                    description: `[EMERGENCY] Custo: ${parsedCost} | Meses: ${parsedMonths}`,
-                    total_amount: calculatedTarget,
-                    total_installments: parsedMonths,
-                    due_date: dueDate.toISOString().split("T")[0],
-                    status: "pending"
-                }
+            await addInstallmentPlan({
+                name: "Fundo de Emergência",
+                description: `[EMERGENCY] Custo: ${parsedCost} | Meses: ${parsedMonths}`,
+                // MAGIA: .toFixed(2) transforma em String para a API aceitar!
+                total_amount: calculatedTarget.toFixed(2),
+                total_installments: parsedMonths,
+                due_date: dueDate.toISOString().split("T")[0],
+                status: "pending",
+                category_id: setupCategoryId // Envia a categoria para a base de dados não chatear
+            })
 
-                if (defaultCat) payload.category_id = defaultCat.category_id || defaultCat.id
-
-                const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include",
-                    body: JSON.stringify(payload)
-                })
-                if (!res.ok) {
-                    const errData = await res.json().catch(() => ({}))
-                    throw new Error(errData.detail || errData.message || "Falha ao criar fundo de emergência.")
-                }
-            }
-
-            refresh()
-            toast.success("Fundo de Emergência configurado com sucesso!")
-            setIsConfiguring(false)
+            toast.success("Fundo de Emergência criado com sucesso!")
         } catch (error: any) {
-            toast.error(error.message || "Erro ao gravar configuração.")
+            toast.error(error.message || "Erro ao criar o fundo.")
         } finally {
             setIsSubmitting(false)
         }
     }
 
     // ==========================================
-    // 4. REGISTAR REFORÇO
+    // 4. ATUALIZAR FUNDO EXISTENTE
+    // ==========================================
+    async function handleUpdateConfig(e: React.FormEvent) {
+        e.preventDefault()
+        if (!activeDashboard?.dashboard_id || !emergencyPlanId) return
+
+        const parsedCost = parseFloat(tempCost)
+        const parsedMonths = parseInt(tempMonths, 10) || 6
+
+        setIsSubmitting(true)
+        try {
+            const calculatedTarget = parsedCost * parsedMonths
+            await updateInstallmentPlan(emergencyPlanId, {
+                name: "Fundo de Emergência",
+                // String obrigatória para o status 422 não apitar
+                total_amount: calculatedTarget.toFixed(2),
+                total_installments: parsedMonths,
+                description: `[EMERGENCY] Custo: ${parsedCost} | Meses: ${parsedMonths}`
+            })
+            toast.success("Alvo do Fundo atualizado!")
+            setIsConfiguring(false)
+        } catch (error: any) {
+            toast.error(error.message || "Erro ao atualizar configuração.")
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    async function handleDeleteFund() {
+        if (!emergencyPlanId) return
+        if (!confirm("Atenção: Queres mesmo apagar o Fundo de Emergência? O histórico de reforços associados precisa de ser apagado primeiro!")) return
+
+        try {
+            await deleteInstallmentPlan(emergencyPlanId)
+            toast.success("Fundo apagado. Podes criar um novo!")
+            setIsConfiguring(false)
+        } catch (error: any) {
+            toast.error("Erro: Verifica se apagaste os movimentos do fundo primeiro.")
+        }
+    }
+
+    // ==========================================
+    // 5. REGISTAR REFORÇO
+    // ==========================================
+// ==========================================
+    // 5. REGISTAR REFORÇO
     // ==========================================
     async function handleAddMovement(e: React.FormEvent) {
         e.preventDefault()
-        if (!activeDashboard?.dashboard_id) return
-
-        let activePlanId = emergencyPlanId
+        if (!activeDashboard?.dashboard_id || !emergencyPlanId) return
 
         const parsedAmount = parseFloat(movAmount)
         if (!movTitle.trim() || isNaN(parsedAmount) || parsedAmount <= 0 || !movCategoryId) {
@@ -232,88 +225,53 @@ export default function EmergencyFundPage() {
         }
 
         const fallbackMethod = paymentMethods?.[0]
-        const fallbackMethodId = fallbackMethod?.payment_method_id || fallbackMethod?.id
-        const selectedMethod = movPaymentMethodId || fallbackMethodId
-        if (!selectedMethod) {
-            return toast.error("Não tens contas de pagamento registadas.")
-        }
+        const selectedMethod = movPaymentMethodId || fallbackMethod?.payment_method_id || fallbackMethod?.id
+        if (!selectedMethod) return toast.error("Não tens contas de pagamento registadas.")
 
         setIsSubmitting(true)
         try {
-            if (!activePlanId) {
-                const defaultTarget = 750 * 6
-                const dueDate = new Date()
-                dueDate.setMonth(dueDate.getMonth() + 6)
-
-                const payload: Record<string, any> = {
-                    name: "Fundo de Emergência",
-                    description: `[EMERGENCY] Custo: 750 | Meses: 6`,
-                    total_amount: defaultTarget,
-                    total_installments: 6,
-                    due_date: dueDate.toISOString().split("T")[0],
-                    status: "pending",
-                    category_id: movCategoryId
-                }
-                const initRes = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include",
-                    body: JSON.stringify(payload)
-                })
-                if (initRes.ok) {
-                    const initData = await initRes.json()
-                    const createdPlan = initData.data || initData
-                    activePlanId = createdPlan.installment_plan_id || createdPlan.id
-                } else {
-                    const err = await initRes.json().catch(() => ({}))
-                    throw new Error(err.detail || err.message || "Configura o fundo de emergência primeiro.")
-                }
-            }
-
             let matchedTag = (tags || []).find((t: any) => t.name?.toLowerCase() === movTag.toLowerCase())
             if (!matchedTag && movTag) {
-                const tagRes = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/tags`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include",
-                    body: JSON.stringify({ name: movTag, description: `Tag ${movTag}` })
-                })
-                if (tagRes.ok) {
-                    const tagData = await tagRes.json()
-                    matchedTag = tagData.data || tagData
-                }
+                const tagData = await addTag(movTag)
+                matchedTag = tagData.data || tagData
             }
 
-            const tagId = matchedTag?.tag_id || matchedTag?.id
-
-            const recordPayload: Record<string, any> = {
+            await addFinancialRecord({
                 name: movTitle.trim(),
-                price: parsedAmount,
-                record_type_id: defaultExpenseTypeId,
-                category_id: movCategoryId,
-                payment_method_id: selectedMethod,
-                installment_plan_id: activePlanId,
-                status: "paid",
-                payment_date: new Date().toISOString()
-            }
-
-            if (tagId) recordPayload.tag_ids = [tagId]
-
-            const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/financial-records`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify(recordPayload)
+                price: parsedAmount, // O Contexto já converte isto em String para nós
+                recordTypeId: defaultExpenseTypeId,
+                categoryId: movCategoryId,
+                paymentMethodId: selectedMethod,
+                installmentPlanId: emergencyPlanId,
+                paymentDate: new Date().toISOString(),
+                tagIds: matchedTag ? [matchedTag.tag_id || matchedTag.id] : []
             })
 
-            if (!res.ok) {
-                const errData = await res.json().catch(() => ({}))
-                throw new Error(errData.detail || errData.message || "Erro ao registar movimento.")
+            // ========================================================
+            // A MAGIA DAS NOTIFICAÇÕES ACONTECE AQUI!
+            // ========================================================
+            const novoSaldo = currentBalance + parsedAmount;
+
+            // 1. Notificar se atingiu 1 Mês de proteção pela primeira vez
+            if (novoSaldo >= monthlyEssentialCost && currentBalance < monthlyEssentialCost) {
+                await createNotification(
+                    "🛡️ 1 Mês de Proteção!",
+                    "Fantástico! Já juntaste o suficiente para cobrir um mês inteiro de despesas essenciais.",
+                    "success"
+                );
             }
 
-            refresh()
-            toast.success(`Reforço de € ${parsedAmount.toFixed(2)} adicionado!`)
+            // 2. Notificar se atingiu 100% do Fundo de Emergência
+            if (novoSaldo >= idealTarget && currentBalance < idealTarget) {
+                await createNotification(
+                    "🏆 Fundo de Emergência Completo!",
+                    "Muitos parabéns! Atingiste o alvo total da tua reserva. Estás financeiramente blindado!",
+                    "goal"
+                );
+            }
+            // ========================================================
 
+            toast.success(`Reforço de € ${parsedAmount.toFixed(2)} adicionado!`)
             setMovTitle("")
             setMovAmount("")
             setIsAddingMovement(false)
@@ -324,49 +282,103 @@ export default function EmergencyFundPage() {
         }
     }
 
-    // ==========================================
-    // 5. APAGAR MOVIMENTO
-    // ==========================================
-    async function handleDeleteMovement(id: string) {
-        if (!confirm("Tens a certeza que queres eliminar este reforço?")) return
-        if (!activeDashboard?.dashboard_id) return
+    // =========================================================================
+    // RENDER 1: ECRÃ DE SETUP (SE NÃO HOUVER FUNDO)
+    // =========================================================================
+    if (!emergencyPlanId) {
+        return (
+            <div className="h-full w-full overflow-y-auto p-4 md:p-6 font-poppins flex flex-col items-center justify-center min-h-[80vh]">
+                <CreateCategoryModal
+                    isOpen={isCategoryModalOpen}
+                    onClose={() => setIsCategoryModalOpen(false)}
+                    recordTypeId={defaultExpenseTypeId}
+                    typeLabel="Despesa"
+                    onSuccess={(id, name) => {
+                        const newCat = { id, category_id: id, name, record_types: [{ kind: "expense" }] };
+                        setTempCategory(newCat);
+                        setSetupCategoryId(id);
+                    }}
+                />
 
-        try {
-            const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/financial-records/${id}`, {
-                method: "DELETE",
-                credentials: "include"
-            })
-            if (!res.ok) throw new Error("Falha ao eliminar registo")
+                <div className="max-w-xl w-full text-center space-y-2 mb-8 animate-in fade-in slide-in-from-bottom-4">
+                    <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <ShieldCheck className="w-8 h-8" />
+                    </div>
+                    <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">
+                        Cria o teu Fundo de Emergência
+                    </h1>
+                    <p className="text-muted-foreground text-sm">
+                        O primeiro passo para a paz de espírito financeira. Define as tuas regras e começa a construir a tua almofada.
+                    </p>
+                </div>
 
-            refresh()
-            toast.success("Reforço removido com sucesso.")
-        } catch (error) {
-            toast.error("Erro ao apagar o movimento.")
-        }
+                <Card className="max-w-xl w-full border-emerald-200 bg-emerald-50/30 shadow-md animate-in zoom-in-95">
+                    <CardHeader>
+                        <CardTitle className="text-lg">Configuração Inicial</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleCreateFund} className="space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-slate-700">Custo Essencial por Mês (€)</label>
+                                    <input
+                                        type="number" step="10" value={tempCost} onChange={(e) => setTempCost(e.target.value)}
+                                        className="h-10 w-full rounded-md border px-3" required
+                                    />
+                                    <p className="text-[10px] text-muted-foreground">Valor mínimo para sobreviveres um mês.</p>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-slate-700">Meses de Proteção</label>
+                                    <select value={tempMonths} onChange={(e) => setTempMonths(e.target.value)} className="h-10 w-full rounded-md border px-3">
+                                        <option value="3">3 Meses (Risco Alto)</option>
+                                        <option value="6">6 Meses (Recomendado)</option>
+                                        <option value="12">12 Meses (Risco Zero)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5 pt-2">
+                                <label className="text-sm font-medium text-slate-700">Categoria do Fundo</label>
+                                <div className="flex gap-2">
+                                    <select value={setupCategoryId} onChange={(e) => setSetupCategoryId(e.target.value)} className="h-10 flex-1 rounded-md border px-3" required>
+                                        <option value="" disabled>Selecionar categoria de associação...</option>
+                                        {availableCategories.map((c: any) => (
+                                            <option key={c.category_id || c.id} value={c.category_id || c.id}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                    <button type="button" onClick={() => setIsCategoryModalOpen(true)} className="h-10 w-10 bg-white border rounded-md flex items-center justify-center hover:bg-slate-50">
+                                        <Plus className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button type="submit" disabled={isSubmitting} className="w-full h-10 mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-md">
+                                {isSubmitting ? "A criar..." : "Criar Fundo de Emergência"}
+                            </button>
+                        </form>
+                    </CardContent>
+                </Card>
+            </div>
+        )
     }
 
+    // =========================================================================
+    // RENDER 2: DASHBOARD PRINCIPAL DO FUNDO
+    // =========================================================================
     return (
         <div className="h-full w-full overflow-y-auto p-4 md:p-6 space-y-6 font-poppins relative">
-
-            {/* MODAL DE CATEGORIA OBRIGATÓRIA (Sempre Despesa) */}
             <CreateCategoryModal
                 isOpen={isCategoryModalOpen}
                 onClose={() => setIsCategoryModalOpen(false)}
                 recordTypeId={defaultExpenseTypeId}
                 typeLabel="Despesa"
                 onSuccess={(id, name) => {
-                    const newCat = {
-                        id,
-                        category_id: id,
-                        name,
-                        record_types: [{ kind: "expense" }]
-                    };
+                    const newCat = { id, category_id: id, name, record_types: [{ kind: "expense" }] };
                     setTempCategory(newCat);
                     setMovCategoryId(id);
                 }}
             />
 
-            {/* CABEÇALHO */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">
@@ -384,10 +396,10 @@ export default function EmergencyFundPage() {
                             setIsConfiguring((prev) => !prev)
                             setIsAddingMovement(false)
                         }}
-                        className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-medium px-3 py-2 rounded-lg transition-colors cursor-pointer"
+                        className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-medium px-3 py-2 rounded-lg cursor-pointer"
                     >
                         <SlidersHorizontal className="w-4 h-4" />
-                        <span>Configurar Fundo</span>
+                        <span>Configurar</span>
                     </button>
 
                     <button
@@ -396,7 +408,7 @@ export default function EmergencyFundPage() {
                             setIsAddingMovement((prev) => !prev)
                             setIsConfiguring(false)
                         }}
-                        className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-medium px-3.5 py-2 rounded-lg shadow-xs transition-colors cursor-pointer"
+                        className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-medium px-3.5 py-2 rounded-lg shadow-xs cursor-pointer"
                     >
                         <Plus className="w-4 h-4" />
                         <span>Reforçar</span>
@@ -404,61 +416,38 @@ export default function EmergencyFundPage() {
                 </div>
             </div>
 
-            {/* PAINEL DE CONFIGURAÇÃO */}
             {isConfiguring && (
-                <Card className="border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/30 dark:bg-emerald-950/10 shadow-sm animate-in fade-in slide-in-from-top-4">
+                <Card className="border-emerald-200 bg-emerald-50/30 shadow-sm animate-in fade-in slide-in-from-top-4">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm sm:text-base font-semibold flex items-center gap-2">
-                            Dimensionar o Fundo de Emergência
+                        <CardTitle className="text-sm sm:text-base font-semibold flex items-center justify-between gap-2">
+                            <span>Ajustar o Fundo de Emergência</span>
+                            <button type="button" onClick={handleDeleteFund} className="p-1.5 bg-red-100 text-red-600 hover:bg-red-200 rounded-md cursor-pointer" title="Apagar este Fundo para criar um novo">
+                                <Trash2 className="w-4 h-4" />
+                            </button>
                         </CardTitle>
                         <CardDescription className="text-xs">
                             Define o teu custo essencial mensal e quantos meses de segurança queres garantir.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <form onSubmit={handleSaveConfig} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                        <form onSubmit={handleUpdateConfig} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                             <div className="flex flex-col gap-1">
-                                <label className="text-xs font-medium text-muted-foreground">
-                                    Custo de Vida Essencial (€ / mês)
-                                </label>
-                                <input
-                                    type="number"
-                                    step="10"
-                                    value={tempCost}
-                                    onChange={(e) => setTempCost(e.target.value)}
-                                    className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs sm:text-sm"
-                                    required
-                                />
+                                <label className="text-xs font-medium text-muted-foreground">Custo Mensal (€)</label>
+                                <input type="number" step="10" value={tempCost} onChange={(e) => setTempCost(e.target.value)} className="h-9 rounded-md border px-3 text-sm" required />
                             </div>
-
                             <div className="flex flex-col gap-1">
-                                <label className="text-xs font-medium text-muted-foreground">
-                                    Meses de Proteção Desejados
-                                </label>
-                                <select
-                                    value={tempMonths}
-                                    onChange={(e) => setTempMonths(e.target.value)}
-                                    className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs sm:text-sm"
-                                >
-                                    <option value="3">3 Meses (Segurança Básica)</option>
+                                <label className="text-xs font-medium text-muted-foreground">Meses de Proteção</label>
+                                <select value={tempMonths} onChange={(e) => setTempMonths(e.target.value)} className="h-9 rounded-md border px-3 text-sm">
+                                    <option value="3">3 Meses (Risco Alto)</option>
                                     <option value="6">6 Meses (Recomendado)</option>
-                                    <option value="12">12 Meses (Tranquilidade Máxima)</option>
+                                    <option value="12">12 Meses (Risco Zero)</option>
                                 </select>
                             </div>
-
                             <div className="flex gap-2">
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className="flex-1 h-9 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer disabled:opacity-50"
-                                >
-                                    {isSubmitting ? "A guardar..." : `Atualizar Alvo`}
+                                <button type="submit" disabled={isSubmitting} className="flex-1 h-9 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-medium rounded-md cursor-pointer">
+                                    {isSubmitting ? "A guardar..." : `Atualizar`}
                                 </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsConfiguring(false)}
-                                    className="h-9 px-3 bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs rounded-md cursor-pointer"
-                                >
+                                <button type="button" onClick={() => setIsConfiguring(false)} className="h-9 px-3 bg-slate-200 text-slate-700 text-xs rounded-md cursor-pointer">
                                     Fechar
                                 </button>
                             </div>
@@ -467,312 +456,136 @@ export default function EmergencyFundPage() {
                 </Card>
             )}
 
-            {/* PAINEL DE REFORÇO DO FUNDO */}
             {isAddingMovement && (
-                <Card className="border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/30 dark:bg-emerald-950/10 shadow-sm animate-in fade-in slide-in-from-top-4">
+                <Card className="border-emerald-200 bg-emerald-50/30 shadow-sm animate-in fade-in slide-in-from-top-4">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm sm:text-base font-semibold flex items-center gap-2">
-                            Reforçar o Fundo de Emergência
-                        </CardTitle>
-                        <CardDescription className="text-xs">
-                            Transfere montantes da tua conta corrente para reforçar a tua reserva.
-                        </CardDescription>
+                        <CardTitle className="text-sm sm:text-base font-semibold">Reforçar o Fundo de Emergência</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleAddMovement} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs font-medium text-muted-foreground">Motivo</label>
-                                <select
-                                    value={movTag}
-                                    onChange={(e) => setMovTag(e.target.value)}
-                                    className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs sm:text-sm"
-                                >
+                                <select value={movTag} onChange={(e) => setMovTag(e.target.value)} className="h-9 rounded-md border px-3 text-xs">
                                     <option value="Reforço Mensal">📅 Poupança do Mês</option>
                                     <option value="Ganho Extra">✨ Ganho Extra / Subsídio</option>
                                     <option value="Sobra Orçamental">🪙 Sobra do Orçamento</option>
                                 </select>
                             </div>
-
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs font-medium text-muted-foreground">Categoria</label>
                                 <div className="flex gap-1 h-9">
-                                    <select
-                                        value={movCategoryId}
-                                        onChange={(e) => setMovCategoryId(e.target.value)}
-                                        className="h-full flex-1 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 text-xs"
-                                        required
-                                    >
+                                    <select value={movCategoryId} onChange={(e) => setMovCategoryId(e.target.value)} className="h-full flex-1 rounded-md border px-2 text-xs" required>
                                         <option value="" disabled>Selecionar...</option>
-                                        {availableCategories.map((c: any) => (
-                                            <option key={c.category_id || c.id} value={c.category_id || c.id}>
-                                                {c.name}
-                                            </option>
-                                        ))}
+                                        {availableCategories.map((c: any) => (<option key={c.category_id || c.id} value={c.category_id || c.id}>{c.name}</option>))}
                                     </select>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsCategoryModalOpen(true)}
-                                        className="h-9 w-9 flex items-center justify-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-200 transition-colors cursor-pointer"
-                                        title="Nova Categoria"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                    </button>
+                                    <button type="button" onClick={() => setIsCategoryModalOpen(true)} className="h-9 w-9 bg-white border rounded-md hover:bg-slate-50 flex items-center justify-center cursor-pointer"><Plus className="w-4 h-4" /></button>
                                 </div>
                             </div>
-
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs font-medium text-muted-foreground">Descrição</label>
-                                <input
-                                    type="text"
-                                    placeholder="Ex: Reforço após salário"
-                                    value={movTitle}
-                                    onChange={(e) => setMovTitle(e.target.value)}
-                                    className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs sm:text-sm"
-                                    required
-                                />
+                                <input type="text" placeholder="Ex: Reforço após salário" value={movTitle} onChange={(e) => setMovTitle(e.target.value)} className="h-9 rounded-md border px-3 text-xs" required />
                             </div>
-
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs font-medium text-muted-foreground">Valor (€)</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    placeholder="0.00"
-                                    value={movAmount}
-                                    onChange={(e) => setMovAmount(e.target.value)}
-                                    className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs sm:text-sm"
-                                    required
-                                />
+                                <input type="number" step="0.01" value={movAmount} onChange={(e) => setMovAmount(e.target.value)} className="h-9 rounded-md border px-3 text-xs" required />
                             </div>
-
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs font-medium text-muted-foreground">Conta Financeira</label>
-                                <select
-                                    value={movPaymentMethodId}
-                                    onChange={(e) => setMovPaymentMethodId(e.target.value)}
-                                    className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs sm:text-sm"
-                                >
-                                    {(paymentMethods || []).map((pm: any) => {
-                                        const pmId = pm.payment_method_id || pm.id
-                                        return <option key={pmId} value={pmId}>{pm.name}</option>
-                                    })}
+                                <select value={movPaymentMethodId} onChange={(e) => setMovPaymentMethodId(e.target.value)} className="h-9 rounded-md border px-3 text-xs">
+                                    {(paymentMethods || []).map((pm: any) => (<option key={pm.payment_method_id || pm.id} value={pm.payment_method_id || pm.id}>{pm.name}</option>))}
                                 </select>
                             </div>
-
                             <div className="flex gap-2">
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className="flex-1 h-9 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-medium rounded-md transition-colors cursor-pointer disabled:opacity-50"
-                                >
-                                    {isSubmitting ? "A gravar..." : "Confirmar"}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsAddingMovement(false)}
-                                    className="h-9 px-3 bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs rounded-md cursor-pointer"
-                                >
-                                    Cancelar
-                                </button>
+                                <button type="submit" disabled={isSubmitting} className="flex-1 h-9 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-md cursor-pointer">{isSubmitting ? "A gravar..." : "Confirmar"}</button>
+                                <button type="button" onClick={() => setIsAddingMovement(false)} className="h-9 px-3 bg-slate-200 text-slate-700 text-xs rounded-md cursor-pointer">Cancelar</button>
                             </div>
                         </form>
                     </CardContent>
                 </Card>
             )}
 
-            {/* CARTÕES DE RESUMO */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-                <Card className="@container flex flex-col justify-between py-3 shadow-sm">
-                    <CardHeader className="pb-1 w-full">
-                        <CardTitle className="text-sm sm:text-base font-medium text-muted-foreground flex items-center justify-center gap-2">
-                            <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-md">
-                                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                            </div>
-                            Saldo do Fundo
+                <Card className="flex flex-col justify-between py-3 shadow-sm">
+                    <CardHeader className="pb-1 w-full text-center">
+                        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-center gap-2">
+                            <ShieldCheck className="w-4 h-4 text-emerald-600" /> Saldo do Fundo
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="px-4 pb-2 flex flex-col items-center justify-center text-center gap-1 my-auto">
-                        <div className="text-2xl font-bold @[220px]:text-2xl @[320px]:text-3xl text-slate-900 dark:text-slate-100">
-                            € {currentBalance.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
-                        </div>
-                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                            {completionPct}% da reserva recomendada (€ {idealTarget.toLocaleString("pt-PT")})
-                        </span>
+                    <CardContent className="text-center pt-2 my-auto">
+                        <div className="text-3xl font-bold text-slate-900 dark:text-slate-100">€ {currentBalance.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}</div>
+                        <span className="text-xs text-emerald-600 font-medium">{completionPct}% da reserva recomendada (€ {idealTarget.toLocaleString("pt-PT")})</span>
                     </CardContent>
                 </Card>
 
-                <Card className="@container flex flex-col justify-between py-3 shadow-sm">
-                    <CardHeader className="pb-1 w-full">
-                        <CardTitle className="text-sm sm:text-base font-medium text-muted-foreground flex items-center justify-center gap-2">
-                            <div className="p-1.5 bg-teal-100 dark:bg-teal-900/30 rounded-md">
-                                <ShieldCheck className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                            </div>
-                            Autonomia Garantida
+                <Card className="flex flex-col justify-between py-3 shadow-sm">
+                    <CardHeader className="pb-1 w-full text-center">
+                        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-center gap-2">
+                            <Target className="w-4 h-4 text-teal-600" /> Autonomia Garantida
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="px-4 pb-2 flex flex-col items-center justify-center text-center gap-2 my-auto">
-                        <div className="text-xl font-bold @[220px]:text-xl @[320px]:text-2xl text-slate-900 dark:text-slate-100">
-                            {monthsCovered} Meses <span className="text-xs font-normal text-muted-foreground">de despesas</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 w-full max-w-[150px] justify-center">
-                            {[1, 2, 3, 4, 5].map((level) => (
-                                <div
-                                    key={level}
-                                    className={`h-2 flex-1 rounded-full transition-all duration-500 ${
-                                        level <= securityLevel
-                                            ? "bg-emerald-500 dark:bg-emerald-400"
-                                            : "bg-slate-100 dark:bg-slate-800"
-                                    }`}
-                                />
-                            ))}
-                        </div>
+                    <CardContent className="text-center pt-2 my-auto">
+                        <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{monthsCovered} Meses <span className="text-xs font-normal text-muted-foreground">de despesas</span></div>
                     </CardContent>
                 </Card>
 
-                <Card className="@container flex flex-col justify-between py-3 shadow-sm">
-                    <CardHeader className="pb-1 w-full">
-                        <CardTitle className="text-sm sm:text-base font-medium text-muted-foreground flex items-center justify-center gap-2">
-                            <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-md">
-                                <ArrowUpRight className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                            </div>
-                            Total Reforçado
+                <Card className="flex flex-col justify-between py-3 shadow-sm">
+                    <CardHeader className="pb-1 w-full text-center">
+                        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-center gap-2">
+                            <ArrowUpRight className="w-4 h-4 text-blue-600" /> Total Reforçado
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="px-4 pb-2 flex flex-col justify-center items-center gap-2 my-auto">
-                        <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                            € {totalDeposits.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
-                        </div>
-                        <span className="text-xs text-muted-foreground">Valor bruto poupado até hoje</span>
+                    <CardContent className="text-center pt-2 my-auto">
+                        <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">€ {totalDeposits.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}</div>
                     </CardContent>
                 </Card>
-
             </div>
 
-            {/* SEÇÃO PRINCIPAL */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-                <Card className="lg:col-span-5 flex flex-col justify-between py-4 shadow-sm">
+                <Card className="lg:col-span-5 flex flex-col py-4 shadow-sm">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-base font-semibold flex items-center gap-2">
-                            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                            Estado do Fundo de Emergência
-                        </CardTitle>
-                        <CardDescription className="text-xs">
-                            Baseado num custo essencial de € {monthlyEssentialCost}/mês durante {targetMonths} meses.
-                        </CardDescription>
+                        <CardTitle className="text-base font-semibold">Estado do Fundo de Emergência</CardTitle>
+                        <CardDescription className="text-xs">Baseado num custo essencial de € {monthlyEssentialCost}/mês durante {targetMonths} meses.</CardDescription>
                     </CardHeader>
-
-                    <CardContent className="space-y-5 my-auto">
+                    <CardContent className="space-y-5">
                         <div className="flex flex-col items-center text-center gap-2 pt-2">
-                            <div className="relative flex items-center justify-center">
-                                <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-center shadow-inner">
-                                    <ShieldCheck className="w-8 h-8 text-emerald-600 dark:text-emerald-400 stroke-[1.75]" />
-                                </div>
-                            </div>
-
                             <div className="w-full space-y-1.5 pt-2">
                                 <div className="flex justify-between text-xs font-medium">
-                                    <span className="text-emerald-700 dark:text-emerald-400">
-                                        Acumulado: € {currentBalance.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
-                                    </span>
-                                    <span className="text-muted-foreground">
-                                        Meta: € {idealTarget.toLocaleString("pt-PT")}
-                                    </span>
+                                    <span className="text-emerald-700">Acumulado: € {currentBalance.toLocaleString("pt-PT")}</span>
+                                    <span className="text-muted-foreground">Meta: € {idealTarget.toLocaleString("pt-PT")}</span>
                                 </div>
-                                <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-emerald-500 rounded-full transition-all duration-700"
-                                        style={{ width: `${completionPct}%` }}
-                                    />
+                                <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                                    <div className="h-full bg-emerald-500 rounded-full transition-all duration-700" style={{ width: `${completionPct}%` }} />
                                 </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
-                            <div className="p-3 rounded-lg bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/40 text-xs space-y-1">
-                                <p className="font-semibold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
-                                    <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                    Quando reforçar?
-                                </p>
-                                <p className="text-muted-foreground">
-                                    Sempre que recebes salário, subsídios ou sobras de fim do mês.
-                                </p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Coluna Direita: Histórico */}
                 <Card className="lg:col-span-7 flex flex-col py-4 shadow-sm">
                     <CardHeader className="pb-3 flex flex-row items-center justify-between">
                         <div>
-                            <CardTitle className="text-base font-semibold flex items-center gap-2">
-                                <History className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                                Movimentos do Fundo
-                            </CardTitle>
-                            <CardDescription className="text-xs">
-                                Reforços associados à tua reserva de segurança.
-                            </CardDescription>
+                            <CardTitle className="text-base font-semibold">Movimentos do Fundo</CardTitle>
                         </div>
-                        <span className="text-xs font-medium text-muted-foreground bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full">
-                            {movements.length} movimentos
-                        </span>
                     </CardHeader>
-
                     <CardContent className="space-y-2.5">
-                        {movements.length === 0 && (
-                            <p className="text-center text-xs text-muted-foreground py-8">
-                                Ainda não há movimentos registados no teu Fundo de Emergência.
-                            </p>
-                        )}
+                        {movements.length === 0 && <p className="text-center text-xs text-muted-foreground py-8">Ainda não há movimentos registados.</p>}
                         {movements.map((mov, index) => {
                             const movId = mov.id || index
                             return (
-                                <div
-                                    key={movId}
-                                    className="flex items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 rounded-md bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
-                                            <ArrowUpRight className="w-4 h-4" />
-                                        </div>
-
-                                        <div>
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                                                    {mov.title}
-                                                </p>
-                                                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
-                                                    {mov.categoryTag}
-                                                </span>
-                                            </div>
-                                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                                                <Calendar className="w-3 h-3" />
-                                                {new Date(mov.date).toLocaleDateString("pt-PT")}
-                                            </p>
-                                        </div>
+                                <div key={movId} className="flex items-center justify-between p-3 rounded-lg border">
+                                    <div>
+                                        <p className="text-sm font-medium">{mov.title}</p>
+                                        <p className="text-xs text-muted-foreground">{new Date(mov.date).toLocaleDateString("pt-PT")}</p>
                                     </div>
-
                                     <div className="flex items-center gap-3">
-                                        <span className="text-sm sm:text-base font-bold text-emerald-600 dark:text-emerald-400">
-                                            + € {mov.amount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleDeleteMovement(mov.id)}
-                                            aria-label="Apagar registo"
-                                            className="p-1.5 text-slate-400 hover:text-red-500 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        <span className="font-bold text-emerald-600">+ € {mov.amount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}</span>
+                                        <button onClick={() => handleDeleteMovement(mov.id)} className="p-1.5 text-slate-400 hover:text-red-500 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
                                     </div>
                                 </div>
                             )
                         })}
                     </CardContent>
                 </Card>
-
             </div>
         </div>
     )

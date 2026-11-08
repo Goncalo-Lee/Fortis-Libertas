@@ -3,9 +3,7 @@
 import { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import { useDashboard } from './DashboardContext';
 
-
 const FinancialContext = createContext<any>(undefined);
-
 
 async function safeFetch(url: string) {
     try {
@@ -20,7 +18,6 @@ async function safeFetch(url: string) {
 export function FinancialProvider({ children }: { children: ReactNode }) {
     const { activeDashboard, loading: dashLoading } = useDashboard();
 
-
     const [bankAccounts, setBankAccounts] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
     const [tags, setTags] = useState<any[]>([]);
@@ -32,14 +29,11 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
     const [globalIcons, setGlobalIcons] = useState<any[]>([]);
     const [dashboardBalance, setDashboardBalance] = useState<number | null>(null);
 
-
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [refreshKey, setRefreshKey] = useState(0);
 
-
     const refresh = () => setRefreshKey(prev => prev + 1);
-
 
     useEffect(() => {
         if (dashLoading) return;
@@ -53,7 +47,6 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
 
         async function fetchEcosystem() {
             try {
-                // Vai buscar tudo ao mesmo tempo para ser super rápido
                 const [
                     banksData, catsData, tagsData, paysData,
                     typesData, recordsData, plansData, balanceData,
@@ -74,12 +67,10 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
                 const fetchedTypes = typesData?.data || typesData || [];
                 setRecordTypes(fetchedTypes);
 
-                // Prepara os registos para a interface ser mais fácil de programar
                 const rawRecords = recordsData?.data || recordsData || [];
                 const enrichedRecords = rawRecords.map((record: any) => {
                     const rtId = record.record_type_id || record.recordTypeId;
                     const rt = fetchedTypes.find((t: any) => (t.record_type_id || t.id) === rtId);
-
                     const kind = (rt?.kind || "").toLowerCase();
 
                     return {
@@ -91,7 +82,6 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
                     };
                 });
 
-                // Guarda tudo nas gavetas
                 setFinancialRecords(enrichedRecords);
                 setInstallmentPlans(plansData?.data || []);
                 setBankAccounts(banksData?.data || []);
@@ -101,38 +91,34 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
                 setDashboardBalance(balanceData?.data?.balance !== undefined ? Number(balanceData.data.balance) : null);
                 setGlobalColors(colorsData?.data || []);
                 setGlobalIcons(iconsData?.data || []);
-
             } catch (err) {
                 setError("Falha ao sincronizar dados.");
             } finally {
                 setLoading(false);
             }
         }
-
         fetchEcosystem();
     }, [activeDashboard, dashLoading, refreshKey]);
 
-
-
-
-    // Adicionar novo Registo
+    // =====================================
+    // REGISTOS FINANCEIROS
+    // =====================================
     async function addFinancialRecord(payload: any) {
         if (!activeDashboard?.dashboard_id) throw new Error("Sem dashboard ativo.");
 
         const apiPayload = {
             name: payload.name,
             description: payload.description || null,
-            price: Number(payload.price).toFixed(2),
+            // A MAGIA ESTÁ AQUI: Blindado para não dar erro 422!
+            price: String(Number(payload.price).toFixed(2)),
             record_type_id: payload.recordTypeId,
             category_id: payload.categoryId,
             payment_method_id: payload.paymentMethodId,
             status: "paid",
             payment_date: payload.paymentDate || new Date().toISOString(),
             tag_ids: payload.tagIds || [],
-            // CORREÇÃO: Usar a palavra "payload" em vez de "data"
             installment_plan_id: payload.installmentPlanId || payload.installment_plan_id
         };
-
 
         const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/financial-records`, {
             method: "POST",
@@ -145,15 +131,12 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
             const errJson = await res.json().catch(() => ({}));
             throw new Error(errJson.detail || errJson.message || "Erro ao gravar registo financeiro.");
         }
-
         refresh();
         return await res.json();
     }
 
-
     async function deleteFinancialRecord(id: string) {
         if (!activeDashboard?.dashboard_id) throw new Error("Sem dashboard ativo.");
-
         const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/financial-records/${id}`, {
             method: "DELETE",
             credentials: "include"
@@ -162,10 +145,54 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         refresh();
     }
 
-    // Apagar Categoria
+    // =====================================
+    // PLANOS / METAS / FUNDOS (NOVO)
+    // =====================================
+    async function addInstallmentPlan(payload: any) {
+        if (!activeDashboard?.dashboard_id) throw new Error("Sem dashboard ativo.");
+        const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || err.message || "Falha ao criar plano.");
+        }
+        refresh();
+        return await res.json();
+    }
+
+    async function deleteInstallmentPlan(id: string) {
+        if (!activeDashboard?.dashboard_id) throw new Error("Sem dashboard ativo.");
+        const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${id}`, {
+            method: "DELETE",
+            credentials: "include"
+        });
+        if (!res.ok) throw new Error("Falha ao eliminar plano.");
+        refresh();
+    }
+
+
+    async function updateInstallmentPlan(id: string, payload: any) {
+        if (!activeDashboard?.dashboard_id) throw new Error("Sem dashboard ativo.");
+        const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error("Falha ao atualizar plano.");
+        refresh();
+        return await res.json();
+    }
+
+    // =====================================
+    // CATEGORIAS & TAGS
+    // =====================================
     async function deleteCategory(categoryId: string) {
         if (!activeDashboard?.dashboard_id) throw new Error("Sem dashboard ativo.");
-
         const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/categories/${categoryId}`, {
             method: "DELETE",
             credentials: "include"
@@ -174,10 +201,21 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         refresh();
     }
 
+    async function addTag(name: string) {
+        if (!activeDashboard?.dashboard_id) throw new Error("Sem dashboard ativo.");
+        const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/tags`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ name, description: `Tag ${name}` })
+        });
+        if (!res.ok) throw new Error("Falha ao criar tag");
+        refresh();
+        return await res.json();
+    }
 
     const balance = useMemo(() => {
         const totalBanks = bankAccounts.reduce((acc, account) => acc + Number(account.initialBalance ?? account.initial_balance ?? 0), 0);
-
         if (dashboardBalance !== null) return totalBanks + dashboardBalance;
         if (!financialRecords.length) return totalBanks;
 
@@ -191,24 +229,24 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         return totalBanks + totalRecords;
     }, [dashboardBalance, financialRecords, bankAccounts]);
 
-
     return (
         <FinancialContext.Provider value={{
-            // Dados
             balance, bankAccounts, categories, tags, paymentMethods, recordTypes, financialRecords, installmentPlans,
             globalColors, globalIcons, loading, error,
-
             refresh,
             addFinancialRecord,
             deleteFinancialRecord,
-            deleteCategory
+            addInstallmentPlan,
+            deleteInstallmentPlan,
+            updateInstallmentPlan,
+            deleteCategory,
+            addTag
         }}>
             {children}
         </FinancialContext.Provider>
     );
 }
 
-// 7. HOOK PARA USAR NAS PÁGINAS (ex: const { balance, deleteCategory } = useFinancial())
 export const useFinancial = () => {
     const context = useContext(FinancialContext);
     if (!context) throw new Error("useFinancial deve ser usado dentro do FinancialProvider");

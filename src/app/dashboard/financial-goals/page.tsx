@@ -7,14 +7,17 @@ import { toast } from "sonner"
 import { useDashboard } from "@/contexts/DashboardContext"
 import { useFinancial } from "@/contexts/FinancialContext"
 import { CreateCategoryModal } from "@/components/CreateCategoryModal"
+import { useNotifications } from "@/contexts/NotificationContext"
 
 export default function FinancialGoalsPage() {
     const { activeDashboard } = useDashboard()
-    const { installmentPlans, financialRecords, categories, recordTypes, paymentMethods, addFinancialRecord, refresh } = useFinancial()
+    const { createNotification } = useNotifications()
 
-
-    console.log("Registos financeiros:", financialRecords);
-
+    // TODAS as chamadas de API vêm agora daqui:
+    const {
+        installmentPlans, financialRecords, categories, recordTypes, paymentMethods, refresh,
+        addFinancialRecord, addInstallmentPlan, updateInstallmentPlan, deleteInstallmentPlan, deleteCategory
+    } = useFinancial()
 
     const [isAdding, setIsAdding] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -79,7 +82,6 @@ export default function FinancialGoalsPage() {
                 const planId = plan.installment_plan_id || plan.id
                 const targetAmount = Number(plan.total_amount ?? plan.totalAmount ?? plan.amount ?? 0)
 
-                // CORREÇÃO MAGISTRAL: Alargar a procura do ID e do campo de valor no registo financeiro!
                 const savedAmount = (financialRecords || [])
                     .filter((r: any) =>
                         r.installment_plan_id === planId ||
@@ -115,13 +117,15 @@ export default function FinancialGoalsPage() {
         ? Math.min(Math.round((selectedGoal.savedAmount / selectedGoal.targetAmount) * 100), 100)
         : 0
 
-    // CORREÇÃO: Colocado o sinal de subtração que tinhas perdido
     const totalMonthlyEffort = activeGoals.reduce((acc: number, g: any) => {
-        const remaining = Math.max(0, g.targetAmount - g.savedAmount)
+        const remaining = Math.max(0, g.targetAmount - g.savedAmount) // Corrigido o sinal
         const months = Number(g.total_installments ?? g.totalInstallments ?? 6)
         return acc + remaining / Math.max(1, months)
     }, 0)
 
+    // =====================================
+    // DEPOSITAR (Com notificação automática!)
+    // =====================================
     async function handleExecuteDeposit(e: React.FormEvent) {
         e.preventDefault()
         if (!depositGoal || !depositPaymentMethodId) return toast.error("Preenche todos os campos.")
@@ -142,11 +146,23 @@ export default function FinancialGoalsPage() {
                 installmentPlanId: depositGoal.id
             })
 
+            // A MAGIA DA NOTIFICAÇÃO: Verifica se o depósito bateu os 100% da meta!
+            const currentSaved = depositGoal.savedAmount;
+            const targetAmount = depositGoal.targetAmount;
+            const newSavedAmount = currentSaved + amount;
+
+            if (newSavedAmount >= targetAmount && currentSaved < targetAmount) {
+                await createNotification(
+                    "🏆 Meta Alcançada!",
+                    `Fantástico! Acabaste de juntar o valor total para a tua meta: ${depositGoal.name}. Já a podes concluir!`,
+                    "goal"
+                );
+            }
+
             toast.success(`Depósito de €${amount.toFixed(2)} efetuado com sucesso!`)
             setDepositGoal(null)
             setDepositAmount("")
             setDepositPaymentMethodId("")
-            refresh()
         } catch (error: any) {
             toast.error(error.message || "Erro ao efetuar depósito.")
         } finally {
@@ -154,13 +170,16 @@ export default function FinancialGoalsPage() {
         }
     }
 
+    // =====================================
+    // CRIAR META
+    // =====================================
     async function handleCreateGoal(e: React.FormEvent) {
         e.preventDefault()
         if (!activeDashboard?.dashboard_id) return toast.error("Sem dashboard ativo.")
         if (!newCategoryId) return toast.error("Seleciona uma categoria.")
 
         if (!defaultExpenseTypeId) {
-            return toast.error("Erro crítico: O teu dashboard atual não tem nenhum 'Record Type' de Despesa configurado. Vai à página de Despesas ou corre o seed.")
+            return toast.error("Erro crítico: Sem 'Record Type' de Despesa. Vai à página de Despesas.")
         }
 
         const target = parseFloat(newTarget)
@@ -171,39 +190,20 @@ export default function FinancialGoalsPage() {
         }
 
         setIsSubmitting(true)
-        const calculatedDueDate = new Date()
-        calculatedDueDate.setMonth(calculatedDueDate.getMonth() + months)
-        const dueDateString = calculatedDueDate.toISOString().split("T")[0]
-
-        const payload = {
-            name: newTitle.trim(),
-            description: `Meta a ${months} meses`,
-            total_amount: target.toFixed(2),
-            total_installments: months,
-            due_date: dueDateString,
-            status: "pending",
-            category_id: newCategoryId,
-        }
-
         try {
-            const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify(payload)
+            const calculatedDueDate = new Date()
+            calculatedDueDate.setMonth(calculatedDueDate.getMonth() + months)
+
+            await addInstallmentPlan({
+                name: newTitle.trim(),
+                description: `Meta a ${months} meses`,
+                total_amount: target.toFixed(2),
+                total_installments: months,
+                due_date: calculatedDueDate.toISOString().split("T")[0],
+                status: "pending",
+                category_id: newCategoryId,
             })
 
-            if (!res.ok) {
-                const rawText = await res.text()
-                try {
-                    const errorData = JSON.parse(rawText)
-                    throw new Error(errorData.detail || errorData.message || "Erro na validação da API.")
-                } catch {
-                    throw new Error(`Erro do Servidor: ${rawText.substring(0, 100)}`)
-                }
-            }
-
-            refresh()
             toast.success("Objetivo financeiro criado com sucesso!")
             setNewTitle("")
             setNewTarget("")
@@ -211,12 +211,15 @@ export default function FinancialGoalsPage() {
             setNewCategoryId("")
             setIsAdding(false)
         } catch (error: any) {
-            toast.error(error.message)
+            toast.error(error.message || "Erro ao criar objetivo.")
         } finally {
             setIsSubmitting(false)
         }
     }
 
+    // =====================================
+    // EDITAR META
+    // =====================================
     function openEditModal(goal: any) {
         const goalId = goal.installment_plan_id || goal.id
         setEditingGoal({ id: goalId, name: goal.name, targetAmount: goal.targetAmount })
@@ -232,66 +235,59 @@ export default function FinancialGoalsPage() {
 
         setIsSavingEdit(true)
         try {
-            const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${editingGoal.id}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ name: editName.trim(), total_amount: target.toFixed(2) })
+            await updateInstallmentPlan(editingGoal.id, {
+                name: editName.trim(),
+                total_amount: target.toFixed(2)
             })
-            if (!res.ok) throw new Error("Erro ao atualizar.")
-            refresh()
+
             toast.success("Meta atualizada!")
             setEditingGoal(null)
         } catch (error: any) {
-            toast.error(error.message)
+            toast.error(error.message || "Erro ao atualizar meta.")
         } finally {
             setIsSavingEdit(false)
         }
     }
 
+    // =====================================
+    // CONCLUIR META (Sem nova notificação porque já disparou no depósito)
+    // =====================================
     async function handleCompleteGoal(goalId: string) {
         if (!activeDashboard?.dashboard_id) return
+
         try {
-            const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${goalId}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ status: "paid" })
-            })
-            if (!res.ok) throw new Error("Falha ao concluir.")
-            refresh()
-            toast.success("Muitos parabéns! Meta conquistada! 🎉")
+            await updateInstallmentPlan(goalId, { status: "paid" })
+
             if (primaryGoalId === goalId) {
                 localStorage.removeItem("primaryFinancialGoal")
                 setPrimaryGoalId(null)
             }
+
+            toast.success("Muitos parabéns! Meta concluída e movida para o histórico! 🎉")
         } catch (error) {
-            toast.error("Erro ao concluir.")
+            toast.error("Erro ao concluir meta.")
         }
     }
 
+    // =====================================
+    // ELIMINAR META E CATEGORIA
+    // =====================================
     async function handleDeleteGoal(id: string) {
         if (!activeDashboard?.dashboard_id) return
         if (!confirm("Tens a certeza? Os registos associados perderão a ligação a esta meta.")) return
         try {
-            const res = await fetch(`/api/v1/dashboards/${activeDashboard.dashboard_id}/installment-plans/${id}`, {
-                method: "DELETE",
-                credentials: "include"
-            })
-            if (!res.ok) throw new Error("Falha ao eliminar.")
-            refresh()
+            await deleteInstallmentPlan(id)
             toast.success("Objetivo removido.")
             if (primaryGoalId === id) setPrimaryGoalId(null)
         } catch (error) {
-            toast.error("Erro ao remover.")
+            toast.error("Erro ao remover meta.")
         }
     }
 
     async function handleDeleteCategory(categoryId: string) {
         if (!confirm("Tens a certeza que queres apagar esta categoria?")) return
         try {
-            await fetch(`/api/v1/dashboards/${activeDashboard?.dashboard_id}/categories/${categoryId}`, { method: "DELETE", credentials: "include" })
-            refresh()
+            await deleteCategory(categoryId)
             toast.success("Categoria eliminada.")
             if (newCategoryId === categoryId) setNewCategoryId("")
         } catch (error) {
@@ -531,8 +527,7 @@ export default function FinancialGoalsPage() {
                             const goalId = goal.installment_plan_id || goal.id
                             const pct = Math.min(Math.round((goal.savedAmount / goal.targetAmount) * 100), 100)
 
-                            // CORREÇÃO: Colocado o sinal de subtração que tinhas perdido
-                            const remaining = Math.max(0, goal.targetAmount - goal.savedAmount)
+                            const remaining = Math.max(0, goal.targetAmount - goal.savedAmount) // Corrigido o sinal
 
                             const months = Number(goal.total_installments ?? goal.totalInstallments ?? 6)
                             const monthlyNeeded = Math.ceil(remaining / Math.max(1, months))

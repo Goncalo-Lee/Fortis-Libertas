@@ -1,71 +1,23 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import {
-    Card,
-    CardContent,
-} from "@/components/ui/card"
-import {
-    Bell,
-    CheckCircle2,
-    Trash2,
-    Calendar,
-    AlertCircle,
-    Info,
-    CheckCheck,
-    Loader2
-} from "lucide-react"
+import { useState } from "react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Bell, CheckCircle2, Trash2, Calendar, AlertCircle, Info, CheckCheck, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { useNotifications } from "@/contexts/NotificationContext"
 
-interface NotificationItem {
-    notification_id: string
-    title: string
-    message: string
-    type?: string
-    is_read: boolean
-    created_at: string
-}
-
 export default function NotificationsPage() {
-    const { unreadCount, refreshCount, markAllAsRead } = useNotifications()
+    const {
+        notifications, unreadCount, loading,
+        markAllAsRead, markAsRead, deleteNotification
+    } = useNotifications()
 
-    const [notifications, setNotifications] = useState<NotificationItem[]>([])
-    const [loading, setLoading] = useState(true)
     const [isProcessing, setIsProcessing] = useState(false)
 
-    // 1. Carregar lista de notificações do utilizador
-    const fetchNotifications = useCallback(async () => {
-        try {
-            setLoading(true)
-            const res = await fetch("/api/v1/me/notifications?per_page=50", {
-                method: "GET",
-                credentials: "include",
-                cache: "no-store",
-            })
-
-            if (res.ok) {
-                const body = await res.json()
-                setNotifications(body.data || [])
-            }
-        } catch (err) {
-            console.error("Erro ao carregar notificações:", err)
-            toast.error("Não foi possível carregar as notificações.")
-        } finally {
-            setLoading(false)
-        }
-    }, [])
-
-    useEffect(() => {
-        fetchNotifications()
-    }, [fetchNotifications])
-
-    // 2. Marcar todas como lidas
     const handleMarkAllAsRead = async () => {
         setIsProcessing(true)
         try {
             await markAllAsRead()
-            setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
             toast.success("Todas as notificações marcadas como lidas.")
         } catch (err) {
             toast.error("Falha ao marcar notificações como lidas.")
@@ -74,50 +26,15 @@ export default function NotificationsPage() {
         }
     }
 
-    // 3. Marcar uma individual como lida
-    const handleMarkAsRead = async (notificationId: string) => {
+    const handleDelete = async (id: string) => {
         try {
-            const res = await fetch(`/api/v1/me/notifications/${notificationId}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ is_read: true }),
-            })
-
-            if (res.ok) {
-                setNotifications((prev) =>
-                    prev.map((n) =>
-                        n.notification_id === notificationId ? { ...n, is_read: true } : n
-                    )
-                )
-                refreshCount()
-            }
-        } catch (err) {
-            console.error("Falha ao atualizar notificação:", err)
-        }
-    }
-
-    // 4. Apagar uma notificação
-    const handleDeleteNotification = async (notificationId: string) => {
-        try {
-            const res = await fetch(`/api/v1/me/notifications/${notificationId}`, {
-                method: "DELETE",
-                credentials: "include",
-            })
-
-            if (res.ok) {
-                setNotifications((prev) => prev.filter((n) => n.notification_id !== notificationId))
-                refreshCount()
-                toast.success("Notificação removida.")
-            } else {
-                throw new Error("Erro na eliminação")
-            }
+            await deleteNotification(id)
+            toast.success("Notificação removida.")
         } catch (err) {
             toast.error("Falha ao eliminar notificação.")
         }
     }
 
-    // Ícone por tipo de notificação
     const renderIcon = (type?: string) => {
         const t = (type || "").toLowerCase()
         if (t.includes("alert") || t.includes("warning") || t.includes("late")) {
@@ -132,8 +49,6 @@ export default function NotificationsPage() {
     return (
         <div className="flex-1 w-full p-4 sm:p-6 md:p-8 font-poppins overflow-y-auto overflow-x-hidden">
             <div className="mx-auto w-full max-w-4xl space-y-6 pb-12">
-
-                {/* CABEÇALHO */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="space-y-1">
                         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
@@ -161,7 +76,6 @@ export default function NotificationsPage() {
                     </div>
                 </div>
 
-                {/* CONTEÚDO */}
                 {loading ? (
                     <Card className="py-12 shadow-sm text-center border-slate-200/80 dark:border-slate-800">
                         <CardContent className="flex flex-col items-center justify-center space-y-3">
@@ -224,7 +138,7 @@ export default function NotificationsPage() {
                                         <button
                                             type="button"
                                             title="Marcar como lida"
-                                            onClick={() => handleMarkAsRead(item.notification_id)}
+                                            onClick={() => markAsRead(item.notification_id)}
                                             className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-md transition-colors cursor-pointer"
                                         >
                                             <CheckCircle2 className="w-4 h-4" />
@@ -233,7 +147,7 @@ export default function NotificationsPage() {
                                     <button
                                         type="button"
                                         title="Eliminar notificação"
-                                        onClick={() => handleDeleteNotification(item.notification_id)}
+                                        onClick={() => handleDelete(item.notification_id)}
                                         className="p-1.5 text-slate-400 hover:text-red-500 rounded-md transition-colors cursor-pointer"
                                     >
                                         <Trash2 className="w-4 h-4" />
