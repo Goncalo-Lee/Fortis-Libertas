@@ -368,7 +368,6 @@ export default function AccountSettingsPage() {
                                 </div>
                             </CardContent>
                         </Card>
-
                     </div>
                 </div>
             </div>

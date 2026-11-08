@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import {
     Card,
     CardContent,
@@ -29,7 +29,8 @@ import {
     Link as LinkIcon,
     Loader2,
     CheckCircle2,
-    Plus
+    Plus,
+    Info
 } from "lucide-react"
 import { toast } from "sonner"
 import { useFinancial } from "@/contexts/FinancialContext"
@@ -40,9 +41,71 @@ interface InvoiceItem {
     supplier: string
     documentType: string
     amount: number
-    fileUrl?: string
+    fileName?: string
+    fileUrl?: string // Aqui vamos guardar o conteúdo real do ficheiro!
     linkedRecordId?: string | null
 }
+
+// ============================================================================
+// MOTOR DE BASE DE DADOS LOCAL (IndexedDB) - ZERO BACKEND NECESSÁRIO!
+// ============================================================================
+const DB_NAME = "MoneyPillowInvoicesDB"
+const STORE_NAME = "invoices"
+
+const openDB = (): Promise<IDBDatabase> => {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1)
+        request.onupgradeneeded = (e: any) => {
+            if (!e.target.result.objectStoreNames.contains(STORE_NAME)) {
+                e.target.result.createObjectStore(STORE_NAME, { keyPath: "id" })
+            }
+        }
+        request.onsuccess = () => resolve(request.result)
+        request.onerror = () => reject(request.error)
+    })
+}
+
+const saveInvoiceToDB = async (invoice: InvoiceItem) => {
+    const db = await openDB()
+    return new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readwrite")
+        tx.objectStore(STORE_NAME).put(invoice)
+        tx.oncomplete = () => resolve()
+        tx.onerror = () => reject(tx.error)
+    })
+}
+
+const getAllInvoicesFromDB = async (): Promise<InvoiceItem[]> => {
+    const db = await openDB()
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readonly")
+        const req = tx.objectStore(STORE_NAME).getAll()
+        req.onsuccess = () => resolve(req.result)
+        req.onerror = () => reject(req.error)
+    })
+}
+
+const deleteInvoiceFromDB = async (id: string) => {
+    const db = await openDB()
+    return new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readwrite")
+        tx.objectStore(STORE_NAME).delete(id)
+        tx.oncomplete = () => resolve()
+        tx.onerror = () => reject(tx.error)
+    })
+}
+
+// Converte o ficheiro fisicamente para uma string gigante que o browser consegue guardar
+const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.readAsDataURL(file)
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = error => reject(error)
+    })
+}
+// ============================================================================
+
 
 export default function InvoicesPage() {
     const { financialRecords, recordTypes } = useFinancial()
@@ -50,17 +113,29 @@ export default function InvoicesPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [isUploadOpen, setIsUploadOpen] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
 
-    // Estado local para faturas
     const [invoices, setInvoices] = useState<InvoiceItem[]>([])
 
-    // Estados do Formulário de Upload
     const [newInvSupplier, setNewInvSupplier] = useState("")
     const [newInvAmount, setNewInvAmount] = useState("")
     const [newInvDate, setNewInvDate] = useState("")
     const [newInvLinkedRecord, setNewInvLinkedRecord] = useState("")
+    const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
-    // Despesas recentes para preencher a Dropdown de "Associar a Despesa"
+    // CARREGAR FATURAS DO BROWSER AO INICIAR A PÁGINA
+    useEffect(() => {
+        getAllInvoicesFromDB().then((data) => {
+            // Ordena da mais recente para a mais antiga
+            data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            setInvoices(data)
+            setIsLoading(false)
+        }).catch(() => {
+            toast.error("Erro ao carregar o arquivo local.")
+            setIsLoading(false)
+        })
+    }, [])
+
     const recentExpenses = useMemo(() => {
         if (!financialRecords) return []
         return financialRecords
@@ -80,7 +155,6 @@ export default function InvoicesPage() {
             .slice(0, 30)
     }, [financialRecords, recordTypes])
 
-    // Filtrar faturas pela barra de pesquisa
     const filteredInvoices = invoices.filter(inv =>
         inv.supplier.toLowerCase().includes(searchQuery.toLowerCase()) ||
         inv.documentType.toLowerCase().includes(searchQuery.toLowerCase())
@@ -89,44 +163,91 @@ export default function InvoicesPage() {
     const totalInvoicesValue = invoices.reduce((acc, curr) => acc + curr.amount, 0)
     const unlinkedInvoicesCount = invoices.filter(inv => !inv.linkedRecordId).length
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            setSelectedFile(e.target.files[0])
+        }
+    }
+
+    const handleExpenseSelection = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const recordId = e.target.value
+        setNewInvLinkedRecord(recordId)
+
+        if (recordId) {
+            const selectedRecord = recentExpenses.find((r: any) =>
+                (r.financial_record_id || r.id || "").toString() === recordId.toString()
+            )
+
+            if (selectedRecord) {
+                if (selectedRecord.price || selectedRecord.amount) {
+                    setNewInvAmount(String(selectedRecord.price || selectedRecord.amount))
+                }
+                if (!newInvSupplier && selectedRecord.name) {
+                    setNewInvSupplier(selectedRecord.name)
+                }
+                if (!newInvDate && (selectedRecord.payment_date || selectedRecord.paymentDate)) {
+                    setNewInvDate(new Date(selectedRecord.payment_date || selectedRecord.paymentDate).toISOString().split('T')[0])
+                }
+            }
+        }
+    }
+
     const handleUploadInvoice = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!newInvSupplier || !newInvAmount || !newInvDate) {
             return toast.error("Preenche os campos obrigatórios.")
         }
+        if (!selectedFile) {
+            return toast.error("Por favor, anexa o ficheiro da fatura.")
+        }
 
         setIsSubmitting(true)
 
         try {
+            // Processa o ficheiro para uma string Base64 para poder ser guardada
+            const fileDataUrl = await fileToBase64(selectedFile)
+
             const newInvoice: InvoiceItem = {
                 id: crypto.randomUUID(),
                 date: newInvDate,
                 supplier: newInvSupplier,
                 amount: parseFloat(newInvAmount),
                 documentType: "Fatura",
+                fileName: selectedFile.name,
+                fileUrl: fileDataUrl, // O FICHEIRO REAL ESTÁ AQUI DENTRO!
                 linkedRecordId: newInvLinkedRecord || null
             }
 
-            setInvoices(prev => [newInvoice, ...prev])
+            // GRAVA NO BROWSER (IndexedDB)
+            await saveInvoiceToDB(newInvoice)
+
+            // ATUALIZA A UI
+            setInvoices(prev => [newInvoice, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
 
             setNewInvSupplier("")
             setNewInvAmount("")
             setNewInvDate("")
             setNewInvLinkedRecord("")
+            setSelectedFile(null)
             setIsUploadOpen(false)
 
-            toast.success("Documento adicionado com sucesso!")
+            toast.success("Documento arquivado no teu dispositivo!")
         } catch (error) {
-            toast.error("Erro ao arquivar documento.")
+            toast.error("Erro ao arquivar documento localmente.")
         } finally {
             setIsSubmitting(false)
         }
     }
 
     const handleDelete = async (id: string) => {
-        if (confirm("Tens a certeza que queres eliminar este documento?")) {
-            setInvoices(prev => prev.filter(inv => inv.id !== id))
-            toast.success("Fatura eliminada do arquivo.")
+        if (confirm("Tens a certeza que queres eliminar este documento para sempre?")) {
+            try {
+                await deleteInvoiceFromDB(id) // Apaga do Browser
+                setInvoices(prev => prev.filter(inv => inv.id !== id))
+                toast.success("Fatura eliminada do arquivo local.")
+            } catch (error) {
+                toast.error("Erro ao tentar eliminar.")
+            }
         }
     }
 
@@ -134,7 +255,18 @@ export default function InvoicesPage() {
         <div className="flex-1 w-full p-4 sm:p-6 md:p-8 font-poppins overflow-y-auto overflow-x-hidden">
             <div className="mx-auto w-full max-w-6xl space-y-6 pb-12">
 
-                {/* CABEÇALHO & AÇÃO PRINCIPAL */}
+                <div className="bg-blue-50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300 p-3.5 rounded-xl text-xs sm:text-sm flex gap-3 items-start border border-blue-100 dark:border-blue-900/50 shadow-sm">
+                    <Info className="w-5 h-5 shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
+                    <div className="space-y-1">
+                        <p className="font-semibold text-blue-900 dark:text-blue-200">Privacidade Garantida (Arquivo Local):</p>
+                        <p className="leading-relaxed">
+                            Para tua total segurança, <strong>nenhuma fatura é enviada para os nossos servidores</strong>.
+                            Os documentos são guardados de forma encriptada diretamente no armazenamento do teu browser (IndexedDB).
+                            Estão sempre disponíveis aqui nesta máquina e podes descarregá-los a qualquer momento clicando no ícone de Download.
+                        </p>
+                    </div>
+                </div>
+
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="space-y-1">
                         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
@@ -145,13 +277,15 @@ export default function InvoicesPage() {
                         </p>
                     </div>
 
-                    <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="gap-2 shrink-0 cursor-pointer">
-                                <Plus className="w-4 h-4" />
-                                <span>Nova Fatura</span>
-                            </Button>
-                        </DialogTrigger>
+                    <Button onClick={() => setIsUploadOpen(true)} className="gap-2 shrink-0 cursor-pointer">
+                        <Plus className="w-4 h-4" />
+                        <span>Nova Fatura</span>
+                    </Button>
+
+                    <Dialog open={isUploadOpen} onOpenChange={(open) => {
+                        setIsUploadOpen(open)
+                        if (!open) setSelectedFile(null)
+                    }}>
                         <DialogContent className="sm:max-w-md font-poppins">
                             <DialogHeader>
                                 <DialogTitle className="flex items-center gap-2">
@@ -159,26 +293,69 @@ export default function InvoicesPage() {
                                     Arquivar Nova Fatura
                                 </DialogTitle>
                                 <DialogDescription className="text-xs">
-                                    Faz upload do PDF/Imagem e associa o documento a uma despesa registada.
+                                    O ficheiro será guardado localmente e associado aos teus registos.
                                 </DialogDescription>
                             </DialogHeader>
 
                             <form onSubmit={handleUploadInvoice} className="space-y-4 pt-2">
-                                <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-6 flex flex-col items-center justify-center text-center gap-2 bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors cursor-pointer">
-                                    <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full text-blue-600 dark:text-blue-400">
-                                        <FileText className="w-6 h-6" />
+
+                                <Label
+                                    htmlFor="file-upload"
+                                    className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-6 flex flex-col items-center justify-center text-center gap-2 bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors cursor-pointer"
+                                >
+                                    <div className={`p-3 rounded-full ${selectedFile ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'}`}>
+                                        {selectedFile ? <CheckCircle2 className="w-6 h-6" /> : <FileText className="w-6 h-6" />}
                                     </div>
-                                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                        Clica ou arrasta o ficheiro para aqui
-                                    </p>
-                                    <p className="text-[10px] text-muted-foreground">
-                                        PDF, PNG ou JPG (Max: 5MB)
-                                    </p>
+
+                                    {selectedFile ? (
+                                        <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 truncate max-w-[250px]">
+                                            {selectedFile.name}
+                                        </p>
+                                    ) : (
+                                        <>
+                                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                                Clica para selecionar o ficheiro
+                                            </p>
+                                            <p className="text-[10px] text-muted-foreground">
+                                                PDF, PNG ou JPG (Max: 15MB)
+                                            </p>
+                                        </>
+                                    )}
+                                </Label>
+                                <input
+                                    id="file-upload"
+                                    type="file"
+                                    accept=".pdf, image/png, image/jpeg, image/jpg"
+                                    className="hidden"
+                                    onChange={handleFileChange}
+                                />
+
+                                <div className="space-y-1.5 pt-2">
+                                    <Label className="text-xs font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                                        <LinkIcon className="w-3.5 h-3.5" /> 1. Associar a uma Despesa (Opcional)
+                                    </Label>
+                                    <select
+                                        value={newInvLinkedRecord}
+                                        onChange={handleExpenseSelection}
+                                        className="w-full h-9 rounded-md border border-blue-200 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-950/20 px-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none cursor-pointer"
+                                    >
+                                        <option value="">-- Não associar para já --</option>
+                                        {recentExpenses.map((r: any, idx: number) => {
+                                            const recordId = r.financial_record_id || r.id || idx
+                                            const recordDate = r.payment_date || r.paymentDate
+                                            return (
+                                                <option key={recordId} value={recordId}>
+                                                    {recordDate ? new Date(recordDate).toLocaleDateString("pt-PT") : "Sem data"} - {r.name} (€{Number(r.price || 0).toFixed(2)})
+                                                </option>
+                                            )
+                                        })}
+                                    </select>
+                                    <p className="text-[10px] text-muted-foreground pl-1">Ao selecionares, os campos abaixo preenchem-se sozinhos!</p>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
                                     <div className="space-y-1.5 col-span-2">
-                                        <Label className="text-xs font-semibold">Fornecedor / Entidade</Label>
+                                        <Label className="text-xs font-semibold">2. Fornecedor / Entidade</Label>
                                         <Input
                                             placeholder="Ex: Worten, EDP, Continente..."
                                             value={newInvSupplier}
@@ -187,7 +364,7 @@ export default function InvoicesPage() {
                                         />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <Label className="text-xs font-semibold">Data de Emissão</Label>
+                                        <Label className="text-xs font-semibold">3. Data de Emissão</Label>
                                         <Input
                                             type="date"
                                             value={newInvDate}
@@ -196,7 +373,7 @@ export default function InvoicesPage() {
                                         />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <Label className="text-xs font-semibold">Valor (€)</Label>
+                                        <Label className="text-xs font-semibold">4. Valor (€)</Label>
                                         <Input
                                             type="number"
                                             step="0.01"
@@ -206,32 +383,11 @@ export default function InvoicesPage() {
                                             required
                                         />
                                     </div>
-                                    <div className="space-y-1.5 col-span-2">
-                                        <Label className="text-xs font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
-                                            <LinkIcon className="w-3.5 h-3.5" /> Associar a Despesa (Opcional)
-                                        </Label>
-                                        <select
-                                            value={newInvLinkedRecord}
-                                            onChange={(e) => setNewInvLinkedRecord(e.target.value)}
-                                            className="w-full h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 text-sm"
-                                        >
-                                            <option value="">-- Não associar para já --</option>
-                                            {recentExpenses.map((r: any, idx: number) => {
-                                                const recordId = r.financial_record_id || r.id || idx
-                                                const recordDate = r.payment_date || r.paymentDate
-                                                return (
-                                                    <option key={recordId} value={recordId}>
-                                                        {recordDate ? new Date(recordDate).toLocaleDateString("pt-PT") : "Sem data"} - {r.name} (€{Number(r.price || 0).toFixed(2)})
-                                                    </option>
-                                                )
-                                            })}
-                                        </select>
-                                    </div>
                                 </div>
                                 <DialogFooter className="pt-4 border-t border-slate-100 dark:border-slate-800">
                                     <Button type="button" variant="ghost" onClick={() => setIsUploadOpen(false)}>Cancelar</Button>
                                     <Button type="submit" disabled={isSubmitting}>
-                                        {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> A guardar...</> : "Guardar Fatura"}
+                                        {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> A arquivar...</> : "Arquivar Fatura"}
                                     </Button>
                                 </DialogFooter>
                             </form>
@@ -239,7 +395,6 @@ export default function InvoicesPage() {
                     </Dialog>
                 </div>
 
-                {/* CARTÕES DE RESUMO */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <Card className="shadow-sm border-slate-200/80 dark:border-slate-800">
                         <CardHeader className="pb-2">
@@ -304,14 +459,21 @@ export default function InvoicesPage() {
                                 <tr>
                                     <th className="px-6 py-3 font-semibold whitespace-nowrap">Data</th>
                                     <th className="px-6 py-3 font-semibold">Fornecedor</th>
-                                    <th className="px-6 py-3 font-semibold">Documento</th>
+                                    <th className="px-6 py-3 font-semibold">Ficheiro</th>
                                     <th className="px-6 py-3 font-semibold">Associação</th>
                                     <th className="px-6 py-3 font-semibold">Valor</th>
                                     <th className="px-6 py-3 font-semibold text-right">Ações</th>
                                 </tr>
                                 </thead>
                                 <tbody>
-                                {filteredInvoices.length === 0 ? (
+                                {isLoading ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                                            <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-500" />
+                                            <p className="mt-2 text-xs">A carregar o teu arquivo local...</p>
+                                        </td>
+                                    </tr>
+                                ) : filteredInvoices.length === 0 ? (
                                     <tr>
                                         <td colSpan={6} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
                                             <div className="flex flex-col items-center justify-center gap-2">
@@ -331,9 +493,9 @@ export default function InvoicesPage() {
                                                 {inv.supplier}
                                             </td>
                                             <td className="px-6 py-3">
-                                                    <span className="px-2 py-1 rounded-md text-[10px] font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                                                        {inv.documentType}
-                                                    </span>
+                                                <span className="px-2 py-1 rounded-md text-[10px] font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 truncate max-w-[150px] inline-block">
+                                                    {inv.fileName || inv.documentType}
+                                                </span>
                                             </td>
                                             <td className="px-6 py-3">
                                                 {inv.linkedRecordId ? (
@@ -351,12 +513,17 @@ export default function InvoicesPage() {
                                             </td>
                                             <td className="px-6 py-3 text-right">
                                                 <div className="flex items-center justify-end gap-2">
-                                                    <button
-                                                        title="Descarregar PDF"
-                                                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-colors"
-                                                    >
-                                                        <Download className="w-4 h-4" />
-                                                    </button>
+                                                    {/* O BOTÃO DE DOWNLOAD AGORA FUNCIONA A SÉRIO! */}
+                                                    {inv.fileUrl && (
+                                                        <a
+                                                            href={inv.fileUrl}
+                                                            download={inv.fileName || `fatura_${inv.supplier}.pdf`}
+                                                            title="Descarregar Ficheiro"
+                                                            className="p-1.5 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-colors"
+                                                        >
+                                                            <Download className="w-4 h-4" />
+                                                        </a>
+                                                    )}
                                                     <button
                                                         onClick={() => handleDelete(inv.id)}
                                                         title="Eliminar Fatura"

@@ -31,18 +31,13 @@ type ReportType = "statement" | "expenses_by_category" | "monthly_balance"
 export default function ReportsGeneratorPage() {
     const { financialRecords, categories, paymentMethods, recordTypes } = useFinancial()
 
-    // Controlos de Filtro
     const [reportType, setReportType] = useState<ReportType>("statement")
     const [selectedMonth, setSelectedMonth] = useState<string>((new Date().getMonth() + 1).toString())
     const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString())
 
-    // Estado de geração
     const [isGenerating, setIsGenerating] = useState(false)
     const [previewData, setPreviewData] = useState<any[] | null>(null)
 
-    // ============================================================================
-    // HELPERS ROBUSTOS (Lidam com objectos aninhados e IDs da nova API)
-    // ============================================================================
     const getCategoryName = (r: any) => {
         if (r.category?.name) return r.category.name
         const id = r.category_id || r.categoryId
@@ -61,7 +56,6 @@ export default function ReportsGeneratorPage() {
         const rt = (recordTypes || []).find((t: any) => (t.record_type_id || t.id) === rtId)
         const kind = rt?.kind || r.record_type?.kind
         const typeName = (rt?.name || r.recordType?.name || r.record_type_name || "").toLowerCase()
-
         return kind === "income" || typeName.includes("income") || typeName.includes("receita") || typeName.includes("rendimento")
     }
 
@@ -71,9 +65,6 @@ export default function ReportsGeneratorPage() {
         return Array.from(new Set(years)).sort((a: number, b: number) => b - a)
     }, [financialRecords])
 
-    // ============================================================================
-    // GERAR DADOS (TABELA)
-    // ============================================================================
     const handleGeneratePreview = (e?: React.FormEvent) => {
         if (e) e.preventDefault()
         if (!financialRecords) return toast.error("Sem dados para processar.")
@@ -138,15 +129,10 @@ export default function ReportsGeneratorPage() {
         }, 600)
     }
 
-    // ============================================================================
-    // EXPORTAR CSV (Formatado para Excel em PT)
-    // ============================================================================
     const handleExportCSV = () => {
         if (!previewData || previewData.length === 0) return toast.error("Gera o relatório primeiro.")
-
         const headers = Object.keys(previewData[0])
         const csvRows = []
-
         csvRows.push(headers.join(";"))
 
         for (const row of previewData) {
@@ -164,7 +150,6 @@ export default function ReportsGeneratorPage() {
         const csvContent = "\uFEFF" + csvRows.join("\n")
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
         const url = URL.createObjectURL(blob)
-
         const link = document.createElement("a")
         link.setAttribute("href", url)
         link.setAttribute("download", `relatorio_${reportType}_${selectedMonth}_${selectedYear}.csv`)
@@ -172,16 +157,11 @@ export default function ReportsGeneratorPage() {
         link.click()
         document.body.removeChild(link)
         URL.revokeObjectURL(url)
-
         toast.success("CSV gerado com sucesso.")
     }
 
-    // ============================================================================
-    // EXPORTAR PDF
-    // ============================================================================
     const handleExportPDF = () => {
         if (!previewData || previewData.length === 0) return toast.error("Gera o relatório primeiro.")
-
         const doc = new jsPDF()
         const titleMap = {
             "statement": "Extrato Detalhado",
@@ -191,7 +171,6 @@ export default function ReportsGeneratorPage() {
 
         doc.setFontSize(18)
         doc.text(`Relatório Financeiro: ${titleMap[reportType]}`, 14, 22)
-
         doc.setFontSize(11)
         doc.setTextColor(100)
         doc.text(`Período: ${selectedMonth}/${selectedYear} | Gerado a: ${new Date().toLocaleDateString("pt-PT")}`, 14, 30)
@@ -216,7 +195,6 @@ export default function ReportsGeneratorPage() {
         <div className="flex-1 w-full p-4 sm:p-6 md:p-8 font-poppins overflow-y-auto">
             <div className="mx-auto w-full max-w-6xl space-y-6 pb-12">
 
-                {/* CABEÇALHO */}
                 <div className="flex flex-col space-y-1">
                     <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2">
                         Gerador de Relatórios
@@ -228,7 +206,6 @@ export default function ReportsGeneratorPage() {
 
                 <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 min-w-0 items-start">
 
-                    {/* COLUNA ESQUERDA: CONFIGURADOR */}
                     <div className="xl:col-span-4 flex flex-col gap-6">
                         <Card className="shadow-sm border-slate-200/80 dark:border-slate-800">
                             <CardHeader>
@@ -242,7 +219,6 @@ export default function ReportsGeneratorPage() {
                             </CardHeader>
                             <CardContent>
                                 <form onSubmit={handleGeneratePreview} className="space-y-5">
-
                                     <div className="space-y-2">
                                         <Label className="text-xs font-semibold">Tipo de Relatório</Label>
                                         <div className="flex flex-col gap-2">
@@ -254,7 +230,6 @@ export default function ReportsGeneratorPage() {
                                                     <span className="text-[10px] text-muted-foreground">Todas as transações mensais</span>
                                                 </div>
                                             </label>
-
                                             <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${reportType === 'expenses_by_category' ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/20' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900'}`}>
                                                 <input type="radio" name="report" value="expenses_by_category" checked={reportType === 'expenses_by_category'} onChange={() => setReportType('expenses_by_category')} className="hidden" />
                                                 <PieChart className={`w-5 h-5 ${reportType === 'expenses_by_category' ? 'text-blue-600' : 'text-slate-400'}`} />
@@ -263,7 +238,6 @@ export default function ReportsGeneratorPage() {
                                                     <span className="text-[10px] text-muted-foreground">Agrupamento de gastos totais</span>
                                                 </div>
                                             </label>
-
                                             <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${reportType === 'monthly_balance' ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/20' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900'}`}>
                                                 <input type="radio" name="report" value="monthly_balance" checked={reportType === 'monthly_balance'} onChange={() => setReportType('monthly_balance')} className="hidden" />
                                                 <ArrowUpRight className={`w-5 h-5 ${reportType === 'monthly_balance' ? 'text-blue-600' : 'text-slate-400'}`} />
@@ -274,15 +248,10 @@ export default function ReportsGeneratorPage() {
                                             </label>
                                         </div>
                                     </div>
-
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
                                             <Label className="text-xs font-semibold">Mês</Label>
-                                            <select
-                                                value={selectedMonth}
-                                                onChange={(e) => setSelectedMonth(e.target.value)}
-                                                className="w-full h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 text-sm"
-                                            >
+                                            <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className="w-full h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 text-sm">
                                                 <option value="1">Janeiro</option>
                                                 <option value="2">Fevereiro</option>
                                                 <option value="3">Março</option>
@@ -299,18 +268,11 @@ export default function ReportsGeneratorPage() {
                                         </div>
                                         <div className="space-y-1.5">
                                             <Label className="text-xs font-semibold">Ano</Label>
-                                            <select
-                                                value={selectedYear}
-                                                onChange={(e) => setSelectedYear(e.target.value)}
-                                                className="w-full h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 text-sm"
-                                            >
-                                                {availableYears.map(yr => (
-                                                    <option key={yr} value={yr}>{yr}</option>
-                                                ))}
+                                            <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="w-full h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 text-sm">
+                                                {availableYears.map(yr => <option key={yr} value={yr}>{yr}</option>)}
                                             </select>
                                         </div>
                                     </div>
-
                                     <Button type="submit" disabled={isGenerating} className="w-full gap-2 cursor-pointer">
                                         {isGenerating ? "A processar..." : "Gerar Pré-visualização"}
                                     </Button>
@@ -319,9 +281,8 @@ export default function ReportsGeneratorPage() {
                         </Card>
                     </div>
 
-                    {/* COLUNA DIREITA: PRÉ-VISUALIZAÇÃO */}
                     <div className="xl:col-span-8 flex flex-col">
-                        <Card className="shadow-sm border-slate-200/80 dark:border-slate-800">
+                        <Card className="shadow-sm border-slate-200/80 dark:border-slate-800 h-full flex flex-col">
                             <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <div>
                                     <CardTitle className="text-base flex items-center gap-2">
@@ -333,27 +294,19 @@ export default function ReportsGeneratorPage() {
                                     </CardDescription>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2 sm:self-start">
-                                    <Button
-                                        variant="outline"
-                                        onClick={handleExportCSV}
-                                        disabled={!previewData || previewData.length === 0}
-                                        className="gap-2 border-emerald-200 hover:bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:hover:bg-emerald-950 dark:text-emerald-400 cursor-pointer"
-                                    >
+                                    <Button variant="outline" onClick={handleExportCSV} disabled={!previewData || previewData.length === 0} className="gap-2 border-emerald-200 hover:bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:hover:bg-emerald-950 dark:text-emerald-400 cursor-pointer">
                                         <Download className="w-4 h-4"/> CSV / Excel
                                     </Button>
-                                    <Button
-                                        variant="outline"
-                                        onClick={handleExportPDF}
-                                        disabled={!previewData || previewData.length === 0}
-                                        className="gap-2 border-rose-200 hover:bg-rose-50 text-rose-700 dark:border-rose-800 dark:hover:bg-rose-950 dark:text-rose-400 cursor-pointer"
-                                    >
+                                    <Button variant="outline" onClick={handleExportPDF} disabled={!previewData || previewData.length === 0} className="gap-2 border-rose-200 hover:bg-rose-50 text-rose-700 dark:border-rose-800 dark:hover:bg-rose-950 dark:text-rose-400 cursor-pointer">
                                         <FileDown className="w-4 h-4"/> PDF
                                     </Button>
                                 </div>
                             </CardHeader>
-                            <CardContent>
+
+                            {/* AQUI ESTÁ A CORREÇÃO DO SCROLL RESPONSIVO */}
+                            <CardContent className="p-0 flex-1 relative">
                                 {!previewData ? (
-                                    <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-xl">
+                                    <div className="m-6 flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-xl">
                                         <Calendar className="w-10 h-10 text-slate-300 dark:text-slate-700 mb-3"/>
                                         <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
                                             Nenhum relatório gerado.
@@ -363,39 +316,42 @@ export default function ReportsGeneratorPage() {
                                         </p>
                                     </div>
                                 ) : previewData.length === 0 ? (
-                                    <div className="py-12 text-center text-sm text-muted-foreground border rounded-xl">
+                                    <div className="m-6 py-12 text-center text-sm text-muted-foreground border rounded-xl">
                                         Não foram encontrados dados financeiros para este período.
                                     </div>
                                 ) : (
-                                    <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
-                                        <table className="w-full text-sm text-left">
-                                            <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-900/50 dark:text-slate-300">
-                                            <tr>
-                                                {Object.keys(previewData[0]).map((header) => (
-                                                    <th key={header} className="px-4 py-3 font-semibold whitespace-nowrap">
-                                                        {header}
-                                                    </th>
-                                                ))}
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            {previewData.map((row, idx) => (
-                                                <tr key={idx} className="border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                                                    {Object.values(row).map((val: any, i) => (
-                                                        <td key={i} className="px-4 py-2.5 whitespace-nowrap text-slate-700 dark:text-slate-300">
-                                                            {val === "Despesa" ? (
-                                                                <span className="text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1"><ArrowDownRight className="w-3 h-3"/> {val}</span>
-                                                            ) : val === "Receita" ? (
-                                                                <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1"><ArrowUpRight className="w-3 h-3"/> {val}</span>
-                                                            ) : (
-                                                                val
-                                                            )}
-                                                        </td>
+                                    // CONTAINER COM SCROLL INTERNO (max-h-96 = 384px) PARA NÃO ESTRAGAR O LAYOUT
+                                    <div className="mx-6 mb-6 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                                        <div className="max-h-[500px] overflow-y-auto overflow-x-auto">
+                                            <table className="w-full text-sm text-left relative">
+                                                <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-900/50 dark:text-slate-300 sticky top-0 z-10 shadow-xs">
+                                                <tr>
+                                                    {Object.keys(previewData[0]).map((header) => (
+                                                        <th key={header} className="px-4 py-3 font-semibold whitespace-nowrap bg-slate-50 dark:bg-slate-900/90 backdrop-blur-md">
+                                                            {header}
+                                                        </th>
                                                     ))}
                                                 </tr>
-                                            ))}
-                                            </tbody>
-                                        </table>
+                                                </thead>
+                                                <tbody>
+                                                {previewData.map((row, idx) => (
+                                                    <tr key={idx} className="border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                                        {Object.values(row).map((val: any, i) => (
+                                                            <td key={i} className="px-4 py-2.5 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                                                                {val === "Despesa" ? (
+                                                                    <span className="text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1"><ArrowDownRight className="w-3 h-3"/> {val}</span>
+                                                                ) : val === "Receita" ? (
+                                                                    <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1"><ArrowUpRight className="w-3 h-3"/> {val}</span>
+                                                                ) : (
+                                                                    val
+                                                                )}
+                                                            </td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
                                 )}
                             </CardContent>
