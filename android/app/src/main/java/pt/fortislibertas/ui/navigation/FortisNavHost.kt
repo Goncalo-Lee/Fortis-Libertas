@@ -13,6 +13,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import pt.fortislibertas.ui.auth.AuthScreen
 import pt.fortislibertas.ui.home.HomeScreen
 import pt.fortislibertas.ui.newrecord.NewRecordScreen
 import pt.fortislibertas.ui.profile.ProfileScreen
@@ -26,13 +27,20 @@ import pt.fortislibertas.ui.transactions.TransactionsScreen
 fun FortisNavHost(
     navController: NavHostController,
     contentPadding: PaddingValues,
+    startDestination: Any,
     modifier: Modifier = Modifier,
 ) {
     NavHost(
         navController = navController,
-        startDestination = HomeRoute,
+        startDestination = startDestination,
         modifier = modifier,
     ) {
+        composable<AuthRoute> {
+            AuthScreen(
+                contentPadding = contentPadding,
+                onSignedIn = { navController.navigateToHomeClearingStack() },
+            )
+        }
         composable<HomeRoute> {
             HomeScreen(
                 contentPadding = contentPadding,
@@ -40,7 +48,7 @@ fun FortisNavHost(
                 onSeeAllTransactions = {
                     navController.navigateToTab(TopLevelDestination.TRANSACTIONS)
                 },
-                onSignIn = { /* TODO: sign in screen */ },
+                onSignIn = { navController.navigate(AuthRoute) },
             )
         }
         composable<DashboardRoute> { PlaceholderScreen("Dashboard", contentPadding) }
@@ -53,7 +61,7 @@ fun FortisNavHost(
         composable<ProfileRoute> {
             ProfileScreen(
                 contentPadding = contentPadding,
-                onNavigateToSignIn = { /* TODO: sign in screen */ },
+                onNavigateToSignIn = { navController.navigate(AuthRoute) },
             )
         }
     }
@@ -70,6 +78,13 @@ fun NavHostController.navigateToTab(destination: TopLevelDestination) {
         popUpTo(graph.findStartDestination().id) { saveState = true }
         launchSingleTop = true
         restoreState = true
+    }
+}
+
+/** After signing in: Home becomes the only screen, so back does not return to the Auth screen. */
+private fun NavHostController.navigateToHomeClearingStack() {
+    navigate(HomeRoute) {
+        popUpTo(graph.id) { inclusive = true }
     }
 }
 

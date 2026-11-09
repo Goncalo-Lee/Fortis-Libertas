@@ -1,0 +1,18 @@
+<resources>
+    <string name="auth_sign_in">Entrar</string>
+    <string name="auth_sign_up">Criar conta</string>
+    <string name="auth_username">Nome de utilizador</string>
+    <string name="auth_email">Email</string>
+    <string name="auth_password">Palavra-passe</string>
+    <string name="auth_confirm_password">Confirmar palavra-passe</string>
+    <string name="auth_remember_me">Lembrar-me</string>
+    <string name="auth_show_password">Mostrar palavra-passe</string>
+    <string name="auth_hide_password">Esconder palavra-passe</string>
+    <string name="auth_logo_description">Fortis Libertas</string>
+    <string name="auth_error_required">Campo obrigatório</string>
+    <string name="auth_error_email_invalid">Email inválido</string>
+    <string name="auth_error_password_length">Tem de ter entre 8 e 32 caracteres</string>
+    <string name="auth_error_password_mismatch">As palavras-passe não coincidem</string>
+    <string name="auth_error_invalid_credentials">Email ou palavra-passe errados</string>
+    <string name="auth_error_email_taken">Este email já tem uma conta</string>
+</resources>

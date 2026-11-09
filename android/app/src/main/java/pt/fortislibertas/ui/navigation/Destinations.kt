@@ -8,6 +8,7 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import kotlinx.serialization.Serializable
 import pt.fortislibertas.R
 
+@Serializable data object AuthRoute
 @Serializable data object HomeRoute
 @Serializable data object DashboardRoute
 @Serializable data object NewRecordRoute

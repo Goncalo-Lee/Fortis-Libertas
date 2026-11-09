@@ -57,6 +57,7 @@ data class FortisExtendedColors(
     val expense: Color,
     val warning: Color,
     val onWarning: Color,
+    val authPanel: Color,          // background of the Sign in / Sign up panel
 )
 
 private val LightExtended = FortisExtendedColors(
@@ -64,6 +65,7 @@ private val LightExtended = FortisExtendedColors(
     expense = UltraRed,
     warning = Pineapple,
     onWarning = CodGray,
+    authPanel = PaleSky,
 )
 
 private val DarkExtended = FortisExtendedColors(
@@ -71,6 +73,7 @@ private val DarkExtended = FortisExtendedColors(
     expense = UltraRedLight,
     warning = Pineapple,
     onWarning = CodGray,
+    authPanel = DarkSurfaceContainer,
 )
 
 private val LocalFortisColors = staticCompositionLocalOf { LightExtended }

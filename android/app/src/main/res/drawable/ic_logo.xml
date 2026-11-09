@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fortis Libertas "F" logo: two Deep Blue bars behind one Curious Blue bar. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="137dp"
+    android:height="170dp"
+    android:viewportWidth="137"
+    android:viewportHeight="170">
+    <path android:fillColor="#FF2A4D88" android:pathData="M37,0 h93 a7,7 0 0 1 7,7 v25 a7,7 0 0 1 -7,7 h-93 a7,7 0 0 1 -7,-7 v-25 a7,7 0 0 1 7,-7 z" />
+    <path android:fillColor="#FF2A4D88" android:pathData="M37,66 h60 a7,7 0 0 1 7,7 v25 a7,7 0 0 1 -7,7 h-60 a7,7 0 0 1 -7,-7 v-25 a7,7 0 0 1 7,-7 z" />
+    <path android:fillColor="#FF2092E9" android:pathData="M7,0 h24 a7,7 0 0 1 7,7 v156 a7,7 0 0 1 -7,7 h-24 a7,7 0 0 1 -7,-7 v-156 a7,7 0 0 1 7,-7 z" />
+</vector>

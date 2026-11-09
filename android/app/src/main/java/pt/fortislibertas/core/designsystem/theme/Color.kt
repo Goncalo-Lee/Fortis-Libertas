@@ -17,6 +17,9 @@ val White        = Color(0xFFFFFFFF)
 val OasisDark      = Color(0xFF3E7F23)   // income as text in light mode
 val UltraRedLight  = Color(0xFFFF5A64)   // expense/error in dark mode
 
+// Auth screen panel (light blue from the wireframe)
+val PaleSky        = Color(0xFFA5D8FD)
+
 // Light mode neutrals
 val LightSurfaceVariant   = Color(0xFFEEF1F5)
 val LightSurfaceContainer = Color(0xFFF1F3F6)

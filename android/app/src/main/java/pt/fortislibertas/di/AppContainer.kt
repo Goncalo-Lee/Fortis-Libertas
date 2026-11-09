@@ -3,6 +3,7 @@ package pt.fortislibertas.di
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -91,11 +92,13 @@ class AppContainer(context: Context) {
         if (BuildConfig.USE_FAKE_DATA) FakeTransactionRepository()
         else RemoteTransactionRepository(retrofit.create(TransactionApi::class.java))
 
-    init {
-        appScope.launch {
-            accountStore.clearSessionOnly()          // "Remember me" off → that session ends here
-            if (BuildConfig.USE_FAKE_DATA) accountStore.seedIfEmpty(FakeAccountData.accounts)
-        }
+    /**
+     * Account clean-up when the app starts. FortisApp waits for it before choosing
+     * the first screen, so it never opens with an account that is about to be removed.
+     */
+    val startup: Job = appScope.launch {
+        accountStore.clearSessionOnly()              // "Remember me" off → that session ends here
+        if (BuildConfig.USE_FAKE_DATA) accountStore.seedIfEmpty(FakeAccountData.accounts)
     }
 }
 
