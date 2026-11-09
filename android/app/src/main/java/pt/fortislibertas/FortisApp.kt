@@ -9,15 +9,18 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import kotlinx.coroutines.flow.first
 import pt.fortislibertas.core.designsystem.components.FortisBottomBar
 import pt.fortislibertas.ui.navigation.AuthRoute
+import pt.fortislibertas.ui.navigation.CardsRoute
 import pt.fortislibertas.ui.navigation.FortisNavHost
 import pt.fortislibertas.ui.navigation.HomeRoute
 import pt.fortislibertas.ui.navigation.TopLevelDestination
@@ -36,6 +39,7 @@ fun FortisApp(navController: NavHostController = rememberNavController()) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     val currentTab = TopLevelDestination.entries.firstOrNull { currentDestination.isOn(it) }
+        ?: backStackEntry?.cardsOrigin()          // Cards / Banks: keep the tab it was opened from
 
     // First screen: Home if there is an active account, otherwise Sign in.
     // null while the saved accounts are being read (only a few milliseconds).
@@ -75,4 +79,10 @@ fun FortisApp(navController: NavHostController = rememberNavController()) {
                 .haze(hazeState),                            // Haze 1.0.0 (newer versions: hazeSource)
         )
     }
+}
+
+/** The tab that opened the Cards / Banks screen, or null when this entry is another screen. */
+private fun NavBackStackEntry.cardsOrigin(): TopLevelDestination? {
+    if (!destination.hasRoute(CardsRoute::class)) return null
+    return if (toRoute<CardsRoute>().from == "profile") TopLevelDestination.PROFILE else TopLevelDestination.HOME
 }

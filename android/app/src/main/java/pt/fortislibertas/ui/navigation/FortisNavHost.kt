@@ -13,7 +13,10 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
 import pt.fortislibertas.ui.auth.AuthScreen
+import pt.fortislibertas.ui.cards.CardsPage
+import pt.fortislibertas.ui.cards.CardsScreen
 import pt.fortislibertas.ui.home.HomeScreen
 import pt.fortislibertas.ui.newrecord.NewRecordScreen
 import pt.fortislibertas.ui.profile.ProfileScreen
@@ -44,11 +47,19 @@ fun FortisNavHost(
         composable<HomeRoute> {
             HomeScreen(
                 contentPadding = contentPadding,
-                onOpenBanks = { /* TODO: banks and cards screen */ },
+                onOpenBanks = { navController.navigate(CardsRoute(initialPage = "cards", from = "home")) },
                 onSeeAllTransactions = {
                     navController.navigateToTab(TopLevelDestination.TRANSACTIONS)
                 },
                 onSignIn = { navController.navigate(AuthRoute) { launchSingleTop = true } },
+            )
+        }
+        composable<CardsRoute> { entry ->
+            val route = entry.toRoute<CardsRoute>()
+            CardsScreen(
+                contentPadding = contentPadding,
+                initialPage = if (route.initialPage == "banks") CardsPage.Banks else CardsPage.Cards,
+                onBack = { navController.popBackStack() },
             )
         }
         composable<DashboardRoute> { PlaceholderScreen("Dashboard", contentPadding) }
@@ -62,6 +73,7 @@ fun FortisNavHost(
             ProfileScreen(
                 contentPadding = contentPadding,
                 onNavigateToSignIn = { navController.navigate(AuthRoute) { launchSingleTop = true } },
+                onOpenBanks = { navController.navigate(CardsRoute(initialPage = "banks", from = "profile")) },
             )
         }
     }

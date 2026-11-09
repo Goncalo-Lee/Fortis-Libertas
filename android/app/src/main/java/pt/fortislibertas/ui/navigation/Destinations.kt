@@ -15,6 +15,12 @@ import pt.fortislibertas.R
 @Serializable data object TransactionsRoute
 @Serializable data object ProfileRoute
 
+/**
+ * Cards / Banks screen (not a tab). [initialPage]: "cards" or "banks".
+ * [from]: the tab that opened it ("home" or "profile"), so the bottom bar keeps it selected.
+ */
+@Serializable data class CardsRoute(val initialPage: String = "cards", val from: String = "home")
+
 enum class TopLevelDestination(
     val route: Any,
     @DrawableRes val baseIcon: Int,
