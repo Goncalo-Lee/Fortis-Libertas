@@ -48,7 +48,7 @@ fun FortisNavHost(
                 onSeeAllTransactions = {
                     navController.navigateToTab(TopLevelDestination.TRANSACTIONS)
                 },
-                onSignIn = { navController.navigate(AuthRoute) },
+                onSignIn = { navController.navigate(AuthRoute) { launchSingleTop = true } },
             )
         }
         composable<DashboardRoute> { PlaceholderScreen("Dashboard", contentPadding) }
@@ -61,7 +61,7 @@ fun FortisNavHost(
         composable<ProfileRoute> {
             ProfileScreen(
                 contentPadding = contentPadding,
-                onNavigateToSignIn = { navController.navigate(AuthRoute) },
+                onNavigateToSignIn = { navController.navigate(AuthRoute) { launchSingleTop = true } },
             )
         }
     }
@@ -78,6 +78,17 @@ fun NavHostController.navigateToTab(destination: TopLevelDestination) {
         popUpTo(graph.findStartDestination().id) { saveState = true }
         launchSingleTop = true
         restoreState = true
+    }
+}
+
+/**
+ * No account left: Auth becomes the only screen, so the tabs (and the bottom bar)
+ * cannot be reached until someone signs in.
+ */
+fun NavHostController.navigateToAuthClearingStack() {
+    navigate(AuthRoute) {
+        popUpTo(graph.id) { inclusive = true }
+        launchSingleTop = true
     }
 }
 
