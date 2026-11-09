@@ -55,6 +55,7 @@ fun CardsContent(
     onFreeze: (PaymentCard) -> Unit,
     onUnfreeze: (PaymentCard) -> Unit,
     onShowInfo: (PaymentCard) -> Unit,
+    onEdit: (PaymentCard) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val onCards = state.page == CardsPage.Cards
@@ -126,7 +127,7 @@ fun CardsContent(
                                     onFreeze = { onFreeze(card) },
                                     onUnfreeze = { onUnfreeze(card) },
                                     onShowInfo = { onShowInfo(card) },
-                                    onEdit = null,       // TODO: edit card form (design not decided yet)
+                                    onEdit = { onEdit(card) },
                                 )
                             }
                         }
@@ -186,7 +187,7 @@ private fun CardsContentPreview() {
             ),
             contentPadding = PaddingValues(),
             onBack = {}, onOpenNotifications = {}, onTogglePage = {}, onRetry = {},
-            onFilterChange = {}, onFreeze = {}, onUnfreeze = {}, onShowInfo = {},
+            onFilterChange = {}, onFreeze = {}, onUnfreeze = {}, onShowInfo = {}, onEdit = {},
         )
     }
 }
@@ -204,7 +205,7 @@ private fun CardsContentBanksPreview() {
             ),
             contentPadding = PaddingValues(),
             onBack = {}, onOpenNotifications = {}, onTogglePage = {}, onRetry = {},
-            onFilterChange = {}, onFreeze = {}, onUnfreeze = {}, onShowInfo = {},
+            onFilterChange = {}, onFreeze = {}, onUnfreeze = {}, onShowInfo = {}, onEdit = {},
         )
     }
 }

@@ -19,10 +19,14 @@ import kotlinx.coroutines.launch
 import pt.fortislibertas.FortisApplication
 import pt.fortislibertas.R
 import pt.fortislibertas.data.local.AccountStore
+import pt.fortislibertas.data.model.CardUpdate
 import pt.fortislibertas.data.model.PaymentCard
 import pt.fortislibertas.data.repository.NetworkException
 import pt.fortislibertas.data.repository.SessionExpiredException
 import pt.fortislibertas.data.repository.WalletRepository
+
+/** Same limit as the API (cardholder_name: 1–50 chars). */
+private const val CARDHOLDER_MAX = 50
 
 class CardsViewModel(
     private val repository: WalletRepository,
@@ -52,8 +56,8 @@ class CardsViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
             try {
-                val wallet = repository.getWallet()
-                _state.update { it.copy(isLoading = false, cards = wallet.cards, banks = wallet.banks) }
+                reload()
+                _state.update { it.copy(isLoading = false) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -61,6 +65,13 @@ class CardsViewModel(
             }
         }
     }
+
+    private suspend fun reload() {
+        val wallet = repository.getWallet()
+        _state.update { it.copy(cards = wallet.cards, banks = wallet.banks) }
+    }
+
+    // ── Page and filter ─────────────────────────────────
 
     /** Round button at the bottom: Cards ↔ Banks. "Inactive" only exists for cards, so it falls back to All. */
     fun togglePage() = _state.update {
@@ -82,34 +93,104 @@ class CardsViewModel(
         _state.update { it.copy(dialog = null) }
     }
 
-    /** Confirms freeze / unfreeze, then reloads so the card shows its new state. */
+    /** Confirms freeze / unfreeze / delete, then reloads so the list shows the new state. */
     fun confirmDialog() {
         val dialog = _state.value.dialog ?: return
         if (_state.value.isWorking || dialog is CardsDialog.Info) return
 
+        runAction(onDone = { it.copy(dialog = null) }) {
+            when (dialog) {
+                is CardsDialog.Freeze -> {
+                    repository.freezeCard(dialog.card.id); R.string.msg_card_frozen
+                }
+                is CardsDialog.Unfreeze -> {
+                    repository.unfreezeCard(dialog.card.id); R.string.msg_card_unfrozen
+                }
+                is CardsDialog.Delete -> {
+                    repository.deleteCard(dialog.card.id)
+                    _state.update { it.copy(editForm = null) }       // the card no longer exists
+                    R.string.msg_card_deleted
+                }
+                is CardsDialog.Info -> R.string.error_generic       // never reached (checked above)
+            }
+        }
+    }
+
+    // ── Edit card (bottom sheet) ────────────────────────
+
+    fun openEdit(card: PaymentCard) = _state.update { it.copy(editForm = CardEditForm(card)) }
+
+    fun closeEdit() {
+        if (_state.value.isWorking) return
+        _state.update { it.copy(editForm = null) }
+    }
+
+    /** Changes the form and clears the error of [field] (if any). */
+    fun updateEdit(field: CardEditField?, change: (CardEditForm) -> CardEditForm) = _state.update { s ->
+        val form = s.editForm ?: return@update s
+        val changed = change(form)
+        s.copy(editForm = changed.copy(errors = if (field == null) changed.errors else changed.errors - field))
+    }
+
+    /** "Delete card" button inside the sheet: asks first. */
+    fun requestDelete() {
+        val card = _state.value.editForm?.card ?: return
+        _state.update { it.copy(dialog = CardsDialog.Delete(card)) }
+    }
+
+    fun saveEdit() {
+        val form = _state.value.editForm ?: return
+        if (_state.value.isWorking) return
+
+        val errors = validate(form)
+        if (errors.isNotEmpty()) {
+            _state.update { it.copy(editForm = form.copy(errors = errors)) }
+            return
+        }
+
+        runAction(onDone = { it.copy(editForm = null) }) {
+            repository.updateCard(
+                form.card.id,
+                CardUpdate(
+                    cardholderName = form.cardholderName.trim(),
+                    type = form.type,
+                    expiryDate = form.expiryDate,
+                    colorHex = form.colorHex,
+                    cardNumber = form.cardNumber.takeIf { form.replaceNumber },
+                    cvv = form.cvv.takeIf { form.replaceNumber && it.isNotEmpty() },
+                ),
+            )
+            R.string.msg_card_saved
+        }
+    }
+
+    private fun validate(f: CardEditForm): Map<CardEditField, Int> = buildMap {
+        if (f.cardholderName.isBlank() || f.cardholderName.trim().length > CARDHOLDER_MAX) {
+            put(CardEditField.CardholderName, R.string.cards_error_required)
+        }
+        if (f.replaceNumber) {
+            if (!isValidCardNumber(f.cardNumber)) put(CardEditField.CardNumber, R.string.cards_error_number)
+            if (f.cvv.isNotEmpty() && !Regex("^\\d{3}$").matches(f.cvv)) put(CardEditField.Cvv, R.string.cards_error_cvv)
+        }
+    }
+
+    /**
+     * Runs a request with the "working" flag, reloads the wallet and shows [block]'s message.
+     * [onDone] closes what was open (dialog or sheet) on success; errors keep it open.
+     */
+    private fun runAction(onDone: (CardsUiState) -> CardsUiState, block: suspend () -> Int) {
         viewModelScope.launch {
             _state.update { it.copy(isWorking = true) }
             try {
-                val message = when (dialog) {
-                    is CardsDialog.Freeze -> {
-                        repository.freezeCard(dialog.card.id)
-                        R.string.msg_card_frozen
-                    }
-                    is CardsDialog.Unfreeze -> {
-                        repository.unfreezeCard(dialog.card.id)
-                        R.string.msg_card_unfrozen
-                    }
-                    is CardsDialog.Info -> return@launch
-                }
-                val wallet = repository.getWallet()
-                _state.update { it.copy(cards = wallet.cards, banks = wallet.banks) }
+                val message = block()
+                reload()
+                _state.update { onDone(it).copy(isWorking = false, dialog = null) }
                 _events.send(CardsEvent.ShowMessage(message))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _events.send(CardsEvent.ShowMessage(e.toMessageRes()))
-            } finally {
                 _state.update { it.copy(isWorking = false, dialog = null) }
+                _events.send(CardsEvent.ShowMessage(e.toMessageRes()))
             }
         }
     }
@@ -133,4 +214,14 @@ class CardsViewModel(
             }
         }
     }
+}
+
+/** 16 digits and a valid Luhn check digit (same rule as the API, §7.3). */
+internal fun isValidCardNumber(number: String): Boolean {
+    if (!Regex("^\\d{16}$").matches(number)) return false
+    val sum = number.reversed().mapIndexed { i, ch ->
+        val d = ch - '0'
+        if (i % 2 == 1) (d * 2).let { if (it > 9) it - 9 else it } else d
+    }.sum()
+    return sum % 10 == 0
 }

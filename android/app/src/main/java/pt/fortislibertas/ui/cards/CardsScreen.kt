@@ -3,11 +3,19 @@ package pt.fortislibertas.ui.cards
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AcUnit
+import androidx.compose.material.icons.outlined.DeleteForever
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -16,16 +24,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.ConfirmDialog
+import pt.fortislibertas.ui.cards.components.CardsEditCardForm
 import pt.fortislibertas.ui.cards.components.CardsInfoDialog
 
 /**
  * Stateful version of the Cards / Banks screen, used by the NavHost.
  * Connects [CardsViewModel] to [CardsContent] and shows the snackbar and the dialogs.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardsScreen(
     contentPadding: PaddingValues,
@@ -60,6 +71,7 @@ fun CardsScreen(
             onFreeze = viewModel::requestFreeze,
             onUnfreeze = viewModel::requestUnfreeze,
             onShowInfo = viewModel::showInfo,
+            onEdit = viewModel::openEdit,
         )
         SnackbarHost(
             hostState = snackbarHostState,
@@ -69,7 +81,32 @@ fun CardsScreen(
         )
     }
 
-    // Dialogs: freeze and unfreeze always ask first
+    // ── Edit card: sheet that slides up from the bottom, like the New record form ──
+    state.editForm?.let { form ->
+        ModalBottomSheet(
+            onDismissRequest = viewModel::closeEdit,
+            sheetState = rememberModalBottomSheetState(
+                skipPartiallyExpanded = true,
+                confirmValueChange = { !state.isWorking },   // cannot be dragged closed while saving
+            ),
+        ) {
+            CardsEditCardForm(
+                form = form,
+                isSaving = state.isWorking,
+                onUpdate = viewModel::updateEdit,
+                onCancel = viewModel::closeEdit,
+                onSave = viewModel::saveEdit,
+                onDelete = viewModel::requestDelete,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .imePadding()                             // the keyboard does not cover the fields
+                    .verticalScroll(rememberScrollState())
+                    .padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
+            )
+        }
+    }
+
+    // Dialogs: freeze, unfreeze and delete always ask first
     when (val dialog = state.dialog) {
         is CardsDialog.Freeze -> ConfirmDialog(
             icon = Icons.Outlined.AcUnit,
@@ -92,6 +129,17 @@ fun CardsScreen(
             onDismiss = viewModel::closeDialog,
         )
         is CardsDialog.Info -> CardsInfoDialog(card = dialog.card, onDismiss = viewModel::closeDialog)
+        is CardsDialog.Delete -> ConfirmDialog(
+            icon = Icons.Outlined.DeleteForever,
+            title = stringResource(R.string.cards_delete_title),
+            message = stringResource(R.string.cards_delete_message),
+            confirmLabel = stringResource(R.string.action_delete),
+            dismissLabel = stringResource(R.string.action_cancel),
+            destructive = true,
+            isWorking = state.isWorking,
+            onConfirm = viewModel::confirmDialog,
+            onDismiss = viewModel::closeDialog,
+        )
         null -> Unit
     }
 }

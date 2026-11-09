@@ -2,7 +2,9 @@ package pt.fortislibertas.ui.cards
 
 import androidx.annotation.StringRes
 import pt.fortislibertas.data.model.BankAccount
+import pt.fortislibertas.data.model.CardType
 import pt.fortislibertas.data.model.PaymentCard
+import java.time.LocalDate
 
 /** Which list is showing; the round button at the bottom switches between them. */
 enum class CardsPage { Cards, Banks }
@@ -19,7 +21,24 @@ sealed interface CardsDialog {
     data class Freeze(override val card: PaymentCard) : CardsDialog
     data class Unfreeze(override val card: PaymentCard) : CardsDialog
     data class Info(override val card: PaymentCard) : CardsDialog
+    data class Delete(override val card: PaymentCard) : CardsDialog
 }
+
+/** Fields of the Edit card form that can have a validation error. */
+enum class CardEditField { CardholderName, CardNumber, Cvv }
+
+/** What the user has typed so far in the Edit card form (bottom sheet). */
+data class CardEditForm(
+    val card: PaymentCard,
+    val cardholderName: String = card.cardholderName,
+    val type: CardType = card.type,
+    val expiryDate: LocalDate? = card.expiryDate,
+    val colorHex: String = card.colorHex,
+    val replaceNumber: Boolean = false,          // number + CVV fields only show after "Replace card number"
+    val cardNumber: String = "",
+    val cvv: String = "",
+    val errors: Map<CardEditField, Int> = emptyMap(),   // field → @StringRes of the message
+)
 
 /** Everything the Cards / Banks screen needs to draw itself. */
 data class CardsUiState(
@@ -30,7 +49,8 @@ data class CardsUiState(
     val isLoading: Boolean = true,
     @StringRes val errorMessage: Int? = null,
     val dialog: CardsDialog? = null,
-    val isWorking: Boolean = false,              // freeze / unfreeze request running
+    val editForm: CardEditForm? = null,          // not null = Edit card sheet open
+    val isWorking: Boolean = false,              // freeze / unfreeze / save / delete request running
     val userName: String? = null,
     val avatarUrl: String? = null,
 ) {

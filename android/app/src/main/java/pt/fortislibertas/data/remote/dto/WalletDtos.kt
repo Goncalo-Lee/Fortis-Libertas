@@ -70,9 +70,24 @@ data class BankAccountDto(
     )
 }
 
+/**
+ * Body of PATCH /api/v1/cards/{card_id} (endpoints.md §7.3).
+ * Null fields are not sent (encodeDefaults is off), so the number and CVV are kept when null.
+ * No color yet: the API rejects unknown keys (422) until color_id exists (see plano-api-cartoes).
+ */
+@Serializable
+data class UpdateCardRequestDto(
+    @SerialName("cardholder_name") val cardholderName: String,
+    @SerialName("type_card") val typeCard: String,
+    @SerialName("expiry_date") val expiryDate: String? = null,
+    @SerialName("card_number") val cardNumber: String? = null,
+    val cvv: String? = null,
+)
+
 /** Card colours while the API has no color field: always the same colour for the same card. */
 object CardColors {
-    private val palette = listOf("#FFE761", "#2092E9", "#76C352", "#F97316", "#7C3AED", "#06B6D4")
+    /** Colours the user can pick in the Edit card form. */
+    val palette = listOf("#FFE761", "#2092E9", "#76C352", "#F97316", "#7C3AED", "#06B6D4")
 
     fun fallbackFor(cardId: String): String = palette[Math.floorMod(cardId.hashCode(), palette.size)]
 }

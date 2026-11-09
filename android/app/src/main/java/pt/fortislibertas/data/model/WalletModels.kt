@@ -35,6 +35,19 @@ data class PaymentCard(
     fun isExpired(today: LocalDate = LocalDate.now()): Boolean = expiryDate?.isBefore(today) == true
 }
 
+/**
+ * What the Edit card form sends. [cardNumber] and [cvv] are write-only in the API:
+ * null = keep the current ones.
+ */
+data class CardUpdate(
+    val cardholderName: String,
+    val type: CardType,
+    val expiryDate: LocalDate?,
+    val colorHex: String,
+    val cardNumber: String? = null,
+    val cvv: String? = null,
+)
+
 /** Cards and bank accounts, loaded together for the Cards / Banks screen. */
 data class Wallet(
     val cards: List<PaymentCard>,

@@ -36,4 +36,19 @@
     <string name="cards_filter_frozen">Frozen</string>
     <string name="cards_filter_inactive">Inactive</string>
     <string name="cards_empty_filter">Nothing here with this filter.</string>
+    <string name="cards_edit_title">Edit card</string>
+    <string name="cards_color">Colour</string>
+    <string name="cards_replace_number">Replace card number</string>
+    <string name="cards_keep_number">Keep current number</string>
+    <string name="cards_field_number">Card number</string>
+    <string name="cards_field_cvv">CVV</string>
+    <string name="cards_delete">Delete card</string>
+    <string name="cards_delete_title">Delete this card?</string>
+    <string name="cards_delete_message">Payment methods that use it will no longer be linked to this card.</string>
+    <string name="cards_error_required">Required field</string>
+    <string name="cards_error_number">Must have 16 valid digits</string>
+    <string name="cards_error_cvv">Must have 3 digits</string>
+    <string name="cards_ok">OK</string>
+    <string name="msg_card_saved">Card saved</string>
+    <string name="msg_card_deleted">Card deleted</string>
 </resources>
