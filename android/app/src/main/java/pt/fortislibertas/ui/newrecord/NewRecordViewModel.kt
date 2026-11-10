@@ -210,6 +210,7 @@ class NewRecordViewModel(
             if (price == null || price <= BigDecimal.ZERO) put(FormField.Price, R.string.error_invalid_amount)
             if (form.paymentDate == null) put(FormField.PaymentDate, R.string.error_required)
             if (form.categoryId == null) put(FormField.Category, R.string.error_required)
+            if (form.paymentMethodId == null) put(FormField.PaymentMethod, R.string.error_required)  // required by the API
         }
         if (errors.isNotEmpty()) {
             _state.update { it.copy(record = form.copy(errors = errors)) }

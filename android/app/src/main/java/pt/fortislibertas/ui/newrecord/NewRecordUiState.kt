@@ -14,7 +14,7 @@ enum class PickerDialog { Category, Tags }
 
 /** Fields that can have a validation error. */
 enum class FormField {
-    Name, Type, Price, PaymentDate, Category,
+    Name, Type, Price, PaymentDate, Category, PaymentMethod,
     TotalAmount, TotalInstalments, FirstDueDate,
 }
 

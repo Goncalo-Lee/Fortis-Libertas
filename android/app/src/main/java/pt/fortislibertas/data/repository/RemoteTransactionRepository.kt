@@ -1,48 +1,61 @@
 package pt.fortislibertas.data.repository
 
-import java.io.IOException
+import java.math.BigDecimal
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import pt.fortislibertas.data.model.FilterOptions
 import pt.fortislibertas.data.model.TransactionDetail
 import pt.fortislibertas.data.model.TransactionFilter
 import pt.fortislibertas.data.model.TransactionItem
-import pt.fortislibertas.data.remote.TransactionApi
-import retrofit2.HttpException
+import pt.fortislibertas.data.remote.FinanceApi
+import pt.fortislibertas.data.remote.loadLookup
 
-/** API mode: the server filters; the app only sends the parameters. */
+/** API mode: GET /dashboards/{id}/financial-records; the server filters, the app sends the parameters. */
 class RemoteTransactionRepository(
-    private val api: TransactionApi,
-    /** TODO: the active dashboard (see "alinhar a app com a API"); null until the app knows it. */
-    private val activeDashboardId: suspend () -> String? = { null },
+    private val api: FinanceApi,
+    private val activeDashboardId: suspend () -> String?,
 ) : TransactionRepository {
 
-    override suspend fun getTransactions(filter: TransactionFilter): List<TransactionItem> = call {
+    /** The newest 100 records that match (no "load more" yet). */
+    override suspend fun getTransactions(filter: TransactionFilter): List<TransactionItem> = apiCall {
+        val dashboardId = requireDashboard(activeDashboardId)
+        val lookup = api.loadLookup(dashboardId)
+        // The app's type can be several record types of the dashboard
+        val typeIds = filter.type?.let { lookup.recordTypeIds(it) }
+        if (typeIds != null && typeIds.isEmpty()) return@apiCall emptyList()
+
         api.getRecords(
-            search = filter.query.trim().ifEmpty { null },
-            type = filter.type?.name?.lowercase(),
+            dashboardId,
+            query = filter.query.trim().ifEmpty { null },
+            recordTypeIds = typeIds?.joinToString(","),
             categoryIds = filter.categoryIds.takeIf { it.isNotEmpty() }?.joinToString(","),
             tagIds = filter.tagIds.takeIf { it.isNotEmpty() }?.joinToString(","),
-            minAmount = filter.minAmount?.toPlainString(),
-            maxAmount = filter.maxAmount?.toPlainString(),
-        ).items.map { it.toModel() }
+            minPrice = filter.minAmount?.toPlainString(),
+            maxPrice = filter.maxAmount?.toPlainString(),
+        ).data.map { lookup.toItem(it) }
     }
 
-    override suspend fun getFilterOptions(): FilterOptions = call { api.getFilterOptions().toModel() }
-
-    override suspend fun getDetail(summary: TransactionItem): TransactionDetail = call {
-        api.getRecord(dashboardId(), summary.id).data.toModel(summary)
-    }
-
-    override suspend fun delete(recordId: String) = call { api.deleteRecord(dashboardId(), recordId) }
-
-    private suspend fun dashboardId(): String =
-        activeDashboardId() ?: throw IllegalStateException("No active dashboard yet")
-
-    private suspend fun <T> call(block: suspend () -> T): T =
-        try {
-            block()
-        } catch (e: HttpException) {
-            if (e.code() == 401) throw SessionExpiredException() else throw e
-        } catch (e: IOException) {
-            throw NetworkException(e)
+    override suspend fun getFilterOptions(): FilterOptions = apiCall {
+        val dashboardId = requireDashboard(activeDashboardId)
+        coroutineScope {
+            val lookup = async { api.loadLookup(dashboardId) }
+            val tags = async { api.getTags(dashboardId).data }
+            // End of the amount slider: the most expensive record
+            val top = async { api.getRecords(dashboardId, sort = "-price", perPage = 1).data }
+            val types = lookup.await()
+            FilterOptions(
+                categories = types.categories.map { types.toCategory(it) },
+                tags = tags.await().map { it.toModel() },
+                maxAmount = top.await().firstOrNull()?.price?.toBigDecimalOrNull() ?: BigDecimal.ZERO,
+            )
         }
+    }
+
+    override suspend fun getDetail(summary: TransactionItem): TransactionDetail = apiCall {
+        api.getRecord(requireDashboard(activeDashboardId), summary.id).data.toModel(summary)
+    }
+
+    override suspend fun delete(recordId: String) = apiCall {
+        api.deleteRecord(requireDashboard(activeDashboardId), recordId)
+    }
 }

@@ -19,11 +19,9 @@ import pt.fortislibertas.data.local.SettingsStore
 import pt.fortislibertas.data.remote.AuthApi
 import pt.fortislibertas.data.remote.AuthInterceptor
 import pt.fortislibertas.data.remote.DashboardApi
+import pt.fortislibertas.data.remote.FinanceApi
 import pt.fortislibertas.data.remote.FortisApi
-import pt.fortislibertas.data.remote.HomeApi
 import pt.fortislibertas.data.remote.NotificationApi
-import pt.fortislibertas.data.remote.RecordApi
-import pt.fortislibertas.data.remote.TransactionApi
 import pt.fortislibertas.data.remote.WalletApi
 import pt.fortislibertas.data.repository.AuthRepository
 import pt.fortislibertas.data.repository.DashboardRepository
@@ -90,6 +88,9 @@ class AppContainer(context: Context) {
             .build()
     }
 
+    /** Dashboard data shared by Home, Transactions, New record and Profile. */
+    private val financeApi: FinanceApi by lazy { retrofit.create(FinanceApi::class.java) }
+
     // ── Repositories ────────────────────────────────────
 
     val authRepository: AuthRepository =
@@ -98,14 +99,10 @@ class AppContainer(context: Context) {
 
     val profileRepository: ProfileRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeProfileRepository(accountStore)
-        else RemoteProfileRepository(retrofit.create(FortisApi::class.java))
+        else RemoteProfileRepository(retrofit.create(FortisApi::class.java), financeApi) { dashboardStore.current() }
     val recordRepository: RecordRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeRecordRepository()
-        else RemoteRecordRepository(retrofit.create(RecordApi::class.java)) { dashboardStore.current() }
-
-    val homeRepository: HomeRepository =
-        if (BuildConfig.USE_FAKE_DATA) FakeHomeRepository()
-        else RemoteHomeRepository(retrofit.create(HomeApi::class.java))
+        else RemoteRecordRepository(financeApi) { dashboardStore.current() }
 
     val dashboardRepository: DashboardRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeDashboardRepository()
@@ -115,13 +112,18 @@ class AppContainer(context: Context) {
         if (BuildConfig.USE_FAKE_DATA) FakeWalletRepository()
         else RemoteWalletRepository(retrofit.create(WalletApi::class.java), accountStore, CardColorStore(context))
 
+    // After walletRepository: the Home uses it for the card stack
+    val homeRepository: HomeRepository =
+        if (BuildConfig.USE_FAKE_DATA) FakeHomeRepository()
+        else RemoteHomeRepository(financeApi, walletRepository) { dashboardStore.current() }
+
     val notificationRepository: NotificationRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeNotificationRepository()
         else RemoteNotificationRepository(retrofit.create(NotificationApi::class.java))
 
     val transactionRepository: TransactionRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeTransactionRepository()
-        else RemoteTransactionRepository(retrofit.create(TransactionApi::class.java)) { dashboardStore.current() }
+        else RemoteTransactionRepository(financeApi) { dashboardStore.current() }
 
     /**
      * Account clean-up when the app starts. FortisApp waits for it before choosing

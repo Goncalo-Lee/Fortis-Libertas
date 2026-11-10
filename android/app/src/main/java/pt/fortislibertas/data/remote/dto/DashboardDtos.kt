@@ -58,4 +58,7 @@ data class CategoryRefDto(
 
 /** Colour object of the catalog: { color_id, name, code_color }. */
 @Serializable
-data class ColorRefDto(@SerialName("code_color") val codeColor: String)
+data class ColorRefDto(
+    @SerialName("code_color") val codeColor: String,
+    @SerialName("is_reserved") val isReserved: Boolean = false,   // the seeded Income / Expenses colours
+)

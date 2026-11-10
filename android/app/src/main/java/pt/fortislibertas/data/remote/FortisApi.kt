@@ -3,7 +3,6 @@ package pt.fortislibertas.data.remote
 import kotlinx.serialization.json.JsonObject
 import pt.fortislibertas.data.remote.dto.ItemResponseDto
 import pt.fortislibertas.data.remote.dto.MeDto
-import pt.fortislibertas.data.remote.dto.ProfileDto
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -16,8 +15,9 @@ import retrofit2.http.POST
  */
 interface FortisApi {
 
+    /** The user with the embedded profile (endpoints.md §3.2). */
     @GET("api/v1/me")
-    suspend fun getMe(): ProfileDto
+    suspend fun getMe(): ItemResponseDto<MeDto>
 
     /** Suspends the account (fills suspended_at). */
     @POST("api/v1/me/deactivate")
@@ -26,10 +26,6 @@ interface FortisApi {
     /** Soft delete (fills deleted_at; recoverable for 30 days). */
     @DELETE("api/v1/me")
     suspend fun deleteMe()
-
-    /** Same endpoint as getMe, in the API format (snake_case + "data"), for Edit account. */
-    @GET("api/v1/me")
-    suspend fun getMeDetails(): ItemResponseDto<MeDto>
 
     /**
      * PATCH bodies are JSON objects built by hand: only changed fields are sent,

@@ -8,6 +8,7 @@ import java.time.LocalDate
 /** JSON of GET /api/v1/me (endpoints.md §3.2), only what Edit account needs. */
 @Serializable
 data class MeDto(
+    @SerialName("user_id") val id: String = "",
     @SerialName("user_name") val userName: String? = null,
     @SerialName("full_name") val fullName: String,
     val email: String,

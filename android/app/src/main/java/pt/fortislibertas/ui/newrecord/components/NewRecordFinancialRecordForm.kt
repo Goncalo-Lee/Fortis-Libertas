@@ -115,13 +115,14 @@ fun NewRecordFinancialRecordForm(
             )
         }
 
+        // Required: every record in the API has a payment method
         SelectField(
             label = stringResource(R.string.field_payment_method),
-            options = listOf<PaymentMethod?>(null) + options.paymentMethods,
+            options = options.paymentMethods,
             selected = options.paymentMethods.firstOrNull { it.id == form.paymentMethodId },
-            optionLabel = { it?.name ?: none },
-            onSelect = { v -> onUpdate(null) { it.copy(paymentMethodId = v?.id) } },
-            placeholder = none,
+            optionLabel = { it.name },
+            onSelect = { v -> onUpdate(FormField.PaymentMethod) { it.copy(paymentMethodId = v.id) } },
+            errorText = form.errors.messageFor(FormField.PaymentMethod),
         )
 
         // Date + Status
