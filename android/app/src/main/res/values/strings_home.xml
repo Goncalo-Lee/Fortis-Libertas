@@ -1,0 +1,18 @@
+<resources>
+    <string name="home_title">Home</string>
+    <string name="greeting_morning">Good morning,</string>
+    <string name="greeting_afternoon">Good afternoon,</string>
+    <string name="greeting_evening">Good evening,</string>
+    <string name="total_balance">Total balance</string>
+    <string name="vs_last_week">vs last week</string>
+    <string name="banks_and_cards">Banks and cards</string>
+    <string name="overview_week">This week</string>
+    <string name="legend_income">Income</string>
+    <string name="legend_expense">Expenses</string>
+    <string name="chart_week_description">This week: income %1$s, expenses %2$s</string>
+    <string name="recent_transactions">Recent transactions</string>
+    <string name="see_all">See all</string>
+    <string name="today">Today</string>
+    <string name="yesterday">Yesterday</string>
+    <string name="home_no_transactions">No transactions yet. Add your first one in New.</string>
+</resources>

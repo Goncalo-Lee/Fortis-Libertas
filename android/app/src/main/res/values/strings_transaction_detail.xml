@@ -1,0 +1,19 @@
+<resources>
+    <string name="detail_type">Type</string>
+    <string name="detail_status">Status</string>
+    <string name="detail_date">Payment date</string>
+    <string name="detail_payment_method">Payment method</string>
+    <string name="detail_plan">Instalment plan</string>
+    <string name="detail_tags">Tags</string>
+    <string name="detail_description">Description</string>
+    <string name="detail_none">—</string>
+    <string name="detail_close">Close</string>
+    <string name="detail_delete">Delete</string>
+    <string name="detail_delete_title">Delete this record?</string>
+    <string name="detail_delete_message">It will no longer count in your balances and lists.</string>
+    <string name="detail_load_error">Could not load all the details.</string>
+    <string name="status_active">Active</string>
+    <string name="status_settled">Settled</string>
+    <string name="status_cancelled">Cancelled</string>
+    <string name="status_late">Late</string>
+</resources>

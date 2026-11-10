@@ -1,0 +1,34 @@
+package pt.fortislibertas.core.designsystem.theme
+
+import androidx.compose.ui.graphics.Color
+
+// ── Fortis Libertas brand ────────────────────────────
+val DeepBlue     = Color(0xFF2A4D88)
+val CodGray      = Color(0xFF171717)
+val PaleWhite    = Color(0xFFFAFBFC)
+val CuriousBlue  = Color(0xFF2092E9)
+val UltraRed     = Color(0xFFD00018)
+val Oasis        = Color(0xFF76C352)
+val Pineapple    = Color(0xFFFFE761)
+val White        = Color(0xFFFFFFFF)
+
+// ── Derived (suggestion: adjust freely) ─────────────
+// Variations for contrast and surfaces
+val OasisDark      = Color(0xFF3E7F23)   // income as text in light mode
+val UltraRedLight  = Color(0xFFFF5A64)   // expense/error in dark mode
+
+// Auth screen panel (light blue from the wireframe)
+val PaleSky        = Color(0xFFA5D8FD)
+
+// Light mode neutrals
+val LightSurfaceVariant   = Color(0xFFEEF1F5)
+val LightSurfaceContainer = Color(0xFFF1F3F6)
+val LightOnSurfaceVariant = Color(0xFF5F6670)
+val LightOutline          = Color(0xFFD5DAE1)
+
+// Dark mode neutrals (steps above Cod Gray)
+val DarkSurface          = Color(0xFF1F1F1F)
+val DarkSurfaceContainer = Color(0xFF262626)
+val DarkSurfaceVariant   = Color(0xFF2E2E2E)
+val DarkOnSurfaceVariant = Color(0xFFA3A3A3)
+val DarkOutline          = Color(0xFF3A3A3A)

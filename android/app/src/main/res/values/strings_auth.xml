@@ -1,0 +1,18 @@
+<resources>
+    <string name="auth_sign_in">Sign In</string>
+    <string name="auth_sign_up">Sign Up</string>
+    <string name="auth_username">Username</string>
+    <string name="auth_email">Email</string>
+    <string name="auth_password">Password</string>
+    <string name="auth_confirm_password">Confirm Password</string>
+    <string name="auth_remember_me">Remember me</string>
+    <string name="auth_show_password">Show password</string>
+    <string name="auth_hide_password">Hide password</string>
+    <string name="auth_logo_description">Fortis Libertas</string>
+    <string name="auth_error_required">Required field</string>
+    <string name="auth_error_email_invalid">Invalid email</string>
+    <string name="auth_error_password_length">Must have between 8 and 32 characters</string>
+    <string name="auth_error_password_mismatch">Passwords do not match</string>
+    <string name="auth_error_invalid_credentials">Wrong email or password</string>
+    <string name="auth_error_email_taken">This email already has an account</string>
+</resources>

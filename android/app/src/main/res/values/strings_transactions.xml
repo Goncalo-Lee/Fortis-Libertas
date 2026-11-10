@@ -1,0 +1,10 @@
+<resources>
+    <string name="transactions_title">Transactions</string>
+    <string name="transactions_empty">No transactions match your search or filters.</string>
+    <string name="filter_title">Filters</string>
+    <string name="filter_all">All</string>
+    <string name="filter_investments">Investments</string>
+    <string name="filter_categories">Categories</string>
+    <string name="filter_tags">Tags</string>
+    <string name="filter_amount">Amount</string>
+</resources>

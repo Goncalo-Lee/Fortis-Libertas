@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Fortislibertas</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_new_record">New record</string>
+    <string name="nav_transactions">Transactions</string>
+    <string name="nav_profile">Profile</string>
+</resources>

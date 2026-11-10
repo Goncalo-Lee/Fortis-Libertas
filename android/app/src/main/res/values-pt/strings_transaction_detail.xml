@@ -1,0 +1,19 @@
+<resources>
+    <string name="detail_type">Tipo</string>
+    <string name="detail_status">Estado</string>
+    <string name="detail_date">Data de pagamento</string>
+    <string name="detail_payment_method">Método de pagamento</string>
+    <string name="detail_plan">Plano de prestações</string>
+    <string name="detail_tags">Tags</string>
+    <string name="detail_description">Descrição</string>
+    <string name="detail_none">—</string>
+    <string name="detail_close">Fechar</string>
+    <string name="detail_delete">Apagar</string>
+    <string name="detail_delete_title">Apagar este registo?</string>
+    <string name="detail_delete_message">Deixa de contar nos saldos e nas listas.</string>
+    <string name="detail_load_error">Não foi possível carregar todos os detalhes.</string>
+    <string name="status_active">Ativo</string>
+    <string name="status_settled">Liquidado</string>
+    <string name="status_cancelled">Cancelado</string>
+    <string name="status_late">Atrasado</string>
+</resources>

@@ -1,0 +1,185 @@
+package pt.fortislibertas.core.designsystem.components.charts
+
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import kotlin.math.floor
+import kotlin.math.log10
+import kotlin.math.pow
+import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
+import pt.fortislibertas.core.designsystem.preview.FortisPreviews
+import pt.fortislibertas.core.designsystem.theme.FortisTheme
+
+/** One chart group: the label below and the two values. */
+data class BarGroup(val label: String, val income: Float, val expense: Float)
+
+private val LabelHeight = 24.dp
+
+/**
+ * Grouped bar chart (expense + income per day), built only with
+ * Box and Row: no library, no Canvas. Each bar is a Box whose height
+ * is a fraction of the available height (value ÷ max).
+ */
+@Composable
+fun GroupedBarChart(
+    groups: List<BarGroup>,
+    incomeColor: Color,
+    expenseColor: Color,
+    axisLabel: (Float) -> String,
+    contentDescription: String,
+    modifier: Modifier = Modifier,
+    chartHeight: Dp = 180.dp,
+) {
+    val rawMax = groups.maxOfOrNull { maxOf(it.income, it.expense) } ?: 0f
+    val max = niceMax(rawMax)
+    val lineColor = MaterialTheme.colorScheme.outline
+
+    // The bars grow from 0 the first time the chart appears
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(chartHeight)
+            // TalkBack reads a summary instead of 14 separate bars
+            .clearAndSetSemantics { this.contentDescription = contentDescription },
+    ) {
+        // Y axis: max, half, zero
+        Column(
+            modifier = Modifier
+                .fillMaxHeight()
+                .padding(end = 8.dp, bottom = LabelHeight),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.End,
+        ) {
+            listOf(max, max / 2, 0f).forEach {
+                Text(
+                    text = axisLabel(it),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        Row(Modifier.weight(1f).fillMaxHeight()) {
+            groups.forEach { group ->
+                Column(
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .drawBehind {
+                                // Baseline under the bars
+                                drawLine(
+                                    color = lineColor,
+                                    start = Offset(0f, size.height),
+                                    end = Offset(size.width, size.height),
+                                    strokeWidth = 1.dp.toPx(),
+                                )
+                            },
+                        verticalAlignment = Alignment.Bottom,
+                        horizontalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterHorizontally),
+                    ) {
+                        Bar(if (visible) group.expense / max else 0f, expenseColor)
+                        Bar(if (visible) group.income / max else 0f, incomeColor)
+                    }
+                    Box(Modifier.height(LabelHeight), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = group.label,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Bar(fraction: Float, color: Color) {
+    val animated by animateFloatAsState(
+        targetValue = fraction.coerceIn(0f, 1f),
+        animationSpec = tween(durationMillis = 600),
+        label = "barHeight",
+    )
+    Box(
+        Modifier
+            .width(10.dp)
+            .fillMaxHeight(animated)
+            .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+            .background(color),
+    )
+}
+
+/**
+ * Rounds the max up to a "nice" axis value:
+ * 88 → 100 · 112 → 200 · 1 250 → 2 000 · 0 → 100
+ */
+private fun niceMax(value: Float): Float {
+    if (value <= 0f) return 100f
+    val magnitude = 10.0.pow(floor(log10(value.toDouble())))
+    val normalized = value / magnitude
+    val nice = when {
+        normalized <= 1.0 -> 1.0
+        normalized <= 2.0 -> 2.0
+        normalized <= 5.0 -> 5.0
+        else -> 10.0
+    }
+    return (nice * magnitude).toFloat()
+}
+
+@FortisPreviews
+@Composable
+private fun GroupedBarChartPreview() {
+    FortisPreviewTheme {
+        GroupedBarChart(
+            groups = listOf(
+                BarGroup("Mon", income = 120f, expense = 40f),
+                BarGroup("Tue", income = 0f, expense = 85f),
+                BarGroup("Wed", income = 300f, expense = 20f),
+                BarGroup("Thu", income = 0f, expense = 0f),
+                BarGroup("Fri", income = 50f, expense = 150f),
+                BarGroup("Sat", income = 0f, expense = 60f),
+                BarGroup("Sun", income = 0f, expense = 0f),
+            ),
+            incomeColor = FortisTheme.colors.income,
+            expenseColor = FortisTheme.colors.expense,
+            axisLabel = { "${it.toInt()} €" },
+            contentDescription = "Week chart",
+            modifier = Modifier.padding(16.dp),
+        )
+    }
+}

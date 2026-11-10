@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Notifications -->
+    <string name="notif_title">Notifications</string>
+    <string name="notif_mark_all">Mark all as read</string>
+    <string name="notif_all">All</string>
+    <string name="notif_unread">Unread</string>
+    <string name="notif_empty">You have no notifications.</string>
+    <string name="notif_empty_unread">You have read everything.</string>
+    <string name="notif_delete">Delete</string>
+    <string name="notif_dashboard_added">You were added to the dashboard “%1$s” as %2$s</string>
+    <string name="notif_bank_added">You were added to the account “%1$s” as %2$s</string>
+    <string name="notif_unknown_dashboard">a dashboard</string>
+    <string name="notif_unknown_bank">a bank account</string>
+    <string name="notif_generic">New notification</string>
+    <string name="notif_role_owner">owner</string>
+    <string name="notif_role_editor">editor</string>
+    <string name="notif_role_viewer">viewer</string>
+    <string name="notif_unread_state">Unread</string>
+    <string name="notif_time_now">now</string>
+    <string name="notif_time_minutes">%1$d min ago</string>
+    <string name="notif_time_hours">%1$d h ago</string>
+    <string name="notif_time_yesterday">yesterday</string>
+</resources>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    By default only HTTPS is allowed. The local Next.js server runs on plain HTTP,
+    so HTTP is allowed ONLY for the development addresses below.
+    Testing on a real phone: add the PC's IP on the network (e.g. 192.168.1.50) as another <domain>.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>   <!-- the PC, seen from the emulator -->
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

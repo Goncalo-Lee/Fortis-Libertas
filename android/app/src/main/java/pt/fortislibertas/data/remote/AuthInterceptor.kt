@@ -1,0 +1,46 @@
+package pt.fortislibertas.data.remote
+
+import kotlinx.coroutines.runBlocking
+import okhttp3.Interceptor
+import okhttp3.Response
+import pt.fortislibertas.data.local.AccountStore
+
+/**
+ * Adds the active account's token to every request:
+ *   Authorization: Bearer <token>
+ *
+ * OkHttp runs interceptors on a network thread, so the
+ * runBlocking here does not block the UI.
+ */
+class AuthInterceptor(private val accountStore: AccountStore) : Interceptor {
+
+    override fun intercept(chain: Interceptor.Chain): Response {
+        // Sign in / sign up: no Bearer, and the token in the answer belongs to the NEW account,
+        // so it must not replace the active account's token
+        val path = chain.request().url.encodedPath
+        if (path.endsWith("/sign-in/email") || path.endsWith("/sign-up/email")) {
+            return chain.proceed(chain.request())
+        }
+
+        val token = runBlocking { accountStore.activeToken() }
+
+        val request = chain.request().newBuilder().apply {
+            if (token != null) header("Authorization", "Bearer $token")
+        }.build()
+
+        val response = chain.proceed(request)
+
+        // Better Auth bearer plugin: if the session is renewed, the new token comes in this header
+        response.header("set-auth-token")?.let { newToken ->
+            runBlocking { accountStore.updateActiveToken(newToken) }
+        }
+
+        // 401 = the session ended (expired, revoked on another device, or a test token).
+        // The account is removed: the app switches to another saved account or opens Sign in.
+        if (response.code == 401 && token != null) {
+            runBlocking { accountStore.removeByToken(token) }
+        }
+
+        return response
+    }
+}
