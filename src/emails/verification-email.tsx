@@ -15,84 +15,75 @@ import {
 } from "@react-email/components";
 import * as React from "react";
 
-interface VerifyEmailProps {
+
+interface VerificationEmailProps {
     username: string;
-    url: string;
+    verificationUrl: string;
     userEmail: string;
 }
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-export const VerifyEmail = ({
-                                username,
-                                url,
-                                userEmail,
-                            }: VerifyEmailProps) => {
+
+
+export const VerificationEmail = ({
+                                      username = "there",
+                                      verificationUrl,
+                                  }: VerificationEmailProps) => {
+
+
     return (
         <Html>
-            <Head />
-            <Preview>Verifique o seu endereço de email para a Fortis Libertas</Preview>
+        <Head />
+            <Preview>Verify your email for Fortis Libertas</Preview>
             <Tailwind>
-                <Body className="bg-slate-50 my-auto mx-auto font-sans px-4">
-                    <Container className="bg-white border border-slate-200 rounded-xl shadow-sm my-[40px] mx-auto p-8 max-w-[480px]">
-
-                        {/* LOGO SECTION */}
-                        <Section className="mt-2 mb-6 text-center">
+                <Body className="bg-white my-auto mx-auto font-sans px-2">
+                    <Container className="border border-solid border-[#eaeaea] rounded my-[40px] mx-auto p-[20px] max-w-[465px]">
+                        <Section className="mt-[32px]">
                             <Img
-                                src={`${baseUrl}/logo-removebg.png`}
-                                width="96"
-                                height="96"
+                                src={`${baseUrl}/logo.png`}
+                                width="40"
+                                height="40"
                                 alt="Fortis Libertas"
-                                className="mx-auto rounded-lg"
+                                className="my-0 mx-auto rounded-full"
                             />
                         </Section>
 
-                        {/* HEADER */}
-                        <Heading className="text-slate-900 text-[24px] font-bold text-center p-0 mt-0 mb-6 mx-0">
-                            Verifique o seu endereço de email
+                        <Heading className="text-black text-[24px] font-normal text-center p-0 my-[30px] mx-0">
+                            Verify your email
                         </Heading>
 
-                        {/* BODY TEXT */}
-                        <Text className="text-slate-700 text-[15px] leading-[24px] m-0 mb-4">
-                            Olá <strong>{username}</strong>,
+                        <Text className="text-black text-[14px] leading-[24px]">
+                            Hello {username},
                         </Text>
 
-                        <Text className="text-slate-700 text-[15px] leading-[24px] m-0 mb-6">
-                            Obrigado por se registar na Fortis Libertas! Por favor, verifique o seu endereço de email (
-                            <Link href={`mailto:${userEmail}`} className="text-indigo-600 no-underline font-medium">
-                                {userEmail}
-                            </Link>
-                            ) clicando no botão abaixo para ativar a sua conta:
+                        <Text className="text-black text-[14px] leading-[24px]">
+                            Welcome to Fortis Libertas! Please verify your email address by clicking the button below so you can securely log in and get started.
                         </Text>
 
-                        {/* CALL TO ACTION BUTTON */}
-                        <Section className="text-center mt-6 mb-8">
+                        <Section className="text-center mt-[32px] mb-[32px]">
                             <Button
-                                className="bg-slate-900 rounded-md text-white text-[14px] font-medium no-underline text-center px-8 py-3.5"
-                                href={url}
+                                className="bg-[#000000] rounded text-white text-[12px] font-semibold no-underline text-center px-6 py-3"
+                                href={verificationUrl}
+                                style={{ backgroundColor: '#000000', color: '#ffffff', padding: '12px 24px', borderRadius: '4px', textDecoration: 'none', display: 'inline-block' }}
                             >
-                                Verificar Endereço de Email
+                                Verify Email
                             </Button>
                         </Section>
 
-                        {/* RAW URL FALLBACK */}
-                        <Text className="text-slate-500 text-[14px] leading-[24px] m-0 mb-2">
-                            Ou copie e cole este URL no seu navegador:
-                        </Text>
-                        <Text className="text-slate-500 text-[14px] leading-[24px] m-0 mb-6">
-                            <Link href={url} className="text-indigo-600 no-underline break-all">
-                                {url}
+                        <Text className="text-black text-[14px] leading-[24px]">
+                            Or copy and paste this URL into your browser:{" "}
+                            <Link href={verificationUrl} className="text-blue-600 no-underline break-all">
+                                {verificationUrl}
                             </Link>
                         </Text>
 
-                        {/* FOOTER DIVIDER */}
-                        <Hr className="border border-solid border-slate-200 my-[24px] mx-0 w-full" />
+                        <Hr className="border border-solid border-[#eaeaea] my-[26px] mx-0 w-full" />
 
-                        {/* FOOTER TEXT */}
-                        <Text className="text-slate-400 text-[12px] leading-[20px] m-0 text-center">
-                            Se não criou uma conta, pode ignorar e eliminar este email em segurança.
+                        <Text className="text-[#666666] text-[12px] leading-[24px]">
+                            If you didnt create an account with Fortis Libertas, you can safely
+                            ignore and delete this message.
                         </Text>
-
                     </Container>
                 </Body>
             </Tailwind>
@@ -100,4 +91,4 @@ export const VerifyEmail = ({
     );
 };
 
-export default VerifyEmail;
+export default VerificationEmail;

@@ -8,10 +8,8 @@ import { getDefaultProfileCatalogIds } from "../db/queries/catalogs";
 import {nextCookies} from "better-auth/next-js";
 import nodemailer from "nodemailer";
 import { onAccountUpdated, onSessionCreated, onSessionDeleted, onUserUpdated } from "./auth-activity";
-import {error} from "better-auth/api";
 import ResetPasswordEmail from "@/emails/reset-password";
 import { render } from "@react-email/render";
-import {user} from "../db/schema";
 import VerificationEmail from "@/emails/verification-email";
 
 /**
@@ -52,13 +50,21 @@ export const auth = betterAuth({
 
   emailVerification: {
     sendOnSignUp: true,
-    autoSignInAfterVerification: true,
+    sendOnSignIn: true,
+    autoSignInAfterVerification: false,
+    requireEmailVerification: true,
 
     sendVerificationEmail: async ({ user, url }) => {
+      // Better-Auth provides 'url' which is typically just a token or a relative path
+      // We should ensure it's a full URL using BETTER_AUTH_URL
+      const baseUrl = process.env.BETTER_AUTH_URL || "http://localhost:3000";
+      const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+
       const emailHtml = await render(
           VerificationEmail({
-            verificationUrl: url,
-            username: user.name
+            verificationUrl: fullUrl,
+            username: user.name || "Utilizador",
+            userEmail: user.email,
           })
       )
       if (process.env.SEEDING === "true") {
@@ -70,7 +76,7 @@ export const auth = betterAuth({
         await transporter.sendMail({
           from: '"Fortis Libertas" <no-reply@fortislibertas.com>',
           to: user.email,
-          subject: "Verificação de Email - Fortis Libertas", // Tornámos mais genérico
+          subject: "Verificação de Email - Fortis Libertas",
           html: emailHtml,
         });
 

@@ -12,6 +12,7 @@ import { authClient } from "@/lib/auth-client";
 import Enable2FADialog from "@/components/two-factor-dialog";
 import RequestResetDialog from "@/components/request-reset-dialog";
 import MailChangeDialog from "@/components/mail-change-dialog";
+import { OpenBankingModal } from "@/components/OpenBankingModal"; // <--- O teu modal importado aqui!
 
 export default function AccountSettingsPage() {
     const { data: session, refetch: refetchSession } = authClient.useSession();
@@ -29,9 +30,9 @@ export default function AccountSettingsPage() {
     const [birthDate, setBirthDate] = useState("");
     const [savingProfile, setSavingProfile] = useState(false);
 
-    // Estados da simulação de Open Banking
-    const [isConnectingBank, setIsConnectingBank] = useState(false);
-    const [isBankConnected, setIsBankConnected] = useState(false);
+    // Estados reais para o Modal de Open Banking
+    const [isOpenBankingModalOpen, setIsOpenBankingModalOpen] = useState(false);
+    const [connectedBankInfo, setConnectedBankInfo] = useState<any>(null);
 
     // Sincronizar dados vindos do ProfileContext
     useEffect(() => {
@@ -84,16 +85,6 @@ export default function AccountSettingsPage() {
         } finally {
             setSavingProfile(false);
         }
-    };
-
-    // Função que simula o consentimento bancário
-    const handleConnectBank = async () => {
-        setIsConnectingBank(true);
-        // Simula o tempo de redirecionamento para o login do banco e retorno
-        await new Promise(resolve => setTimeout(resolve, 2500));
-        setIsBankConnected(true);
-        setIsConnectingBank(false);
-        toast.success("Consentimento OAuth concedido via Nordigen (GoCardless)!");
     };
 
     const is2FAEnabled = Boolean(session?.user?.twoFactorEnabled || userData.two_factor_enabled);
@@ -230,7 +221,7 @@ export default function AccountSettingsPage() {
                             </CardContent>
                         </Card>
 
-                        {/* NOVO CARTÃO COMPACTO: OPEN BANKING */}
+                        {/* CARTÃO OPEN BANKING COM O MODAL REAL INTEGRADO */}
                         <Card className="shadow-sm border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
                             <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <div className="flex flex-col gap-2">
@@ -243,7 +234,7 @@ export default function AccountSettingsPage() {
                                         </h3>
                                     </div>
                                     <p className="text-xs text-muted-foreground leading-relaxed max-w-sm">
-                                        Associa a tua conta através da API gratuita da Nordigen (GoCardless) para sincronizar despesas e receitas automaticamente.
+                                        Associa a tua conta através da API gratuita da Nordigen (GoCardless) para simular o consentimento PSD2 e sincronizar dados.
                                     </p>
                                     <div className="flex items-center gap-2 mt-1">
                                         <span className="text-xs font-medium text-slate-900 dark:text-slate-100">
@@ -251,35 +242,23 @@ export default function AccountSettingsPage() {
                                         </span>
                                         <span
                                             className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                                isBankConnected
+                                                connectedBankInfo
                                                     ? "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300"
                                                     : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-400"
                                             }`}
                                         >
-                                            {isBankConnected ? "Autorizado" : "Não Configurado"}
+                                            {connectedBankInfo ? `Ligado (${connectedBankInfo.name})` : "Não Configurado"}
                                         </span>
                                     </div>
                                 </div>
                                 <div className="flex-shrink-0 self-start sm:self-center">
                                     <Button
-                                        variant={isBankConnected ? "outline" : "default"}
-                                        disabled={isConnectingBank}
-                                        onClick={handleConnectBank}
+                                        variant={connectedBankInfo ? "outline" : "default"}
+                                        onClick={() => setIsOpenBankingModalOpen(true)}
                                         className="gap-2 text-xs h-9 w-full sm:w-auto"
                                     >
-                                        {isConnectingBank ? (
-                                            <>
-                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                <span>A Redirecionar...</span>
-                                            </>
-                                        ) : isBankConnected ? (
-                                            <span>Gerir Ligação</span>
-                                        ) : (
-                                            <>
-                                                <Landmark className="w-3.5 h-3.5" />
-                                                <span>Ligar Banco</span>
-                                            </>
-                                        )}
+                                        <Landmark className="w-3.5 h-3.5" />
+                                        <span>{connectedBankInfo ? "Gerir Banco" : "Ligar Banco"}</span>
                                     </Button>
                                 </div>
                             </CardContent>
@@ -371,6 +350,15 @@ export default function AccountSettingsPage() {
                     </div>
                 </div>
             </div>
+
+            {/* O MODAL DE OPEN BANKING RENDERIZADO AQUI */}
+            <OpenBankingModal
+                isOpen={isOpenBankingModalOpen}
+                onClose={() => setIsOpenBankingModalOpen(false)}
+                onSuccess={(bankData) => {
+                    setConnectedBankInfo(bankData);
+                }}
+            />
         </div>
     );
 }

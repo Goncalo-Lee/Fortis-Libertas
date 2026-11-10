@@ -12,14 +12,10 @@ import {
     Plus,
     Calendar,
     TrendingDown,
-    ArrowDownRight,
     PieChart,
     History,
     Trash2,
-    AlertCircle,
     Flame,
-    Home,
-    Repeat
 } from "lucide-react"
 
 import { toast } from "sonner"
@@ -32,7 +28,7 @@ type ExpenseNature = "essential" | "subscription" | "spontaneous"
 
 export default function ExpensesPage() {
     const { activeDashboard } = useDashboard()
-    const { financialRecords, recordTypes, categories, paymentMethods, tags, installmentPlans, addFinancialRecord, refresh } = useFinancial()
+    const { financialRecords, recordTypes, categories, paymentMethods, tags, addFinancialRecord, refresh } = useFinancial()
 
     const [viewMode, setViewMode] = useState<"monthly" | "annual">("monthly")
 
@@ -46,7 +42,6 @@ export default function ExpensesPage() {
     const [newCategoryId, setNewCategoryId] = useState("")
     const [newPaymentMethodId, setNewPaymentMethodId] = useState("")
     const [newNature, setNewNature] = useState<ExpenseNature>("spontaneous")
-    const [newInstallmentPlanId, setNewInstallmentPlanId] = useState("") // NOVO: Dropdown de Meta/Dívida
 
     // Controlo do Modal de Categoria
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
@@ -79,29 +74,9 @@ export default function ExpensesPage() {
                 // Filtro estrito: Apenas se tiver 'expense' ou 'neutral'
                 return rts.some((rt: any) => rt.kind === "expense" || rt.kind === "neutral")
             }
-            return false 
+            return false
         })
     }, [categories, tempCategory])
-
-    // ==========================================
-    // SEPARAR METAS E DÍVIDAS ATIVAS PARA O DROPDOWN
-    // ==========================================
-    const activeGoals = useMemo(() => {
-        if (!installmentPlans) return []
-        return installmentPlans.filter((p: any) =>
-            (!p.description || !p.description.startsWith("[DEBT]")) &&
-            p.status !== "paid" && p.status !== "cancelled"
-        )
-    }, [installmentPlans])
-
-    const activeDebts = useMemo(() => {
-        if (!installmentPlans) return []
-        return installmentPlans.filter((p: any) =>
-            p.description?.startsWith("[DEBT]") &&
-            p.status !== "paid" && p.status !== "cancelled"
-        )
-    }, [installmentPlans])
-
 
     // ==========================================
     // 1. FILTRAR E CLASSIFICAR DESPESAS REAIS
@@ -134,8 +109,7 @@ export default function ExpensesPage() {
                 colorHex,
                 iconCode,
                 date: record.payment_date || record.paymentDate,
-                nature,
-                installmentPlanId: record.installment_plan_id || record.installmentPlanId
+                nature
             }
         }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [financialRecords, recordTypes, categories, expenseTypeId])
@@ -214,14 +188,13 @@ export default function ExpensesPage() {
                 categoryId: newCategoryId,
                 paymentMethodId: newPaymentMethodId,
                 paymentDate: new Date(newDate).toISOString(),
-                tagIds: tagId ? [tagId] : [],
-                installmentPlanId: newInstallmentPlanId || null // A Magia da Associação
+                tagIds: tagId ? [tagId] : []
             })
 
             toast.success(`Despesa adicionada com sucesso!`)
             setNewTitle(""); setNewAmount(""); setNewDescription("");
             setNewDate(new Date().toISOString().split('T')[0]);
-            setNewCategoryId(""); setNewPaymentMethodId(""); setNewInstallmentPlanId("");
+            setNewCategoryId(""); setNewPaymentMethodId("");
             setIsAdding(false)
         } catch (error: any) {
             toast.error(error.message || "Erro ao gravar despesa.")
@@ -262,11 +235,11 @@ export default function ExpensesPage() {
                 recordTypeId={expenseTypeId}
                 typeLabel="Despesa"
                 onSuccess={(id, name, kind) => {
-                    const newCat = { 
-                        id, 
-                        category_id: id, 
-                        name, 
-                        record_types: [{ kind: kind || "expense" }] 
+                    const newCat = {
+                        id,
+                        category_id: id,
+                        name,
+                        record_types: [{ kind: kind || "expense" }]
                     };
                     setTempCategory(newCat);
                     setNewCategoryId(id);
@@ -283,7 +256,7 @@ export default function ExpensesPage() {
                         <button type="button" onClick={() => setViewMode("monthly")} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewMode === "monthly" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs" : "text-muted-foreground hover:text-slate-900"}`}>Mensal</button>
                         <button type="button" onClick={() => setViewMode("annual")} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewMode === "annual" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs" : "text-muted-foreground hover:text-slate-900"}`}>Anual</button>
                     </div>
-                    <button type="button" onClick={() => setIsAdding((prev) => !prev)} className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-medium px-3.5 py-2 rounded-lg shadow-xs transition-colors">
+                    <button type="button" onClick={() => setIsAdding((prev) => !prev)} className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-medium px-3.5 py-2 rounded-lg shadow-xs transition-colors cursor-pointer">
                         <Plus className="w-4 h-4" />
                         <span>Registar Gasto</span>
                     </button>
@@ -300,36 +273,6 @@ export default function ExpensesPage() {
                             <div className="flex flex-col gap-1 md:col-span-2">
                                 <label className="text-xs font-medium text-muted-foreground">O que compraste?</label>
                                 <input type="text" placeholder="Ex: Combustível, Jantar, Luz..." value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-sm" required />
-                            </div>
-
-                            {/* NOVO CAMPO: Associação a Metas / Dívidas */}
-                            <div className="flex flex-col gap-1 md:col-span-2">
-                                <label className="text-xs font-medium text-muted-foreground">Associar a Objetivo ou Dívida (Opcional)</label>
-                                <select
-                                    value={newInstallmentPlanId}
-                                    onChange={(e) => setNewInstallmentPlanId(e.target.value)}
-                                    className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs"
-                                >
-                                    <option value="">Nenhum (Gasto normal)</option>
-
-                                    {activeGoals.length > 0 && (
-                                        <optgroup label="🎯 Depositar em Meta / Poupança">
-                                            {activeGoals.map((g: any) => {
-                                                const gId = g.installment_plan_id || g.id
-                                                return <option key={gId} value={gId}>{g.name}</option>
-                                            })}
-                                        </optgroup>
-                                    )}
-
-                                    {activeDebts.length > 0 && (
-                                        <optgroup label="💳 Abater em Crédito / Dívida">
-                                            {activeDebts.map((d: any) => {
-                                                const dId = d.installment_plan_id || d.id
-                                                return <option key={dId} value={dId}>{d.name}</option>
-                                            })}
-                                        </optgroup>
-                                    )}
-                                </select>
                             </div>
 
                             <div className="flex flex-col gap-1">
@@ -501,7 +444,8 @@ export default function ExpensesPage() {
                             {expenses.length} movimentos
                         </span>
                     </CardHeader>
-                    <CardContent className="space-y-2.5">
+                    {/* SCROLL BAR APLICADA NO HISTÓRICO */}
+                    <CardContent className="space-y-2.5 max-h-[420px] overflow-y-auto pr-1">
                         {expenses.length === 0 && <p className="text-center text-sm text-muted-foreground py-6">Sem despesas registadas.</p>}
                         {expenses.map((item: any) => {
                             return (
@@ -513,42 +457,21 @@ export default function ExpensesPage() {
                                         <div>
                                             <div className="flex items-center gap-2">
                                                 <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{item.title}</p>
-                                                {item.nature === "spontaneous" ? (
-                                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center gap-0.5 border border-rose-200/50 dark:border-rose-900/50">
-                                                        <AlertCircle className="w-2.5 h-2.5" /> Espontânea
-                                                    </span>
-                                                ) : item.nature === "essential" ? (
-                                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center gap-0.5 border border-blue-200/50 dark:border-blue-900/50">
-                                                        <Home className="w-2.5 h-2.5" /> Essencial
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center gap-0.5 border border-purple-200/50 dark:border-purple-900/50">
-                                                        <Repeat className="w-2.5 h-2.5" /> Subscrição
-                                                    </span>
-                                                )}
-
-                                                {/* ETIQUETA VISUAL NO HISTÓRICO SE TIVER META/DÍVIDA ASSOCIADA */}
-                                                {item.installmentPlanId && (
-                                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-sm bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                                                        🎯 Foco/Dívida
-                                                    </span>
-                                                )}
+                                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-sm" style={{ backgroundColor: `${item.colorHex}15`, color: item.colorHex }}>
+                                                    {item.categoryName}
+                                                </span>
                                             </div>
                                             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                                                <span className="font-medium" style={{ color: item.colorHex }}>{item.categoryName}</span>
-                                                <span>•</span>
-                                                {item.date ? new Date(item.date).toLocaleDateString("pt-PT") : ""}
-                                                {item.description && <span className="ml-1 opacity-70 italic truncate max-w-[120px] sm:max-w-[150px]">{item.description}</span>}
+                                                <Calendar className="w-3 h-3" /> {item.date ? new Date(item.date).toLocaleDateString("pt-PT") : "Sem data"}
+                                                {item.description && <span className="ml-1 truncate max-w-[120px] sm:max-w-[200px]">{item.description}</span>}
                                             </p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3 shrink-0">
-                                        <span className="text-sm sm:text-base font-bold text-rose-600 dark:text-rose-400">
-                                            € {item.amount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
+                                        <span className="text-sm sm:text-base font-bold" style={{ color: item.colorHex }}>
+                                            - € {item.amount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}
                                         </span>
-                                        <button type="button" onClick={() => handleDelete(item.id)} className="p-1.5 text-slate-400 hover:text-red-500 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer">
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        <button type="button" onClick={() => handleDelete(item.id)} className="p-1.5 text-slate-400 hover:text-red-500 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"><Trash2 className="w-4 h-4" /></button>
                                     </div>
                                 </div>
                             )

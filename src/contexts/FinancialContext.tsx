@@ -18,6 +18,7 @@ async function safeFetch(url: string) {
 export function FinancialProvider({ children }: { children: ReactNode }) {
     const { activeDashboard, loading: dashLoading } = useDashboard();
 
+    const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
     const [bankAccounts, setBankAccounts] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
     const [tags, setTags] = useState<any[]>([]);

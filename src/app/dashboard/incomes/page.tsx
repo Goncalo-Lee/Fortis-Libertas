@@ -2,17 +2,16 @@
 
 import { useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Calendar, TrendingUp, PieChart, History, Trash2, ArrowUpRight, Check, Target } from "lucide-react"
+import { Plus, Calendar, TrendingUp, PieChart, History, Trash2, Target } from "lucide-react"
 import { toast } from "sonner"
 import { useFinancial } from "@/contexts/FinancialContext"
 import { useDashboard } from "@/contexts/DashboardContext"
 import { CreateCategoryModal } from "@/components/CreateCategoryModal"
 import { DynamicIcon } from "@/components/DynamicIcon"
-import {OpenBankingButton} from "@/components/OpenBankingButton";
 
 export default function IncomesPage() {
     const { activeDashboard } = useDashboard()
-    const { financialRecords, recordTypes, categories, paymentMethods, installmentPlans, refresh, addFinancialRecord } = useFinancial()
+    const { financialRecords, recordTypes, categories, paymentMethods, refresh, addFinancialRecord } = useFinancial()
 
     const [isAdding, setIsAdding] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -22,7 +21,6 @@ export default function IncomesPage() {
     const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0])
     const [newCategoryId, setNewCategoryId] = useState("")
     const [newPaymentMethodId, setNewPaymentMethodId] = useState("")
-    const [newInstallmentPlanId, setNewInstallmentPlanId] = useState("")
     const { deleteFinancialRecord, deleteCategory } = useFinancial()
 
     // Estado do Modal
@@ -60,15 +58,6 @@ export default function IncomesPage() {
         })
     }, [categories, tempCategory])
 
-    // APENAS METAS PARA ASSOCIAR A RECEITAS (Exclui dívidas que começam com [DEBT])
-    const availableGoals = useMemo(() => {
-        if (!installmentPlans) return []
-        return installmentPlans.filter((p: any) => {
-            const isDebt = p.description && p.description.startsWith("[DEBT]")
-            return !isDebt && p.status !== "paid" && p.status !== "cancelled"
-        })
-    }, [installmentPlans])
-
     // ==========================================
     // 1. FILTRAR E MAPEAR RENDIMENTOS
     // ==========================================
@@ -94,8 +83,7 @@ export default function IncomesPage() {
                 categoryName: catObj?.name || "Geral",
                 colorHex,
                 iconCode,
-                date: record.payment_date || record.paymentDate,
-                installmentPlanId: record.installment_plan_id || record.installmentPlanId
+                date: record.payment_date || record.paymentDate
             }
         }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [financialRecords, recordTypes, categories, incomeTypeId])
@@ -141,12 +129,11 @@ export default function IncomesPage() {
                 categoryId: newCategoryId,
                 paymentMethodId: newPaymentMethodId,
                 paymentDate: new Date(newDate).toISOString(),
-                installmentPlanId: newInstallmentPlanId || null // <--- O CAMPO EXTRA QUE ENVIA A LIGAÇÃO À META!
             })
             toast.success(`Ganho adicionado com sucesso!`)
             setNewTitle(""); setNewAmount(""); setNewDescription("");
             setNewDate(new Date().toISOString().split('T')[0]);
-            setNewCategoryId(""); setNewPaymentMethodId(""); setNewInstallmentPlanId("");
+            setNewCategoryId(""); setNewPaymentMethodId("");
             setIsAdding(false)
         } catch (error: any) {
             toast.error(error.message || "Ocorreu um erro ao gravar a receita.")
@@ -187,11 +174,11 @@ export default function IncomesPage() {
                 recordTypeId={incomeTypeId}
                 typeLabel="Receita"
                 onSuccess={(id, name, kind) => {
-                    const newCat = { 
-                        id, 
-                        category_id: id, 
-                        name, 
-                        record_types: [{ kind: kind || "income" }] 
+                    const newCat = {
+                        id,
+                        category_id: id,
+                        name,
+                        record_types: [{ kind: kind || "income" }]
                     };
                     setTempCategory(newCat);
                     setNewCategoryId(id);
@@ -261,24 +248,12 @@ export default function IncomesPage() {
                                 </select>
                             </div>
 
-                            {/* NOVO CAMPO: ASSOCIAR A UMA META */}
-                            <div className="flex flex-col gap-1 md:col-span-2">
-                                <label className="text-xs font-medium text-muted-foreground">Associar a Objetivo / Meta (Opcional)</label>
-                                <select value={newInstallmentPlanId} onChange={(e) => setNewInstallmentPlanId(e.target.value)} className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs">
-                                    <option value="">Nenhum (Receita normal)</option>
-                                    {availableGoals.map((g: any) => {
-                                        const gId = g.installment_plan_id || g.id
-                                        return <option key={gId} value={gId}>🎯 {g.name}</option>
-                                    })}
-                                </select>
-                            </div>
-
                             <div className="flex flex-col gap-1 md:col-span-2">
                                 <label className="text-xs font-medium text-muted-foreground">Notas Adicionais (Opcional)</label>
                                 <input type="text" placeholder="Detalhes extra..." value={newDescription} onChange={(e) => setNewDescription(e.target.value)} className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-sm" />
                             </div>
 
-                            <div className="flex gap-2 md:col-span-2 justify-end">
+                            <div className="flex gap-2 md:col-span-4 justify-end">
                                 <button type="button" onClick={() => setIsAdding(false)} className="h-9 px-4 bg-slate-200/70 text-slate-700 text-xs rounded-md hover:bg-slate-300/70 cursor-pointer">Cancelar</button>
                                 <button type="submit" disabled={isSubmitting} className="h-9 px-6 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-md cursor-pointer disabled:opacity-50">{isSubmitting ? "A gravar..." : "Guardar Ganho"}</button>
                             </div>
@@ -358,7 +333,8 @@ export default function IncomesPage() {
                         </div>
                         <span className="text-xs font-medium bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full">{incomes.length} registos</span>
                     </CardHeader>
-                    <CardContent className="space-y-2.5">
+                    {/* ADICIONADO SCROLL BAR NO HISTÓRICO */}
+                    <CardContent className="space-y-2.5 max-h-[420px] overflow-y-auto pr-1">
                         {incomes.length === 0 ? (
                             <div className="text-center text-sm py-10 text-muted-foreground">Sem rendimentos.</div>
                         ) : incomes.map((item: any) => (
@@ -373,9 +349,6 @@ export default function IncomesPage() {
                                             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-sm" style={{ backgroundColor: `${item.colorHex}15`, color: item.colorHex }}>
                                                 {item.categoryName}
                                             </span>
-                                            {item.installmentPlanId && (
-                                                <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-sm font-medium">🎯 Associado a Meta</span>
-                                            )}
                                         </p>
                                         <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                                             <Calendar className="w-3 h-3" /> {item.date ? new Date(item.date).toLocaleDateString("pt-PT") : "Sem data"}
