@@ -1,6 +1,27 @@
 package pt.fortislibertas.data.model
 
 import java.math.BigDecimal
+import java.time.LocalDate
+
+/**
+ * Full data of one financial record, for the transaction details dialog.
+ * [status] is the API key: active, settled, cancelled, pending, paid, late.
+ */
+data class TransactionDetail(
+    val id: String,
+    val name: String,
+    val description: String?,
+    val type: RecordType,
+    val amount: BigDecimal,
+    val currency: String,
+    val date: LocalDate,
+    val status: String,
+    val categoryName: String,
+    val categoryColorHex: String,
+    val paymentMethodName: String?,
+    val tagNames: List<String>,
+    val instalmentPlanName: String?,
+)
 
 /** Everything that narrows the transaction list. Empty = show everything. */
 data class TransactionFilter(

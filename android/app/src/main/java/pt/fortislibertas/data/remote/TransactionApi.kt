@@ -1,8 +1,12 @@
 package pt.fortislibertas.data.remote
 
 import pt.fortislibertas.data.remote.dto.FilterOptionsDto
+import pt.fortislibertas.data.remote.dto.ItemResponseDto
+import pt.fortislibertas.data.remote.dto.RecordDetailDto
 import pt.fortislibertas.data.remote.dto.TransactionListDto
+import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface TransactionApi {
@@ -23,4 +27,19 @@ interface TransactionApi {
 
     @GET("api/v1/records/filter-options")
     suspend fun getFilterOptions(): FilterOptionsDto
+
+    /** One record with the names of its category, payment method and plan (§15). */
+    @GET("api/v1/dashboards/{dashboard_id}/financial-records/{record_id}")
+    suspend fun getRecord(
+        @Path("dashboard_id") dashboardId: String,
+        @Path("record_id") recordId: String,
+        @Query("include") include: String = "category,payment_method,installment_plan",
+    ): ItemResponseDto<RecordDetailDto>
+
+    /** Soft delete (§15). */
+    @DELETE("api/v1/dashboards/{dashboard_id}/financial-records/{record_id}")
+    suspend fun deleteRecord(
+        @Path("dashboard_id") dashboardId: String,
+        @Path("record_id") recordId: String,
+    )
 }

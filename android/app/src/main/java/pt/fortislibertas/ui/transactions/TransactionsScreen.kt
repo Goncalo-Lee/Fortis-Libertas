@@ -4,9 +4,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import pt.fortislibertas.data.model.TransactionItem
+import pt.fortislibertas.ui.transactiondetail.TransactionDetailDialog
 import pt.fortislibertas.ui.transactions.components.TransactionsFilterDialog
 
 /**
@@ -17,10 +21,10 @@ import pt.fortislibertas.ui.transactions.components.TransactionsFilterDialog
 fun TransactionsScreen(
     contentPadding: PaddingValues,
     onOpenNotifications: () -> Unit = {},
-    onTransactionClick: (TransactionItem) -> Unit = {},
     viewModel: TransactionsViewModel = viewModel(factory = TransactionsViewModel.Factory),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var selected by remember { mutableStateOf<TransactionItem?>(null) }   // details dialog
 
     LaunchedEffect(Unit) { viewModel.onScreenShown() }
 
@@ -28,7 +32,7 @@ fun TransactionsScreen(
         state = state,
         contentPadding = contentPadding,
         onOpenNotifications = onOpenNotifications,
-        onTransactionClick = onTransactionClick,
+        onTransactionClick = { selected = it },
         onQueryChange = viewModel::onQueryChange,
         onOpenFilter = viewModel::openFilter,
         onTypeChange = viewModel::onTypeChange,
@@ -42,6 +46,17 @@ fun TransactionsScreen(
             currency = state.items.firstOrNull()?.currency ?: "EUR",
             onApply = viewModel::applyFilter,
             onDismiss = viewModel::closeFilter,
+        )
+    }
+
+    selected?.let { item ->
+        TransactionDetailDialog(
+            summary = item,
+            onDismiss = { selected = null },
+            onDeleted = {
+                selected = null
+                viewModel.retry()                         // reload the list without the deleted record
+            },
         )
     }
 }

@@ -1,15 +1,18 @@
 package pt.fortislibertas.data.repository
 
+import java.io.IOException
 import pt.fortislibertas.data.model.FilterOptions
+import pt.fortislibertas.data.model.TransactionDetail
 import pt.fortislibertas.data.model.TransactionFilter
 import pt.fortislibertas.data.model.TransactionItem
 import pt.fortislibertas.data.remote.TransactionApi
 import retrofit2.HttpException
-import java.io.IOException
 
 /** API mode: the server filters; the app only sends the parameters. */
 class RemoteTransactionRepository(
     private val api: TransactionApi,
+    /** TODO: the active dashboard (see "alinhar a app com a API"); null until the app knows it. */
+    private val activeDashboardId: suspend () -> String? = { null },
 ) : TransactionRepository {
 
     override suspend fun getTransactions(filter: TransactionFilter): List<TransactionItem> = call {
@@ -24,6 +27,15 @@ class RemoteTransactionRepository(
     }
 
     override suspend fun getFilterOptions(): FilterOptions = call { api.getFilterOptions().toModel() }
+
+    override suspend fun getDetail(summary: TransactionItem): TransactionDetail = call {
+        api.getRecord(dashboardId(), summary.id).data.toModel(summary)
+    }
+
+    override suspend fun delete(recordId: String) = call { api.deleteRecord(dashboardId(), recordId) }
+
+    private suspend fun dashboardId(): String =
+        activeDashboardId() ?: throw IllegalStateException("No active dashboard yet")
 
     private suspend fun <T> call(block: suspend () -> T): T =
         try {

@@ -18,6 +18,13 @@ object FakeTransactionData {
         val tagIds: Set<String>,
     )
 
+    /** Descriptions for some records (most records have none, like in real life). */
+    val descriptions = mapOf(
+        "t2" to "Almoço de equipa depois da reunião de sprint.",
+        "t3" to "Site para um cliente — primeira prestação.",
+        "t9" to "Renda de novembro.",
+    )
+
     fun build(today: LocalDate = LocalDate.now()): List<Entry> {
         val categories = FakeRecordData.options().categories.associateBy { it.id }
 

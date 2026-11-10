@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -14,6 +17,7 @@ import pt.fortislibertas.core.designsystem.components.EmptyContent
 import pt.fortislibertas.core.designsystem.components.ErrorContent
 import pt.fortislibertas.core.designsystem.components.LoadingContent
 import pt.fortislibertas.data.model.TransactionItem
+import pt.fortislibertas.ui.transactiondetail.TransactionDetailDialog
 
 /**
  * Stateful version of the Home tab, used by the NavHost.
@@ -26,10 +30,10 @@ fun HomeScreen(
     onSeeAllTransactions: () -> Unit,
     onSignIn: () -> Unit,
     onOpenNotifications: () -> Unit = {},
-    onTransactionClick: (TransactionItem) -> Unit = {},
     viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var selected by remember { mutableStateOf<TransactionItem?>(null) }   // details dialog
 
     // When coming back to this tab (e.g. after creating a record), refresh silently
     LaunchedEffect(Unit) { viewModel.onScreenShown() }
@@ -51,7 +55,7 @@ fun HomeScreen(
             onOpenNotifications = onOpenNotifications,
             onOpenBanks = onOpenBanks,
             onSeeAllTransactions = onSeeAllTransactions,
-            onTransactionClick = onTransactionClick,
+            onTransactionClick = { selected = it },
         )
         state.errorMessage != null -> ErrorContent(
             message = stringResource(state.errorMessage!!),
@@ -60,5 +64,16 @@ fun HomeScreen(
             modifier = Modifier.padding(contentPadding),
         )
         else -> LoadingContent(Modifier.padding(contentPadding))
+    }
+
+    selected?.let { item ->
+        TransactionDetailDialog(
+            summary = item,
+            onDismiss = { selected = null },
+            onDeleted = {
+                selected = null
+                viewModel.refresh()                       // reload Home without the deleted record
+            },
+        )
     }
 }
