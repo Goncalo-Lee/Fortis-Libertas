@@ -1,10 +1,11 @@
 package pt.fortislibertas.ui.cards
 
 import androidx.annotation.StringRes
+import java.time.LocalDate
 import pt.fortislibertas.data.model.BankAccount
+import pt.fortislibertas.data.model.BankMember
 import pt.fortislibertas.data.model.CardType
 import pt.fortislibertas.data.model.PaymentCard
-import java.time.LocalDate
 
 /** Which list is showing; the round button at the bottom switches between them. */
 enum class CardsPage { Cards, Banks }
@@ -40,6 +41,37 @@ data class CardEditForm(
     val errors: Map<CardEditField, Int> = emptyMap(),   // field → @StringRes of the message
 )
 
+/** Details dialog of one bank account; the members load after it opens. */
+data class BankDetailState(
+    val bank: BankAccount,
+    val members: List<BankMember> = emptyList(),
+    val isLoading: Boolean = true,
+    @StringRes val error: Int? = null,
+)
+
+/** Fields of the Add card / Add bank forms that can have a validation error. */
+enum class AddField { Bank, CardholderName, CardNumber, Cvv, Name, InitialBalance }
+
+/** What the user has typed so far in the Add card form. */
+data class CardAddForm(
+    val bankId: String? = null,
+    val cardholderName: String = "",
+    val type: CardType = CardType.DEBIT,
+    val cardNumber: String = "",
+    val expiryDate: LocalDate? = null,
+    val cvv: String = "",
+    val colorHex: String,
+    val errors: Map<AddField, Int> = emptyMap(),
+)
+
+/** What the user has typed so far in the Add bank form. */
+data class BankAddForm(
+    val name: String = "",
+    val initialBalance: String = "",
+    val currency: String = "EUR",
+    val errors: Map<AddField, Int> = emptyMap(),
+)
+
 /** Everything the Cards / Banks screen needs to draw itself. */
 data class CardsUiState(
     val page: CardsPage = CardsPage.Cards,
@@ -50,6 +82,9 @@ data class CardsUiState(
     @StringRes val errorMessage: Int? = null,
     val dialog: CardsDialog? = null,
     val editForm: CardEditForm? = null,          // not null = Edit card sheet open
+    val addCardForm: CardAddForm? = null,        // not null = Add card sheet open
+    val addBankForm: BankAddForm? = null,        // not null = Add bank sheet open
+    val bankDetail: BankDetailState? = null,     // not null = bank details dialog open
     val isWorking: Boolean = false,              // freeze / unfreeze / save / delete request running
     val userName: String? = null,
     val avatarUrl: String? = null,

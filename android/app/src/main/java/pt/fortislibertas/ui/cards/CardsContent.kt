@@ -33,8 +33,10 @@ import pt.fortislibertas.core.designsystem.components.LoadingContent
 import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisScreenPreviews
 import pt.fortislibertas.data.fake.FakeWalletData
+import pt.fortislibertas.data.model.BankAccount
 import pt.fortislibertas.data.model.PaymentCard
 import pt.fortislibertas.ui.cards.components.CardsActionButton
+import pt.fortislibertas.ui.cards.components.CardsAddButton
 import pt.fortislibertas.ui.cards.components.CardsBankItem
 import pt.fortislibertas.ui.cards.components.CardsPaymentCard
 import pt.fortislibertas.ui.cards.components.CardsStatusChips
@@ -56,6 +58,8 @@ fun CardsContent(
     onUnfreeze: (PaymentCard) -> Unit,
     onShowInfo: (PaymentCard) -> Unit,
     onEdit: (PaymentCard) -> Unit,
+    onOpenBank: (BankAccount) -> Unit,
+    onAdd: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val onCards = state.page == CardsPage.Cards
@@ -136,7 +140,7 @@ fun CardsContent(
                         when {
                             state.banks.isEmpty() -> item { EmptyText(stringResource(R.string.banks_empty)) }
                             banks.isEmpty() -> item { EmptyText(stringResource(R.string.cards_empty_filter)) }
-                            else -> items(banks, key = { it.id }) { bank -> CardsBankItem(bank) }
+                            else -> items(banks, key = { it.id }) { bank -> CardsBankItem(bank, onClick = { onOpenBank(bank) }) }
                         }
                     }
                 }
@@ -155,6 +159,15 @@ fun CardsContent(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = contentPadding.calculateBottomPadding() + 8.dp),
+        )
+
+        // "+" at the bottom right: Add card or Add bank, depending on the page
+        CardsAddButton(
+            contentDescription = stringResource(if (onCards) R.string.cards_add_card else R.string.cards_add_bank),
+            onClick = onAdd,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 20.dp, bottom = contentPadding.calculateBottomPadding() + 4.dp),
         )
     }
 }
@@ -187,7 +200,7 @@ private fun CardsContentPreview() {
             ),
             contentPadding = PaddingValues(),
             onBack = {}, onOpenNotifications = {}, onTogglePage = {}, onRetry = {},
-            onFilterChange = {}, onFreeze = {}, onUnfreeze = {}, onShowInfo = {}, onEdit = {},
+            onFilterChange = {}, onFreeze = {}, onUnfreeze = {}, onShowInfo = {}, onEdit = {}, onOpenBank = {}, onAdd = {},
         )
     }
 }
@@ -205,7 +218,7 @@ private fun CardsContentBanksPreview() {
             ),
             contentPadding = PaddingValues(),
             onBack = {}, onOpenNotifications = {}, onTogglePage = {}, onRetry = {},
-            onFilterChange = {}, onFreeze = {}, onUnfreeze = {}, onShowInfo = {}, onEdit = {},
+            onFilterChange = {}, onFreeze = {}, onUnfreeze = {}, onShowInfo = {}, onEdit = {}, onOpenBank = {}, onAdd = {},
         )
     }
 }

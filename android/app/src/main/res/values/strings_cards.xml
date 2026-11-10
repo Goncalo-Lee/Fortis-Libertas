@@ -51,4 +51,26 @@
     <string name="cards_ok">OK</string>
     <string name="msg_card_saved">Card saved</string>
     <string name="msg_card_deleted">Card deleted</string>
+    <string name="cards_add">Add</string>
+    <string name="cards_add_card">Add card</string>
+    <string name="cards_add_bank">Add bank</string>
+    <string name="cards_field_bank">Bank</string>
+    <string name="cards_choose_bank">Choose a bank</string>
+    <string name="cards_no_bank_for_cards">Create a bank first (or ask to be an editor).</string>
+    <string name="cards_field_optional">%1$s (optional)</string>
+    <string name="banks_field_name">Name</string>
+    <string name="banks_field_initial_balance">Initial balance</string>
+    <string name="banks_field_currency">Currency</string>
+    <string name="banks_error_amount">Invalid amount</string>
+    <string name="banks_detail_balance">Balance</string>
+    <string name="banks_detail_role">Your role</string>
+    <string name="banks_detail_status">Status</string>
+    <string name="banks_detail_cards">Cards</string>
+    <string name="banks_detail_members">Members</string>
+    <string name="banks_members_web">Members are managed on the website.</string>
+    <string name="banks_role_editor">Editor</string>
+    <string name="banks_role_viewer">Viewer</string>
+    <string name="banks_members_error">Could not load the members.</string>
+    <string name="msg_card_created">Card added</string>
+    <string name="msg_bank_created">Bank added</string>
 </resources>

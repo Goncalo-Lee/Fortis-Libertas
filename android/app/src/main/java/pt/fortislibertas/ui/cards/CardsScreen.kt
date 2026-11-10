@@ -29,6 +29,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.ConfirmDialog
+import pt.fortislibertas.ui.cards.components.CardsAddBankForm
+import pt.fortislibertas.ui.cards.components.CardsAddCardForm
+import pt.fortislibertas.ui.cards.components.CardsBankDetailDialog
 import pt.fortislibertas.ui.cards.components.CardsEditCardForm
 import pt.fortislibertas.ui.cards.components.CardsInfoDialog
 
@@ -72,6 +75,8 @@ fun CardsScreen(
             onUnfreeze = viewModel::requestUnfreeze,
             onShowInfo = viewModel::showInfo,
             onEdit = viewModel::openEdit,
+            onOpenBank = viewModel::openBank,
+            onAdd = viewModel::openAdd,
         )
         SnackbarHost(
             hostState = snackbarHostState,
@@ -104,6 +109,53 @@ fun CardsScreen(
                     .padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
             )
         }
+    }
+
+    // ── Add card / Add bank: same kind of sheet as Edit card ──
+    if (state.addCardForm != null || state.addBankForm != null) {
+        ModalBottomSheet(
+            onDismissRequest = viewModel::closeAdd,
+            sheetState = rememberModalBottomSheetState(
+                skipPartiallyExpanded = true,
+                confirmValueChange = { !state.isWorking },
+            ),
+        ) {
+            val sheetModifier = Modifier
+                .fillMaxWidth()
+                .imePadding()
+                .verticalScroll(rememberScrollState())
+                .padding(start = 24.dp, end = 24.dp, bottom = 32.dp)
+            state.addCardForm?.let { form ->
+                CardsAddCardForm(
+                    form = form,
+                    banks = state.banks,
+                    isSaving = state.isWorking,
+                    onUpdate = viewModel::updateAddCard,
+                    onCancel = viewModel::closeAdd,
+                    onSave = viewModel::saveAddCard,
+                    modifier = sheetModifier,
+                )
+            }
+            state.addBankForm?.let { form ->
+                CardsAddBankForm(
+                    form = form,
+                    isSaving = state.isWorking,
+                    onUpdate = viewModel::updateAddBank,
+                    onCancel = viewModel::closeAdd,
+                    onSave = viewModel::saveAddBank,
+                    modifier = sheetModifier,
+                )
+            }
+        }
+    }
+
+    // ── Bank details (members are read only) ──
+    state.bankDetail?.let { detail ->
+        CardsBankDetailDialog(
+            state = detail,
+            cardCount = state.cards.count { it.bankId == detail.bank.id },
+            onDismiss = viewModel::closeBank,
+        )
     }
 
     // Dialogs: freeze, unfreeze and delete always ask first

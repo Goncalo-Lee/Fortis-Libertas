@@ -27,11 +27,11 @@ import pt.fortislibertas.data.model.BankAccount
 
 /**
  * One bank account on the Banks page: name, the user's role and the balance.
- * Temporary layout until the Banks page has its own design.
+ * Tapping it opens the bank details (with the members).
  */
 @Composable
-fun CardsBankItem(bank: BankAccount, modifier: Modifier = Modifier) {
-    FortisCard(modifier = modifier) {
+fun CardsBankItem(bank: BankAccount, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    FortisCard(modifier = modifier, onClick = onClick) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             IconTile(
                 icon = Icons.Outlined.AccountBalance,
@@ -63,7 +63,7 @@ fun CardsBankItem(bank: BankAccount, modifier: Modifier = Modifier) {
 private fun CardsBankItemPreview() {
     FortisPreviewTheme {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            FakeWalletData.banks.forEach { CardsBankItem(it) }
+            FakeWalletData.banks.forEach { CardsBankItem(it, onClick = {}) }
         }
     }
 }
