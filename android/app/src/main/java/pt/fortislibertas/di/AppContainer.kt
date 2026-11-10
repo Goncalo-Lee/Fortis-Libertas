@@ -1,6 +1,7 @@
 package pt.fortislibertas.di
 
 import android.content.Context
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -93,16 +94,33 @@ class AppContainer(context: Context) {
 
     // ── Repositories ────────────────────────────────────
 
+    /**
+     * The active dashboard for the API calls. If none was chosen yet (the app opens on the Home,
+     * before the Dashboard tab), the first active dashboard of the account is picked and saved.
+     * Called only when a request is made, so dashboardRepository is ready by then.
+     */
+    private suspend fun activeDashboardId(): String? =
+        dashboardStore.current() ?: try {
+            dashboardRepository.getDashboards()
+                .firstOrNull { it.isActive }
+                ?.id
+                ?.also { dashboardStore.setActive(it) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
+
     val authRepository: AuthRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeAuthRepository()
         else RemoteAuthRepository(retrofit.create(AuthApi::class.java))
 
     val profileRepository: ProfileRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeProfileRepository(accountStore)
-        else RemoteProfileRepository(retrofit.create(FortisApi::class.java), financeApi) { dashboardStore.current() }
+        else RemoteProfileRepository(retrofit.create(FortisApi::class.java), financeApi) { activeDashboardId() }
     val recordRepository: RecordRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeRecordRepository()
-        else RemoteRecordRepository(financeApi) { dashboardStore.current() }
+        else RemoteRecordRepository(financeApi) { activeDashboardId() }
 
     val dashboardRepository: DashboardRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeDashboardRepository()
@@ -115,7 +133,7 @@ class AppContainer(context: Context) {
     // After walletRepository: the Home uses it for the card stack
     val homeRepository: HomeRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeHomeRepository()
-        else RemoteHomeRepository(financeApi, walletRepository) { dashboardStore.current() }
+        else RemoteHomeRepository(financeApi, walletRepository) { activeDashboardId() }
 
     val notificationRepository: NotificationRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeNotificationRepository()
@@ -123,7 +141,7 @@ class AppContainer(context: Context) {
 
     val transactionRepository: TransactionRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeTransactionRepository()
-        else RemoteTransactionRepository(financeApi) { dashboardStore.current() }
+        else RemoteTransactionRepository(financeApi) { activeDashboardId() }
 
     /**
      * Account clean-up when the app starts. FortisApp waits for it before choosing
