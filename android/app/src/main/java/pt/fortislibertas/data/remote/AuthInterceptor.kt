@@ -35,6 +35,12 @@ class AuthInterceptor(private val accountStore: AccountStore) : Interceptor {
             runBlocking { accountStore.updateActiveToken(newToken) }
         }
 
+        // 401 = the session ended (expired, revoked on another device, or a test token).
+        // The account is removed: the app switches to another saved account or opens Sign in.
+        if (response.code == 401 && token != null) {
+            runBlocking { accountStore.removeByToken(token) }
+        }
+
         return response
     }
 }

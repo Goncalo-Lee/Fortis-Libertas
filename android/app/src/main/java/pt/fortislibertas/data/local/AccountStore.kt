@@ -107,6 +107,24 @@ class AccountStore(context: Context) {
         }
     }
 
+    /**
+     * The server said this token is no longer valid (401): removes the account that has it.
+     * Only that account, so a late answer of an old request cannot remove the account in use now.
+     * If it was the active one, switches to the next; with none left, FortisApp opens Sign in.
+     */
+    suspend fun removeByToken(token: String) {
+        dataStore.edit { prefs ->
+            val list = decode(prefs[Keys.ACCOUNTS])
+            val expired = list.firstOrNull { it.token == token } ?: return@edit
+            val kept = list - expired
+            prefs[Keys.ACCOUNTS] = encode(kept)
+            if (prefs[Keys.ACTIVE_ID] == expired.id) {
+                val next = kept.firstOrNull()
+                if (next != null) prefs[Keys.ACTIVE_ID] = next.id else prefs.remove(Keys.ACTIVE_ID)
+            }
+        }
+    }
+
     /** Updates the saved name/email/photo with the latest profile data. */
     suspend fun updateDetails(profile: UserProfile) {
         dataStore.edit { prefs ->
