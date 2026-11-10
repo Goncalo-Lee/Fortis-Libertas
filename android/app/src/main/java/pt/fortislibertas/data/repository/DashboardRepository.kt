@@ -11,6 +11,9 @@ interface DashboardRepository {
 
     suspend fun getDashboards(): List<Dashboard>
 
+    /** Creates a dashboard (the caller becomes its owner). */
+    suspend fun createDashboard(name: String): Dashboard
+
     /** Total of each record type between [from] and [to] (inclusive). */
     suspend fun getRecordTypeTotals(dashboardId: String, from: LocalDate, to: LocalDate): List<RecordTypeTotal>
 

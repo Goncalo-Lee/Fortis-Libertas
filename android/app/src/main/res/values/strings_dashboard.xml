@@ -12,7 +12,6 @@
     <string name="dash_no_data">No records in this period.</string>
     <string name="dash_categories_title">Categories</string>
     <string name="dash_by_type">By record type</string>
-    <string name="dash_no_dashboard">You have no dashboards yet. Create one on the website.</string>
     <string name="dash_chart_spent">Spending per month</string>
     <string name="dash_chart_categories">Share of each category</string>
     <string name="dash_chart_types">Share of each record type</string>
@@ -31,4 +30,10 @@
     <string name="dash_error_color">Choose a colour</string>
     <string name="dash_card_optional">Card (optional)</string>
     <string name="dash_no_card">No card</string>
+    <string name="dash_create">Create dashboard</string>
+    <string name="dash_create_title">New dashboard</string>
+    <string name="dash_create_placeholder">e.g. Personal</string>
+    <string name="dash_create_action">Create</string>
+    <string name="dash_empty_title">You have no dashboard yet</string>
+    <string name="dash_empty_message">Create the first one to start recording your money.</string>
 </resources>

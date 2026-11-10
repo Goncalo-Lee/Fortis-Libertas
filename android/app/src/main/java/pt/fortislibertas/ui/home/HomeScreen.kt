@@ -7,6 +7,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -17,6 +18,8 @@ import pt.fortislibertas.core.designsystem.components.EmptyContent
 import pt.fortislibertas.core.designsystem.components.ErrorContent
 import pt.fortislibertas.core.designsystem.components.LoadingContent
 import pt.fortislibertas.data.model.TransactionItem
+import pt.fortislibertas.ui.dashboard.components.DashboardCreateDialog
+import pt.fortislibertas.ui.dashboard.components.DashboardEmptyState
 import pt.fortislibertas.ui.transactiondetail.TransactionDetailDialog
 
 /**
@@ -34,6 +37,7 @@ fun HomeScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var selected by remember { mutableStateOf<TransactionItem?>(null) }   // details dialog
+    var showCreateDashboard by rememberSaveable { mutableStateOf(false) }
 
     // When coming back to this tab (e.g. after creating a record), refresh silently
     LaunchedEffect(Unit) { viewModel.onScreenShown() }
@@ -46,6 +50,10 @@ fun HomeScreen(
             actionLabel = stringResource(R.string.action_sign_in),
             onAction = onSignIn,
             modifier = Modifier.padding(contentPadding),
+        )
+        state.noDashboard -> DashboardEmptyState(
+            onCreate = { showCreateDashboard = true },
+            contentPadding = contentPadding,
         )
         summary != null -> HomeContent(
             summary = summary,
@@ -64,6 +72,16 @@ fun HomeScreen(
             modifier = Modifier.padding(contentPadding),
         )
         else -> LoadingContent(Modifier.padding(contentPadding))
+    }
+
+    if (showCreateDashboard) {
+        DashboardCreateDialog(
+            onDismiss = { showCreateDashboard = false },
+            onCreated = {
+                showCreateDashboard = false
+                viewModel.refresh()                       // the new dashboard is already the active one
+            },
+        )
     }
 
     selected?.let { item ->

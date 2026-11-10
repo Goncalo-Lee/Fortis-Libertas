@@ -16,6 +16,9 @@ data class DashboardDto(
     fun toModel() = Dashboard(id = id, name = name, isActive = isActive, role = role)
 }
 
+@Serializable
+data class CreateDashboardDto(val name: String)
+
 /** JSON of reports/summary (endpoints.md §16.3). */
 @Serializable
 data class ReportSummaryDto(

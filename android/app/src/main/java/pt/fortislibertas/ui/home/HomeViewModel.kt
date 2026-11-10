@@ -18,6 +18,7 @@ import pt.fortislibertas.R
 import pt.fortislibertas.data.local.AccountStore
 import pt.fortislibertas.data.repository.HomeRepository
 import pt.fortislibertas.data.repository.NetworkException
+import pt.fortislibertas.data.repository.NoDashboardException
 import pt.fortislibertas.data.repository.SessionExpiredException
 
 class HomeViewModel(
@@ -69,9 +70,11 @@ class HomeViewModel(
             if (!silent) _state.update { it.copy(isLoading = true, errorMessage = null) }
             try {
                 val summary = repository.getHome()
-                _state.update { it.copy(isLoading = false, summary = summary, errorMessage = null) }
+                _state.update { it.copy(isLoading = false, summary = summary, errorMessage = null, noDashboard = false) }
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: NoDashboardException) {
+                _state.update { it.copy(isLoading = false, summary = null, errorMessage = null, noDashboard = true) }
             } catch (e: Exception) {
                 // On a silent refresh, keep the old data and do not show an error
                 if (!silent) {

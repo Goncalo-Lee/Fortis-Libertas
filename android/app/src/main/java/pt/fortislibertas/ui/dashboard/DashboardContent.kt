@@ -15,7 +15,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -34,6 +33,7 @@ import pt.fortislibertas.data.model.RecordKind
 import pt.fortislibertas.data.model.RecordTypeTotal
 import pt.fortislibertas.ui.dashboard.components.DashboardBreakdown
 import pt.fortislibertas.ui.dashboard.components.DashboardCategoryCards
+import pt.fortislibertas.ui.dashboard.components.DashboardEmptyState
 import pt.fortislibertas.ui.dashboard.components.DashboardSpentHeader
 import pt.fortislibertas.ui.dashboard.components.DashboardTrend
 import pt.fortislibertas.ui.notifications.LocalUnreadNotifications
@@ -53,6 +53,7 @@ fun DashboardContent(
     onPeriodChange: (DashboardPeriod) -> Unit,
     onTrendTypeChange: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onCreateDashboard: () -> Unit = {},
 ) {
     val locale = Locale.getDefault()
     val today = LocalDate.now()
@@ -89,11 +90,9 @@ fun DashboardContent(
                 onRetry = onRetry,
                 modifier = Modifier.height(300.dp),
             )
-            state.dashboards.isEmpty() -> Text(
-                stringResource(R.string.dash_no_dashboard),
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+            state.dashboards.isEmpty() -> DashboardEmptyState(
+                onCreate = onCreateDashboard,
+                modifier = Modifier.height(420.dp),
             )
             else -> {
                 // Thin bar while reloading data that is already on screen

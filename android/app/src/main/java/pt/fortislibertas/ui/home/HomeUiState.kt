@@ -10,4 +10,5 @@ data class HomeUiState(
     val isSignedIn: Boolean = true,
     val userName: String? = null,
     val avatarUrl: String? = null,
+    val noDashboard: Boolean = false,          // the account has no dashboard yet: show the "+"
 )

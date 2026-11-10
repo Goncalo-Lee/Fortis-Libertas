@@ -1,5 +1,9 @@
 package pt.fortislibertas.data.repository
 
+import java.math.BigDecimal
+import java.math.RoundingMode
+import java.time.LocalDate
+import java.util.UUID
 import kotlinx.coroutines.delay
 import pt.fortislibertas.data.fake.FakeDashboardData
 import pt.fortislibertas.data.fake.FakeRecordData
@@ -9,9 +13,6 @@ import pt.fortislibertas.data.model.Dashboard
 import pt.fortislibertas.data.model.RecordKind
 import pt.fortislibertas.data.model.RecordType
 import pt.fortislibertas.data.model.RecordTypeTotal
-import java.math.BigDecimal
-import java.math.RoundingMode
-import java.time.LocalDate
 
 /**
  * Local mode: totals come from FakeTransactionData (which only has recent days).
@@ -20,9 +21,19 @@ import java.time.LocalDate
  */
 class FakeDashboardRepository : DashboardRepository {
 
+    /** Starts with the test dashboards; new ones stay while the app is open. */
+    private var dashboards = FakeDashboardData.dashboards
+
     override suspend fun getDashboards(): List<Dashboard> {
         delay(250)
-        return FakeDashboardData.dashboards
+        return dashboards
+    }
+
+    override suspend fun createDashboard(name: String): Dashboard {
+        delay(400)
+        val created = Dashboard(id = "dash-${UUID.randomUUID()}", name = name, isActive = true, role = "owner")
+        dashboards = dashboards + created
+        return created
     }
 
     override suspend fun getRecordTypeTotals(dashboardId: String, from: LocalDate, to: LocalDate): List<RecordTypeTotal> {

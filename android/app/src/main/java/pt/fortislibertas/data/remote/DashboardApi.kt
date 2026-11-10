@@ -1,12 +1,15 @@
 package pt.fortislibertas.data.remote
 
 import pt.fortislibertas.data.remote.dto.CategoryRefDto
+import pt.fortislibertas.data.remote.dto.CreateDashboardDto
 import pt.fortislibertas.data.remote.dto.DashboardDto
 import pt.fortislibertas.data.remote.dto.ItemResponseDto
 import pt.fortislibertas.data.remote.dto.ListResponseDto
 import pt.fortislibertas.data.remote.dto.RecordTypeDto
 import pt.fortislibertas.data.remote.dto.ReportSummaryDto
+import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -15,6 +18,10 @@ interface DashboardApi {
 
     @GET("api/v1/dashboards")
     suspend fun getDashboards(@Query("per_page") perPage: Int = 100): ListResponseDto<DashboardDto>
+
+    /** §8.3: only the name; it starts active, with Income / Expenses / Investment seeded. */
+    @POST("api/v1/dashboards")
+    suspend fun createDashboard(@Body body: CreateDashboardDto): ItemResponseDto<DashboardDto>
 
     /** Totals grouped by record_type, category or month. Dates: ISO, inclusive, max 366 days. */
     @GET("api/v1/dashboards/{dashboard_id}/reports/summary")

@@ -13,6 +13,9 @@ internal suspend fun <T> apiCall(block: suspend () -> T): T =
         throw NetworkException(e)
     }
 
-/** The active dashboard, or an error when none was chosen yet (the Dashboard tab picks one). */
+/** The account has no dashboard yet: the screens show the "create your first dashboard" state. */
+class NoDashboardException : Exception("The account has no dashboard")
+
+/** The active dashboard (AppContainer picks the first one when none was chosen). */
 internal suspend fun requireDashboard(activeDashboardId: suspend () -> String?): String =
-    activeDashboardId() ?: throw IllegalStateException("No active dashboard yet")
+    activeDashboardId() ?: throw NoDashboardException()

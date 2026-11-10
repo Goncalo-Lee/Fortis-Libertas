@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 // Build configuration for the Android application module
 plugins {
     alias(libs.plugins.android.application)
@@ -22,7 +24,7 @@ android {
         // 10.0.2.2 = the PC's localhost as seen by the emulator (the slash at the end is required)
         buildConfigField("String", "API_URL", "\"http://10.0.2.2:3000/\"")
         // true = local data (FakeData) · false = API with Bearer
-        buildConfigField("Boolean", "USE_FAKE_DATA", "true")
+        buildConfigField("Boolean", "USE_FAKE_DATA", "false")
     }
 
     buildTypes {
@@ -34,12 +36,16 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
+
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_11)
     }
 }
 
@@ -58,7 +64,6 @@ dependencies {
 
     // --- Testing Dependencies ---
     testImplementation(libs.junit)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
