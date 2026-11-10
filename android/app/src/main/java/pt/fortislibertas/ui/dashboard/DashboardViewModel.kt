@@ -63,6 +63,14 @@ class DashboardViewModel(
 
     fun refresh() = loadAll()
 
+    /**
+     * Called every time the Dashboard tab shows up again (e.g. after a new record):
+     * reloads with the data still on screen (only the thin bar on top shows).
+     */
+    fun onScreenShown() {
+        if (_state.value.months.isNotEmpty()) loadAll()
+    }
+
     fun setPeriod(period: DashboardPeriod) {
         if (period == _state.value.period) return
         _state.update { it.copy(period = period) }

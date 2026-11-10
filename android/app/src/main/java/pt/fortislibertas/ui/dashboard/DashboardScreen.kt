@@ -11,7 +11,11 @@ import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.Sell
 import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -20,6 +24,7 @@ import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.ArcAction
 import pt.fortislibertas.core.designsystem.components.ArcMenu
 import pt.fortislibertas.ui.dashboard.components.DashboardAllCategoriesDialog
+import pt.fortislibertas.ui.dashboard.components.DashboardCreateDialog
 import pt.fortislibertas.ui.dashboard.components.DashboardManageDialog
 
 /**
@@ -33,6 +38,10 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = viewModel(factory = DashboardViewModel.Factory),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var showCreate by rememberSaveable { mutableStateOf(false) }
+
+    // When coming back to this tab, refresh (a record may have been added meanwhile)
+    LaunchedEffect(Unit) { viewModel.onScreenShown() }
 
     Box(Modifier.fillMaxSize()) {
         DashboardContent(
@@ -44,6 +53,7 @@ fun DashboardScreen(
             onKindChange = viewModel::setBreakdownKind,
             onPeriodChange = viewModel::setPeriod,
             onTrendTypeChange = viewModel::setTrendType,
+            onCreateDashboard = { showCreate = true },
         )
 
         // Management button: tap once → 4 buttons in an arc; tap again → back to normal
@@ -68,6 +78,11 @@ fun DashboardScreen(
                 modifier = Modifier.padding(bottom = contentPadding.calculateBottomPadding()),
             )
         }
+    }
+
+    // No dashboard yet: "+" → name → created and active (the ViewModel reloads by itself)
+    if (showCreate) {
+        DashboardCreateDialog(onDismiss = { showCreate = false }, onCreated = { showCreate = false })
     }
 
     state.manage?.let { manage ->
