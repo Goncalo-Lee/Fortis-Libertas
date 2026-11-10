@@ -47,9 +47,10 @@ export default function NotificationsPage() {
     }
 
     return (
-        <div className="flex-1 w-full p-4 sm:p-6 md:p-8 font-poppins overflow-y-auto overflow-x-hidden">
-            <div className="mx-auto w-full max-w-4xl space-y-6 pb-12">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex-1 w-full h-full p-4 sm:p-6 md:p-8 font-poppins flex flex-col overflow-hidden">
+            <div className="mx-auto w-full max-w-4xl space-y-6 flex flex-col h-full">
+                {/* Cabeçalho Fixo */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
                     <div className="space-y-1">
                         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
                             Centro de Notificações
@@ -76,32 +77,33 @@ export default function NotificationsPage() {
                     </div>
                 </div>
 
-                {loading ? (
-                    <Card className="py-12 shadow-sm text-center border-slate-200/80 dark:border-slate-800">
-                        <CardContent className="flex flex-col items-center justify-center space-y-3">
-                            <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
-                            <p className="text-xs text-muted-foreground">A carregar notificações...</p>
-                        </CardContent>
-                    </Card>
-                ) : notifications.length === 0 ? (
-                    <Card className="py-12 shadow-sm text-center border-slate-200/80 dark:border-slate-800">
-                        <CardContent className="flex flex-col items-center justify-center space-y-3">
-                            <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-400">
-                                <Bell className="w-8 h-8" />
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                                    Sem notificações
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    Não existem avisos ou lembretes pendentes na tua conta.
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <div className="space-y-2.5">
-                        {notifications.map((item) => (
+                {/* Conteúdo com Scroll Limitado */}
+                <div className="flex-1 overflow-y-auto pr-2 space-y-2.5 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                    {loading ? (
+                        <Card className="py-12 shadow-sm text-center border-slate-200/80 dark:border-slate-800">
+                            <CardContent className="flex flex-col items-center justify-center space-y-3">
+                                <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+                                <p className="text-xs text-muted-foreground">A carregar notificações...</p>
+                            </CardContent>
+                        </Card>
+                    ) : notifications.length === 0 ? (
+                        <Card className="py-12 shadow-sm text-center border-slate-200/80 dark:border-slate-800">
+                            <CardContent className="flex flex-col items-center justify-center space-y-3">
+                                <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-400">
+                                    <Bell className="w-8 h-8" />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                                        Sem notificações
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Não existem avisos ou lembretes pendentes na tua conta.
+                                    </p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        notifications.map((item) => (
                             <div
                                 key={item.notification_id}
                                 className={`flex items-start justify-between p-3.5 sm:p-4 rounded-xl border transition-all ${
@@ -154,9 +156,9 @@ export default function NotificationsPage() {
                                     </button>
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                )}
+                        ))
+                    )}
+                </div>
             </div>
         </div>
     )
