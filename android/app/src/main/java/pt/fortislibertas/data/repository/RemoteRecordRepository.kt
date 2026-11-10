@@ -1,23 +1,27 @@
 package pt.fortislibertas.data.repository
 
+import java.io.IOException
 import pt.fortislibertas.data.model.Category
 import pt.fortislibertas.data.model.InstalmentPlanOption
 import pt.fortislibertas.data.model.NewFinancialRecord
 import pt.fortislibertas.data.model.NewInstalmentPlan
+import pt.fortislibertas.data.model.PaymentMethod
 import pt.fortislibertas.data.model.RecordFormOptions
 import pt.fortislibertas.data.model.RecordType
 import pt.fortislibertas.data.model.Tag
 import pt.fortislibertas.data.remote.RecordApi
 import pt.fortislibertas.data.remote.dto.CreateCategoryRequest
 import pt.fortislibertas.data.remote.dto.CreateInstalmentPlanRequest
+import pt.fortislibertas.data.remote.dto.CreatePaymentMethodRequestDto
 import pt.fortislibertas.data.remote.dto.CreateRecordRequest
 import pt.fortislibertas.data.remote.dto.CreateTagRequest
 import retrofit2.HttpException
-import java.io.IOException
 
 /** API mode: sends the forms to Next.js with the Bearer token. */
 class RemoteRecordRepository(
     private val api: RecordApi,
+    /** Active dashboard (from DashboardStore); null until one is chosen. */
+    private val activeDashboardId: suspend () -> String? = { null },
 ) : RecordRepository {
 
     override suspend fun getFormOptions(): RecordFormOptions =
@@ -63,6 +67,11 @@ class RemoteRecordRepository(
 
     override suspend fun createCategory(name: String, type: RecordType, colorKey: String): Category =
         call { api.createCategory(CreateCategoryRequest(name, type.name.lowercase(), colorKey)).toModel() }
+
+    override suspend fun createPaymentMethod(name: String, cardId: String?): PaymentMethod = call {
+        val dashboardId = activeDashboardId() ?: throw IllegalStateException("No active dashboard yet")
+        api.createPaymentMethod(dashboardId, CreatePaymentMethodRequestDto(name.trim(), cardId)).data.toModel()
+    }
 
     private suspend fun <T> call(block: suspend () -> T): T =
         try {

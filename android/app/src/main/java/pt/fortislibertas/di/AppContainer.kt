@@ -14,15 +14,19 @@ import pt.fortislibertas.BuildConfig
 import pt.fortislibertas.data.fake.FakeAccountData
 import pt.fortislibertas.data.local.AccountStore
 import pt.fortislibertas.data.local.CardColorStore
+import pt.fortislibertas.data.local.DashboardStore
 import pt.fortislibertas.data.remote.AuthApi
 import pt.fortislibertas.data.remote.AuthInterceptor
+import pt.fortislibertas.data.remote.DashboardApi
 import pt.fortislibertas.data.remote.FortisApi
 import pt.fortislibertas.data.remote.HomeApi
 import pt.fortislibertas.data.remote.RecordApi
 import pt.fortislibertas.data.remote.TransactionApi
 import pt.fortislibertas.data.remote.WalletApi
 import pt.fortislibertas.data.repository.AuthRepository
+import pt.fortislibertas.data.repository.DashboardRepository
 import pt.fortislibertas.data.repository.FakeAuthRepository
+import pt.fortislibertas.data.repository.FakeDashboardRepository
 import pt.fortislibertas.data.repository.FakeHomeRepository
 import pt.fortislibertas.data.repository.FakeProfileRepository
 import pt.fortislibertas.data.repository.FakeRecordRepository
@@ -32,6 +36,7 @@ import pt.fortislibertas.data.repository.HomeRepository
 import pt.fortislibertas.data.repository.ProfileRepository
 import pt.fortislibertas.data.repository.RecordRepository
 import pt.fortislibertas.data.repository.RemoteAuthRepository
+import pt.fortislibertas.data.repository.RemoteDashboardRepository
 import pt.fortislibertas.data.repository.RemoteHomeRepository
 import pt.fortislibertas.data.repository.RemoteProfileRepository
 import pt.fortislibertas.data.repository.RemoteRecordRepository
@@ -51,6 +56,9 @@ class AppContainer(context: Context) {
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     val accountStore = AccountStore(context)
+
+    /** Active dashboard of each account: every screen that reads records uses it. */
+    val dashboardStore = DashboardStore(context, accountStore)
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -87,11 +95,15 @@ class AppContainer(context: Context) {
         else RemoteProfileRepository(retrofit.create(FortisApi::class.java))
     val recordRepository: RecordRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeRecordRepository()
-        else RemoteRecordRepository(retrofit.create(RecordApi::class.java))
+        else RemoteRecordRepository(retrofit.create(RecordApi::class.java)) { dashboardStore.current() }
 
     val homeRepository: HomeRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeHomeRepository()
         else RemoteHomeRepository(retrofit.create(HomeApi::class.java))
+
+    val dashboardRepository: DashboardRepository =
+        if (BuildConfig.USE_FAKE_DATA) FakeDashboardRepository()
+        else RemoteDashboardRepository(retrofit.create(DashboardApi::class.java))
 
     val walletRepository: WalletRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeWalletRepository()
@@ -99,7 +111,7 @@ class AppContainer(context: Context) {
 
     val transactionRepository: TransactionRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeTransactionRepository()
-        else RemoteTransactionRepository(retrofit.create(TransactionApi::class.java))
+        else RemoteTransactionRepository(retrofit.create(TransactionApi::class.java)) { dashboardStore.current() }
 
     /**
      * Account clean-up when the app starts. FortisApp waits for it before choosing

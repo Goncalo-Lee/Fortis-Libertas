@@ -1,15 +1,16 @@
 package pt.fortislibertas.data.repository
 
+import java.util.UUID
 import kotlinx.coroutines.delay
 import pt.fortislibertas.data.fake.FakeRecordData
 import pt.fortislibertas.data.model.Category
 import pt.fortislibertas.data.model.InstalmentPlanOption
 import pt.fortislibertas.data.model.NewFinancialRecord
 import pt.fortislibertas.data.model.NewInstalmentPlan
+import pt.fortislibertas.data.model.PaymentMethod
 import pt.fortislibertas.data.model.RecordFormOptions
 import pt.fortislibertas.data.model.RecordType
 import pt.fortislibertas.data.model.Tag
-import java.util.UUID
 
 /**
  * Local mode: keeps everything in memory while the app is open.
@@ -61,6 +62,13 @@ class FakeRecordRepository : RecordRepository {
             colorHex = hex,
         )
         options = options.copy(categories = options.categories + created)
+        return created
+    }
+
+    override suspend fun createPaymentMethod(name: String, cardId: String?): PaymentMethod {
+        delay(250)
+        val created = PaymentMethod(id = UUID.randomUUID().toString(), name = name)
+        options = options.copy(paymentMethods = options.paymentMethods + created)
         return created
     }
 }

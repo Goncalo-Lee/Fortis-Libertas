@@ -4,6 +4,7 @@ import pt.fortislibertas.data.model.Category
 import pt.fortislibertas.data.model.InstalmentPlanOption
 import pt.fortislibertas.data.model.NewFinancialRecord
 import pt.fortislibertas.data.model.NewInstalmentPlan
+import pt.fortislibertas.data.model.PaymentMethod
 import pt.fortislibertas.data.model.RecordFormOptions
 import pt.fortislibertas.data.model.RecordType
 import pt.fortislibertas.data.model.Tag
@@ -15,4 +16,6 @@ interface RecordRepository {
     suspend fun createInstalmentPlan(plan: NewInstalmentPlan): InstalmentPlanOption
     suspend fun createTag(name: String, categoryId: String?): Tag
     suspend fun createCategory(name: String, type: RecordType, colorKey: String): Category
+    /** [cardId] links the method to one of the user's cards; null for cash, transfer, etc. */
+    suspend fun createPaymentMethod(name: String, cardId: String? = null): PaymentMethod
 }

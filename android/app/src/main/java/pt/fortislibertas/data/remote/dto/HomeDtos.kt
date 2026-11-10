@@ -37,13 +37,13 @@ data class CardPreviewDto(val id: String, val color: ColorDto)
 data class DayTotalsDto(val date: String, val income: String, val expense: String)
 
 @Serializable
-data class CategoryRefDto(val id: String, val name: String, val color: ColorDto)
+data class HomeCategoryRefDto(val id: String, val name: String, val color: ColorDto)
 
 @Serializable
 data class TransactionDto(
     val id: String,
     val name: String,
-    val category: CategoryRefDto,
+    val category: HomeCategoryRefDto,
     val type: String,
     val amount: String,
     val currency: String = "EUR",
