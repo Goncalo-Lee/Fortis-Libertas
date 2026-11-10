@@ -39,6 +39,8 @@ fun ProfileScreen(
     onEditProfile: () -> Unit = {},
     onOpenBanks: () -> Unit = {},
     onOpenDashboards: () -> Unit = {},
+    accountSaved: Boolean = false,
+    onAccountSavedHandled: () -> Unit = {},
     viewModel: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -55,6 +57,15 @@ fun ProfileScreen(
                 is ProfileEvent.ShowMessage ->
                     snackbarHostState.showSnackbar(resources.getString(event.messageRes))
             }
+        }
+    }
+
+    // Back from Edit account with changes: reload and confirm
+    LaunchedEffect(accountSaved) {
+        if (accountSaved) {
+            onAccountSavedHandled()
+            viewModel.loadProfile()
+            snackbarHostState.showSnackbar(resources.getString(R.string.account_saved))
         }
     }
 

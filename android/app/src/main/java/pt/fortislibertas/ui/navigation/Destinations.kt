@@ -14,6 +14,7 @@ import pt.fortislibertas.R
 @Serializable data object NewRecordRoute
 @Serializable data object TransactionsRoute
 @Serializable data object ProfileRoute
+@Serializable data object EditAccountRoute                   // opened from the Profile (no bottom bar)
 
 /**
  * Cards / Banks screen (not a tab). [initialPage]: "cards" or "banks".

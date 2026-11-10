@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Edit account (Profile) -->
+    <string name="account_title">Edit account</string>
+    <string name="account_back">Back</string>
+    <string name="account_photo_web">The photo is changed on the website</string>
+    <string name="account_full_name">Full name</string>
+    <string name="account_username">Username</string>
+    <string name="account_username_hint">Letters, numbers, . _ -</string>
+    <string name="account_email">Email</string>
+    <string name="account_email_web">The email is changed on the website</string>
+    <string name="account_phone">Phone (optional)</string>
+    <string name="account_birth_date">Birth date (optional)</string>
+    <string name="account_currency">Currency</string>
+    <string name="account_primary_bank">Primary bank</string>
+    <string name="account_primary_bank_none">None</string>
+    <string name="account_save">Save</string>
+    <string name="account_saved">Account updated</string>
+    <string name="account_error_username">3 or more characters: letters, numbers, . _ -</string>
+    <string name="account_error_username_taken">This username is already in use</string>
+    <string name="account_error_phone">Invalid phone number</string>
+    <string name="account_error_birth_date">Can\'t be in the future</string>
+</resources>

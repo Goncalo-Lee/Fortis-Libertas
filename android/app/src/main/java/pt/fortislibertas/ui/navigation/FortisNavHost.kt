@@ -2,7 +2,9 @@ package pt.fortislibertas.ui.navigation
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -12,6 +14,7 @@ import pt.fortislibertas.ui.auth.AuthScreen
 import pt.fortislibertas.ui.cards.CardsPage
 import pt.fortislibertas.ui.cards.CardsScreen
 import pt.fortislibertas.ui.dashboard.DashboardScreen
+import pt.fortislibertas.ui.editaccount.EditAccountScreen
 import pt.fortislibertas.ui.home.HomeScreen
 import pt.fortislibertas.ui.newrecord.NewRecordScreen
 import pt.fortislibertas.ui.profile.ProfileScreen
@@ -64,11 +67,26 @@ fun FortisNavHost(
         composable<TransactionsRoute> {
             TransactionsScreen(contentPadding = contentPadding)
         }
-        composable<ProfileRoute> {
+        composable<ProfileRoute> { entry ->
+            // Edit account leaves "account_saved" here so the Profile reloads and says so
+            val accountSaved by entry.savedStateHandle.getStateFlow(ACCOUNT_SAVED, false).collectAsStateWithLifecycle()
             ProfileScreen(
                 contentPadding = contentPadding,
                 onNavigateToSignIn = { navController.navigate(AuthRoute) { launchSingleTop = true } },
+                onEditProfile = { navController.navigate(EditAccountRoute) { launchSingleTop = true } },
                 onOpenBanks = { navController.navigate(CardsRoute(initialPage = "banks", from = "profile")) },
+                accountSaved = accountSaved,
+                onAccountSavedHandled = { entry.savedStateHandle[ACCOUNT_SAVED] = false },
+            )
+        }
+        composable<EditAccountRoute> {
+            EditAccountScreen(
+                contentPadding = contentPadding,
+                onBack = { navController.popBackStack() },
+                onSaved = {
+                    navController.previousBackStackEntry?.savedStateHandle?.set(ACCOUNT_SAVED, true)
+                    navController.popBackStack()
+                },
             )
         }
     }
@@ -105,3 +123,6 @@ private fun NavHostController.navigateToHomeClearingStack() {
         popUpTo(graph.id) { inclusive = true }
     }
 }
+
+/** Key of the "Edit account saved" result in the Profile's SavedStateHandle. */
+private const val ACCOUNT_SAVED = "account_saved"
