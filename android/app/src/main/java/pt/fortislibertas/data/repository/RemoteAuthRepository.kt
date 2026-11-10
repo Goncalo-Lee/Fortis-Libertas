@@ -1,13 +1,14 @@
 package pt.fortislibertas.data.repository
 
+import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import pt.fortislibertas.data.model.SavedAccount
 import pt.fortislibertas.data.remote.AuthApi
 import pt.fortislibertas.data.remote.dto.AuthResponseDto
+import pt.fortislibertas.data.remote.dto.ChangePasswordRequestDto
 import pt.fortislibertas.data.remote.dto.SignInRequestDto
 import pt.fortislibertas.data.remote.dto.SignUpRequestDto
 import retrofit2.Response
-import java.io.IOException
 
 /** API mode: Better Auth email + password. */
 class RemoteAuthRepository(
@@ -24,6 +25,22 @@ class RemoteAuthRepository(
         call(remember, onError = { code -> if (code == 422 || code == 400) EmailTakenException() else httpError(code) }) {
             api.signUp(SignUpRequestDto(name = name.trim(), email = email.trim(), password = password))
         }
+
+    override suspend fun changePassword(currentPassword: String, newPassword: String, revokeOtherSessions: Boolean) {
+        val response = try {
+            api.changePassword(ChangePasswordRequestDto(currentPassword, newPassword, revokeOtherSessions))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            throw NetworkException(e)
+        }
+        when {
+            response.isSuccessful -> Unit
+            response.code() == 400 -> throw WrongPasswordException()      // Better Auth: INVALID_PASSWORD
+            response.code() == 401 -> throw SessionExpiredException()
+            else -> throw httpError(response.code())
+        }
+    }
 
     private suspend fun call(
         remember: Boolean,

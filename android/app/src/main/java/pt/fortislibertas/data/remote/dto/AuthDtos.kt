@@ -46,3 +46,11 @@ data class AuthResponseDto(
         remember = remember,
     )
 }
+
+/** Body of POST /api/auth/change-password (Better Auth uses camelCase). */
+@Serializable
+data class ChangePasswordRequestDto(
+    val currentPassword: String,
+    val newPassword: String,
+    val revokeOtherSessions: Boolean,
+)

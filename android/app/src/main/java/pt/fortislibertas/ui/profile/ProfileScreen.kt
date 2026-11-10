@@ -9,15 +9,21 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.AccountSwitcherSheet
+import pt.fortislibertas.ui.password.ChangePasswordSheet
 import pt.fortislibertas.ui.profile.components.ProfileDialogs
 import pt.fortislibertas.ui.profile.components.ProfileLanguageSheet
 
@@ -31,7 +37,6 @@ fun ProfileScreen(
     contentPadding: PaddingValues,
     onNavigateToSignIn: () -> Unit,
     onEditProfile: () -> Unit = {},
-    onOpenPassword: () -> Unit = {},
     onOpenBanks: () -> Unit = {},
     onOpenDashboards: () -> Unit = {},
     viewModel: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory),
@@ -39,6 +44,8 @@ fun ProfileScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalContext.current.resources
+    val scope = rememberCoroutineScope()
+    var showPasswordSheet by rememberSaveable { mutableStateOf(false) }
 
     // One-time events: navigate and show messages
     LaunchedEffect(viewModel) {
@@ -59,7 +66,7 @@ fun ProfileScreen(
             onSignIn = onNavigateToSignIn,
             onEditProfile = onEditProfile,
             onSwitchAccount = viewModel::openAccountSwitcher,
-            onOpenPassword = onOpenPassword,
+            onOpenPassword = { showPasswordSheet = true },
             onOpenBanks = onOpenBanks,
             onOpenDashboards = onOpenDashboards,
             onRequestDialog = viewModel::openDialog,
@@ -85,6 +92,16 @@ fun ProfileScreen(
             onSelect = viewModel::switchAccount,
             onAddAccount = viewModel::addAccount,
             onDismiss = viewModel::closeAccountSwitcher,
+        )
+    }
+
+    if (showPasswordSheet) {
+        ChangePasswordSheet(
+            onDismiss = { showPasswordSheet = false },
+            onSaved = {
+                showPasswordSheet = false
+                scope.launch { snackbarHostState.showSnackbar(resources.getString(R.string.password_saved)) }
+            },
         )
     }
 

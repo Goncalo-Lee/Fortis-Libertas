@@ -32,4 +32,10 @@ class FakeAuthRepository : AuthRepository {
             remember = remember,
         )
     }
+
+    /** Local mode: "wrongpass" plays the wrong current password, anything else works. */
+    override suspend fun changePassword(currentPassword: String, newPassword: String, revokeOtherSessions: Boolean) {
+        delay(600)
+        if (currentPassword == "wrongpass") throw WrongPasswordException()
+    }
 }
