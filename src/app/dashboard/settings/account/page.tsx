@@ -12,7 +12,7 @@ import { authClient } from "@/lib/auth-client";
 import Enable2FADialog from "@/components/two-factor-dialog";
 import RequestResetDialog from "@/components/request-reset-dialog";
 import MailChangeDialog from "@/components/mail-change-dialog";
-import { OpenBankingModal } from "@/components/OpenBankingModal"; // <--- O teu modal importado aqui!
+import { OpenBankingModal } from "@/components/OpenBankingModal";
 
 export default function AccountSettingsPage() {
     const { data: session, refetch: refetchSession } = authClient.useSession();
@@ -351,7 +351,6 @@ export default function AccountSettingsPage() {
                 </div>
             </div>
 
-            {/* O MODAL DE OPEN BANKING RENDERIZADO AQUI */}
             <OpenBankingModal
                 isOpen={isOpenBankingModalOpen}
                 onClose={() => setIsOpenBankingModalOpen(false)}

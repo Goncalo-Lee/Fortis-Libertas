@@ -7,7 +7,7 @@ import { toast } from "sonner"
 import { useDashboard } from "@/contexts/DashboardContext"
 import { useFinancial } from "@/contexts/FinancialContext"
 import { CreateCategoryModal } from "@/components/CreateCategoryModal"
-import {useNotifications} from "@/contexts/NotificationContext";
+import { useNotifications } from "@/contexts/NotificationContext"
 
 export default function EmergencyFundPage() {
     const { activeDashboard } = useDashboard()
@@ -18,19 +18,22 @@ export default function EmergencyFundPage() {
         addFinancialRecord, deleteFinancialRecord, addInstallmentPlan, updateInstallmentPlan, deleteInstallmentPlan, addTag
     } = useFinancial()
 
-    // Estados dos Modais/Painéis
+    // Modal / panel states
     const [isConfiguring, setIsConfiguring] = useState(false)
     const [isAddingMovement, setIsAddingMovement] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
     const [tempCategory, setTempCategory] = useState<any>(null)
 
-    // Estados para Configuração / Criação
+    // ID of the movement currently being deleted (disables its button while the request runs)
+    const [deletingMovementId, setDeletingMovementId] = useState<string | null>(null)
+
+    // Setup / configuration states
     const [tempCost, setTempCost] = useState("750")
     const [tempMonths, setTempMonths] = useState("6")
     const [setupCategoryId, setSetupCategoryId] = useState("")
 
-    // Estados para Reforço (Depósito)
+    // Top-up (deposit) states
     const [movTitle, setMovTitle] = useState("")
     const [movAmount, setMovAmount] = useState("")
     const [movPaymentMethodId, setMovPaymentMethodId] = useState("")
@@ -38,8 +41,10 @@ export default function EmergencyFundPage() {
     const [movCategoryId, setMovCategoryId] = useState("")
 
     // ==========================================
-    // 1. LOCALIZAR O PLANO DO FUNDO
+    // 1. FIND THE FUND'S PLAN
     // ==========================================
+    // The fund is stored as an installment plan, identified by a description
+    // prefix ([EMERGENCY] / [PILLOW]) or by keywords in its name.
     const emergencyPlan = useMemo(() => {
         if (!installmentPlans) return null
         return installmentPlans.find(
@@ -54,6 +59,7 @@ export default function EmergencyFundPage() {
     }, [installmentPlans])
 
     const { monthlyEssentialCost, targetMonths, idealTarget, emergencyPlanId } = useMemo(() => {
+        // Defaults when no fund exists yet
         if (!emergencyPlan) {
             return { monthlyEssentialCost: 750, targetMonths: 6, idealTarget: 4500, emergencyPlanId: null }
         }
@@ -62,6 +68,8 @@ export default function EmergencyFundPage() {
         const months = Number(emergencyPlan.total_installments ?? emergencyPlan.totalInstallments ?? 6)
         const total = Number(emergencyPlan.total_amount ?? emergencyPlan.totalAmount ?? emergencyPlan.amount ?? 4500)
 
+        // Derive the monthly cost from total/months, but prefer the value
+        // stored in the description ("Custo: X") when it is present.
         let cost = months > 0 ? Math.round(total / months) : 750
         if (emergencyPlan.description && emergencyPlan.description.includes("Custo:")) {
             const match = emergencyPlan.description.match(/Custo:\s*([\d.]+)/)
@@ -81,6 +89,8 @@ export default function EmergencyFundPage() {
     }, [recordTypes])
     const defaultExpenseTypeId = expenseRecordType?.record_type_id || expenseRecordType?.id
 
+    // Categories usable for this fund (expense/neutral), including a freshly
+    // created one that may not have reached the context yet.
     const availableCategories = useMemo(() => {
         let list = categories ? [...categories] : []
         if (tempCategory && !list.some((c: any) => (c.category_id || c.id) === tempCategory.id)) {
@@ -94,6 +104,7 @@ export default function EmergencyFundPage() {
         })
     }, [categories, tempCategory])
 
+    // Keep the config form in sync with the stored plan
     useEffect(() => {
         if (emergencyPlan) {
             setTempCost(String(monthlyEssentialCost))
@@ -102,7 +113,7 @@ export default function EmergencyFundPage() {
     }, [emergencyPlan, monthlyEssentialCost, targetMonths])
 
     // ==========================================
-    // 2. CÁLCULO DE MOVIMENTOS
+    // 2. MOVEMENTS CALCULATION
     // ==========================================
     const movements = useMemo(() => {
         if (!financialRecords || !emergencyPlanId) return []
@@ -128,7 +139,7 @@ export default function EmergencyFundPage() {
     const securityLevel = Math.min(5, Math.max(1, Math.ceil((completionPct / 100) * 5)))
 
     // ==========================================
-    // 3. CRIAR O FUNDO PELA PRIMEIRA VEZ
+    // 3. CREATE THE FUND FOR THE FIRST TIME
     // ==========================================
     async function handleCreateFund(e: React.FormEvent) {
         e.preventDefault()
@@ -151,12 +162,13 @@ export default function EmergencyFundPage() {
             await addInstallmentPlan({
                 name: "Fundo de Emergência",
                 description: `[EMERGENCY] Custo: ${parsedCost} | Meses: ${parsedMonths}`,
-                // MAGIA: .toFixed(2) transforma em String para a API aceitar!
+                // .toFixed(2) converts the number to a string, which is what the API expects
                 total_amount: calculatedTarget.toFixed(2),
                 total_installments: parsedMonths,
                 due_date: dueDate.toISOString().split("T")[0],
                 status: "pending",
-                category_id: setupCategoryId // Envia a categoria para a base de dados não chatear
+                // The API requires a category, so we send it along
+                category_id: setupCategoryId
             })
 
             toast.success("Fundo de Emergência criado com sucesso!")
@@ -168,7 +180,7 @@ export default function EmergencyFundPage() {
     }
 
     // ==========================================
-    // 4. ATUALIZAR FUNDO EXISTENTE
+    // 4. UPDATE / DELETE AN EXISTING FUND
     // ==========================================
     async function handleUpdateConfig(e: React.FormEvent) {
         e.preventDefault()
@@ -182,7 +194,7 @@ export default function EmergencyFundPage() {
             const calculatedTarget = parsedCost * parsedMonths
             await updateInstallmentPlan(emergencyPlanId, {
                 name: "Fundo de Emergência",
-                // String obrigatória para o status 422 não apitar
+                // Must be a string, otherwise the API answers with a 422
                 total_amount: calculatedTarget.toFixed(2),
                 total_installments: parsedMonths,
                 description: `[EMERGENCY] Custo: ${parsedCost} | Meses: ${parsedMonths}`
@@ -205,15 +217,13 @@ export default function EmergencyFundPage() {
             toast.success("Fundo apagado. Podes criar um novo!")
             setIsConfiguring(false)
         } catch (error: any) {
+            // The backend rejects the delete while linked records still exist
             toast.error("Erro: Verifica se apagaste os movimentos do fundo primeiro.")
         }
     }
 
     // ==========================================
-    // 5. REGISTAR REFORÇO
-    // ==========================================
-// ==========================================
-    // 5. REGISTAR REFORÇO
+    // 5. ADD A TOP-UP (DEPOSIT)
     // ==========================================
     async function handleAddMovement(e: React.FormEvent) {
         e.preventDefault()
@@ -224,12 +234,14 @@ export default function EmergencyFundPage() {
             return toast.error("Introduz descrição, montante e categoria válidos.")
         }
 
+        // Fall back to the first payment method if none was selected
         const fallbackMethod = paymentMethods?.[0]
         const selectedMethod = movPaymentMethodId || fallbackMethod?.payment_method_id || fallbackMethod?.id
         if (!selectedMethod) return toast.error("Não tens contas de pagamento registadas.")
 
         setIsSubmitting(true)
         try {
+            // Reuse the tag if it already exists, otherwise create it
             let matchedTag = (tags || []).find((t: any) => t.name?.toLowerCase() === movTag.toLowerCase())
             if (!matchedTag && movTag) {
                 const tagData = await addTag(movTag)
@@ -238,7 +250,7 @@ export default function EmergencyFundPage() {
 
             await addFinancialRecord({
                 name: movTitle.trim(),
-                price: parsedAmount, // O Contexto já converte isto em String para nós
+                price: parsedAmount, // The context already converts this to a string for us
                 recordTypeId: defaultExpenseTypeId,
                 categoryId: movCategoryId,
                 paymentMethodId: selectedMethod,
@@ -248,26 +260,26 @@ export default function EmergencyFundPage() {
             })
 
             // ========================================================
-            // A MAGIA DAS NOTIFICAÇÕES ACONTECE AQUI!
+            // MILESTONE NOTIFICATIONS
             // ========================================================
-            const novoSaldo = currentBalance + parsedAmount;
+            const newBalance = currentBalance + parsedAmount
 
-            // 1. Notificar se atingiu 1 Mês de proteção pela primeira vez
-            if (novoSaldo >= monthlyEssentialCost && currentBalance < monthlyEssentialCost) {
+            // 1. Notify when the balance first covers one month of essential costs
+            if (newBalance >= monthlyEssentialCost && currentBalance < monthlyEssentialCost) {
                 await createNotification(
                     "🛡️ 1 Mês de Proteção!",
                     "Fantástico! Já juntaste o suficiente para cobrir um mês inteiro de despesas essenciais.",
                     "success"
-                );
+                )
             }
 
-            // 2. Notificar se atingiu 100% do Fundo de Emergência
-            if (novoSaldo >= idealTarget && currentBalance < idealTarget) {
+            // 2. Notify when the fund reaches 100% of its target
+            if (newBalance >= idealTarget && currentBalance < idealTarget) {
                 await createNotification(
                     "🏆 Fundo de Emergência Completo!",
                     "Muitos parabéns! Atingiste o alvo total da tua reserva. Estás financeiramente blindado!",
                     "goal"
-                );
+                )
             }
             // ========================================================
 
@@ -282,8 +294,29 @@ export default function EmergencyFundPage() {
         }
     }
 
+    // ==========================================
+    // 6. DELETE A TOP-UP (DEPOSIT)
+    // ==========================================
+    async function handleDeleteMovement(movementId?: string) {
+        // Guard against missing IDs and double clicks
+        if (!movementId || deletingMovementId) return
+        if (!confirm("Queres mesmo apagar este movimento? O saldo do fundo vai ser atualizado.")) return
+
+        setDeletingMovementId(movementId)
+        try {
+            await deleteFinancialRecord(movementId)
+            // Balance, progress bar and "months covered" are derived from the
+            // records, so they update automatically once the context refreshes.
+            toast.success("Movimento apagado.")
+        } catch (error: any) {
+            toast.error(error.message || "Erro ao apagar o movimento.")
+        } finally {
+            setDeletingMovementId(null)
+        }
+    }
+
     // =========================================================================
-    // RENDER 1: ECRÃ DE SETUP (SE NÃO HOUVER FUNDO)
+    // RENDER 1: SETUP SCREEN (WHEN NO FUND EXISTS)
     // =========================================================================
     if (!emergencyPlanId) {
         return (
@@ -363,7 +396,7 @@ export default function EmergencyFundPage() {
     }
 
     // =========================================================================
-    // RENDER 2: DASHBOARD PRINCIPAL DO FUNDO
+    // RENDER 2: MAIN FUND DASHBOARD
     // =========================================================================
     return (
         <div className="h-full w-full overflow-y-auto p-4 md:p-6 space-y-6 font-poppins relative">
@@ -504,6 +537,7 @@ export default function EmergencyFundPage() {
                 </Card>
             )}
 
+            {/* Summary cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card className="flex flex-col justify-between py-3 shadow-sm">
                     <CardHeader className="pb-1 w-full text-center">
@@ -541,6 +575,7 @@ export default function EmergencyFundPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Progress card */}
                 <Card className="lg:col-span-5 flex flex-col py-4 shadow-sm">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-base font-semibold">Estado do Fundo de Emergência</CardTitle>
@@ -561,6 +596,7 @@ export default function EmergencyFundPage() {
                     </CardContent>
                 </Card>
 
+                {/* Movements list */}
                 <Card className="lg:col-span-7 flex flex-col py-4 shadow-sm">
                     <CardHeader className="pb-3 flex flex-row items-center justify-between">
                         <div>
@@ -571,6 +607,7 @@ export default function EmergencyFundPage() {
                         {movements.length === 0 && <p className="text-center text-xs text-muted-foreground py-8">Ainda não há movimentos registados.</p>}
                         {movements.map((mov, index) => {
                             const movId = mov.id || index
+                            const isDeleting = deletingMovementId === mov.id
                             return (
                                 <div key={movId} className="flex items-center justify-between p-3 rounded-lg border">
                                     <div>
@@ -579,7 +616,15 @@ export default function EmergencyFundPage() {
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <span className="font-bold text-emerald-600">+ € {mov.amount.toLocaleString("pt-PT", { minimumFractionDigits: 2 })}</span>
-                                        <button onClick={() => handleDeleteMovement(mov.id)} className="p-1.5 text-slate-400 hover:text-red-500 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDeleteMovement(mov.id)}
+                                            disabled={isDeleting}
+                                            title="Apagar movimento"
+                                            className="p-1.5 text-slate-400 hover:text-red-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
                                     </div>
                                 </div>
                             )
