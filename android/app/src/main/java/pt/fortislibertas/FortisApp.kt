@@ -3,12 +3,14 @@ package pt.fortislibertas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
@@ -17,6 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import pt.fortislibertas.core.designsystem.components.FortisBottomBar
 import pt.fortislibertas.ui.navigation.AuthRoute
@@ -27,6 +30,7 @@ import pt.fortislibertas.ui.navigation.TopLevelDestination
 import pt.fortislibertas.ui.navigation.isOn
 import pt.fortislibertas.ui.navigation.navigateToAuthClearingStack
 import pt.fortislibertas.ui.navigation.navigateToTab
+import pt.fortislibertas.ui.notifications.LocalUnreadNotifications
 
 /**
  * Root of the UI: the Scaffold with the bottom bar and the [FortisNavHost].
@@ -58,6 +62,20 @@ fun FortisApp(navController: NavHostController = rememberNavController()) {
         }
     }
 
+    // Bell badge: refreshed when the account or the tab changes (one small request)
+    val unreadNotifications by container.notificationRepository.unreadCount.collectAsStateWithLifecycle()
+    val activeAccountId by container.accountStore.activeAccountId.collectAsStateWithLifecycle(initialValue = null)
+    LaunchedEffect(activeAccountId, currentTab) {
+        if (activeAccountId == null) return@LaunchedEffect
+        try {
+            container.notificationRepository.refreshUnreadCount()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // No network: the badge keeps the last value
+        }
+    }
+
     Scaffold(
         bottomBar = {
             if (currentTab != null) {
@@ -70,14 +88,16 @@ fun FortisApp(navController: NavHostController = rememberNavController()) {
         },
     ) { innerPadding ->
         val start = startDestination ?: return@Scaffold
-        FortisNavHost(
-            navController = navController,
-            contentPadding = innerPadding,
-            startDestination = start,
-            modifier = Modifier
-                .fillMaxSize()
-                .haze(hazeState),                            // Haze 1.0.0 (newer versions: hazeSource)
-        )
+        CompositionLocalProvider(LocalUnreadNotifications provides unreadNotifications) {
+            FortisNavHost(
+                navController = navController,
+                contentPadding = innerPadding,
+                startDestination = start,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .haze(hazeState),                        // Haze 1.0.0 (newer versions: hazeSource)
+            )
+        }
     }
 }
 

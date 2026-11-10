@@ -40,6 +40,7 @@ import pt.fortislibertas.ui.cards.components.CardsAddButton
 import pt.fortislibertas.ui.cards.components.CardsBankItem
 import pt.fortislibertas.ui.cards.components.CardsPaymentCard
 import pt.fortislibertas.ui.cards.components.CardsStatusChips
+import pt.fortislibertas.ui.notifications.LocalUnreadNotifications
 
 /**
  * Stateless Cards / Banks screen. The header (top bar, back arrow, status chips) stays fixed;
@@ -84,7 +85,7 @@ fun CardsContent(
                     title = stringResource(if (onCards) R.string.cards_title else R.string.banks_title),
                     avatarName = state.userName,
                     avatarUrl = state.avatarUrl,
-                    notificationCount = 0,               // TODO: connect to the notifications count
+                    notificationCount = LocalUnreadNotifications.current,
                     notificationsLabel = stringResource(R.string.notifications),
                     onNotificationsClick = onOpenNotifications,
                 )

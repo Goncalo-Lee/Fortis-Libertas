@@ -35,6 +35,7 @@ import pt.fortislibertas.ui.home.components.HomeChartLegend
 import pt.fortislibertas.ui.home.components.HomeGreetingHeader
 import pt.fortislibertas.ui.home.components.HomeRecentTransactions
 import pt.fortislibertas.ui.home.components.HomeWeekChart
+import pt.fortislibertas.ui.notifications.LocalUnreadNotifications
 
 /**
  * Stateless version of the Home tab: top bar, greeting and balance with the card stack,
@@ -62,7 +63,7 @@ fun HomeContent(
             title = stringResource(R.string.home_title),
             avatarName = userName,
             avatarUrl = avatarUrl,
-            notificationCount = 0,                      // TODO: connect to the notifications count
+            notificationCount = LocalUnreadNotifications.current,
             notificationsLabel = stringResource(R.string.notifications),
             onNotificationsClick = onOpenNotifications,
         )

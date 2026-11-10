@@ -17,6 +17,7 @@ import pt.fortislibertas.ui.dashboard.DashboardScreen
 import pt.fortislibertas.ui.editaccount.EditAccountScreen
 import pt.fortislibertas.ui.home.HomeScreen
 import pt.fortislibertas.ui.newrecord.NewRecordScreen
+import pt.fortislibertas.ui.notifications.NotificationsScreen
 import pt.fortislibertas.ui.profile.ProfileScreen
 import pt.fortislibertas.ui.transactions.TransactionsScreen
 
@@ -31,6 +32,8 @@ fun FortisNavHost(
     startDestination: Any,
     modifier: Modifier = Modifier,
 ) {
+    val openNotifications = { navController.navigate(NotificationsRoute) { launchSingleTop = true } }
+
     NavHost(
         navController = navController,
         startDestination = startDestination,
@@ -50,6 +53,7 @@ fun FortisNavHost(
                     navController.navigateToTab(TopLevelDestination.TRANSACTIONS)
                 },
                 onSignIn = { navController.navigate(AuthRoute) { launchSingleTop = true } },
+                onOpenNotifications = openNotifications,
             )
         }
         composable<CardsRoute> { entry ->
@@ -58,14 +62,20 @@ fun FortisNavHost(
                 contentPadding = contentPadding,
                 initialPage = if (route.initialPage == "banks") CardsPage.Banks else CardsPage.Cards,
                 onBack = { navController.popBackStack() },
+                onOpenNotifications = openNotifications,
             )
         }
-        composable<DashboardRoute> { DashboardScreen(contentPadding = contentPadding) }
+        composable<DashboardRoute> {
+            DashboardScreen(contentPadding = contentPadding, onOpenNotifications = openNotifications)
+        }
         composable<NewRecordRoute> {
-            NewRecordScreen(contentPadding = contentPadding)
+            NewRecordScreen(contentPadding = contentPadding, onOpenNotifications = openNotifications)
         }
         composable<TransactionsRoute> {
-            TransactionsScreen(contentPadding = contentPadding)
+            TransactionsScreen(contentPadding = contentPadding, onOpenNotifications = openNotifications)
+        }
+        composable<NotificationsRoute> {
+            NotificationsScreen(contentPadding = contentPadding, onBack = { navController.popBackStack() })
         }
         composable<ProfileRoute> { entry ->
             // Edit account leaves "account_saved" here so the Profile reloads and says so

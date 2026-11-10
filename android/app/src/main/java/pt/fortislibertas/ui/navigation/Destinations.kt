@@ -14,6 +14,7 @@ import pt.fortislibertas.R
 @Serializable data object NewRecordRoute
 @Serializable data object TransactionsRoute
 @Serializable data object ProfileRoute
+@Serializable data object NotificationsRoute                 // opened from the bell (no bottom bar)
 @Serializable data object EditAccountRoute                   // opened from the Profile (no bottom bar)
 
 /**

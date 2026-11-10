@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Notifications -->
+    <string name="notif_title">Notificações</string>
+    <string name="notif_mark_all">Marcar todas como lidas</string>
+    <string name="notif_all">Todas</string>
+    <string name="notif_unread">Não lidas</string>
+    <string name="notif_empty">Não tens notificações.</string>
+    <string name="notif_empty_unread">Já leste tudo.</string>
+    <string name="notif_delete">Apagar</string>
+    <string name="notif_dashboard_added">Foste adicionado ao dashboard “%1$s” como %2$s</string>
+    <string name="notif_bank_added">Foste adicionado à conta “%1$s” como %2$s</string>
+    <string name="notif_unknown_dashboard">um dashboard</string>
+    <string name="notif_unknown_bank">uma conta bancária</string>
+    <string name="notif_generic">Nova notificação</string>
+    <string name="notif_role_owner">dono</string>
+    <string name="notif_role_editor">editor</string>
+    <string name="notif_role_viewer">leitor</string>
+    <string name="notif_unread_state">Não lida</string>
+    <string name="notif_time_now">agora</string>
+    <string name="notif_time_minutes">há %1$d min</string>
+    <string name="notif_time_hours">há %1$d h</string>
+    <string name="notif_time_yesterday">ontem</string>
+</resources>

@@ -36,6 +36,7 @@ import pt.fortislibertas.ui.dashboard.components.DashboardBreakdown
 import pt.fortislibertas.ui.dashboard.components.DashboardCategoryCards
 import pt.fortislibertas.ui.dashboard.components.DashboardSpentHeader
 import pt.fortislibertas.ui.dashboard.components.DashboardTrend
+import pt.fortislibertas.ui.notifications.LocalUnreadNotifications
 
 /**
  * Stateless Dashboard tab: spent this period + chart, spending by category,
@@ -75,7 +76,7 @@ fun DashboardContent(
             title = state.activeDashboard?.name ?: stringResource(R.string.dash_title),
             avatarName = state.userName,
             avatarUrl = state.avatarUrl,
-            notificationCount = 0,                      // TODO: connect to the notifications count
+            notificationCount = LocalUnreadNotifications.current,
             notificationsLabel = stringResource(R.string.notifications),
             onNotificationsClick = onOpenNotifications,
         )

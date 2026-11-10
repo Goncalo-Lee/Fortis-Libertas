@@ -32,6 +32,7 @@ import pt.fortislibertas.core.designsystem.preview.FortisScreenPreviews
 import pt.fortislibertas.data.fake.FakeTransactionData
 import pt.fortislibertas.data.model.RecordType
 import pt.fortislibertas.data.model.TransactionItem
+import pt.fortislibertas.ui.notifications.LocalUnreadNotifications
 import pt.fortislibertas.ui.transactions.components.TransactionsSearchBar
 import pt.fortislibertas.ui.transactions.components.TransactionsTypeChips
 
@@ -70,7 +71,7 @@ fun TransactionsContent(
                 title = stringResource(R.string.transactions_title),
                 avatarName = state.userName,
                 avatarUrl = state.avatarUrl,
-                notificationCount = 0,                   // TODO: connect to the notifications count
+                notificationCount = LocalUnreadNotifications.current,
                 notificationsLabel = stringResource(R.string.notifications),
                 onNotificationsClick = onOpenNotifications,
             )

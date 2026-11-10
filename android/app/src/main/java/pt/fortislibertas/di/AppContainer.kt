@@ -21,6 +21,7 @@ import pt.fortislibertas.data.remote.AuthInterceptor
 import pt.fortislibertas.data.remote.DashboardApi
 import pt.fortislibertas.data.remote.FortisApi
 import pt.fortislibertas.data.remote.HomeApi
+import pt.fortislibertas.data.remote.NotificationApi
 import pt.fortislibertas.data.remote.RecordApi
 import pt.fortislibertas.data.remote.TransactionApi
 import pt.fortislibertas.data.remote.WalletApi
@@ -29,16 +30,19 @@ import pt.fortislibertas.data.repository.DashboardRepository
 import pt.fortislibertas.data.repository.FakeAuthRepository
 import pt.fortislibertas.data.repository.FakeDashboardRepository
 import pt.fortislibertas.data.repository.FakeHomeRepository
+import pt.fortislibertas.data.repository.FakeNotificationRepository
 import pt.fortislibertas.data.repository.FakeProfileRepository
 import pt.fortislibertas.data.repository.FakeRecordRepository
 import pt.fortislibertas.data.repository.FakeTransactionRepository
 import pt.fortislibertas.data.repository.FakeWalletRepository
 import pt.fortislibertas.data.repository.HomeRepository
+import pt.fortislibertas.data.repository.NotificationRepository
 import pt.fortislibertas.data.repository.ProfileRepository
 import pt.fortislibertas.data.repository.RecordRepository
 import pt.fortislibertas.data.repository.RemoteAuthRepository
 import pt.fortislibertas.data.repository.RemoteDashboardRepository
 import pt.fortislibertas.data.repository.RemoteHomeRepository
+import pt.fortislibertas.data.repository.RemoteNotificationRepository
 import pt.fortislibertas.data.repository.RemoteProfileRepository
 import pt.fortislibertas.data.repository.RemoteRecordRepository
 import pt.fortislibertas.data.repository.RemoteTransactionRepository
@@ -110,6 +114,10 @@ class AppContainer(context: Context) {
     val walletRepository: WalletRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeWalletRepository()
         else RemoteWalletRepository(retrofit.create(WalletApi::class.java), accountStore, CardColorStore(context))
+
+    val notificationRepository: NotificationRepository =
+        if (BuildConfig.USE_FAKE_DATA) FakeNotificationRepository()
+        else RemoteNotificationRepository(retrofit.create(NotificationApi::class.java))
 
     val transactionRepository: TransactionRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeTransactionRepository()

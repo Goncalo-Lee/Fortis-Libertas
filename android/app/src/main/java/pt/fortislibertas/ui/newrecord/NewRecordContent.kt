@@ -22,6 +22,7 @@ import pt.fortislibertas.core.designsystem.components.ActionTile
 import pt.fortislibertas.core.designsystem.components.FortisTopBar
 import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisScreenPreviews
+import pt.fortislibertas.ui.notifications.LocalUnreadNotifications
 
 /** Fixed part of the Register tab: top bar and the three tiles. Stateless, easy to preview. */
 @Composable
@@ -44,7 +45,7 @@ fun NewRecordContent(
             title = stringResource(R.string.register_title),
             avatarName = avatarName,
             avatarUrl = avatarUrl,
-            notificationCount = 0,       // TODO: connect to the notifications count
+            notificationCount = LocalUnreadNotifications.current,
             notificationsLabel = stringResource(R.string.notifications),
             onNotificationsClick = onOpenNotifications,
         )
