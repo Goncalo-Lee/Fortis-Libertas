@@ -8,7 +8,12 @@ import type { Tx } from "../memberships";
  * - `dashboard.member_added`    -> { dashboard_id, role, added_by }
  * - `bank_account.member_added` -> { bank_account_id, role, added_by }
  */
-export type NotificationType = "dashboard.member_added" | "bank_account.member_added";
+export type NotificationType =
+  | "dashboard.member_added"
+  | "bank_account.member_added"
+  | "goal.reached"
+  | "report.generated"
+  | "manual";
 
 /** Either the plain connection or an open transaction, so a notification can be written with the change that caused it. */
 export type Executor = typeof db | Tx;

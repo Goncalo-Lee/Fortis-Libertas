@@ -25,3 +25,14 @@ export async function updateUserProfile(data: { phone?: string | null; birth_dat
 
     return res.json();
 }
+
+export async function sendNotification(title: string, message: string) {
+    const res = await fetch('/api/v1/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, message })
+    });
+
+    if (!res.ok) throw new Error("Erro ao enviar notificação.");
+    return res.json();
+}

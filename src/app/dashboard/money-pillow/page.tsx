@@ -319,6 +319,16 @@ export default function EmergencyFundPage() {
 
             // Milestone notifications
             const newBalance = currentBalance + parsedAmount
+            const oldPct = idealTarget > 0 ? Math.floor((currentBalance / idealTarget) * 10) : 0;
+            const newPct = idealTarget > 0 ? Math.floor((newBalance / idealTarget) * 10) : 0;
+
+            if (newPct > oldPct && newPct < 10) {
+                await createNotification(
+                    "📈 Progresso no Fundo!",
+                    `Boa! Já atingiste ${newPct * 10}% do teu Fundo de Emergência. Continua assim!`,
+                    "info"
+                )
+            }
 
             if (newBalance >= monthlyEssentialCost && currentBalance < monthlyEssentialCost) {
                 await createNotification(

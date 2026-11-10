@@ -23,6 +23,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { useFinancial } from "@/contexts/FinancialContext"
+import { useNotifications } from "@/contexts/NotificationContext"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
 
@@ -30,6 +31,7 @@ type ReportType = "statement" | "expenses_by_category" | "monthly_balance"
 
 export default function ReportsGeneratorPage() {
     const { financialRecords, categories, paymentMethods, recordTypes } = useFinancial()
+    const { createNotification } = useNotifications()
 
     const [reportType, setReportType] = useState<ReportType>("statement")
     const [selectedMonth, setSelectedMonth] = useState<string>((new Date().getMonth() + 1).toString())
@@ -126,6 +128,12 @@ export default function ReportsGeneratorPage() {
             setPreviewData(generatedData)
             setIsGenerating(false)
             toast.success("Relatório gerado com sucesso!")
+
+            createNotification(
+                "📄 Relatório Gerado",
+                `O relatório do tipo "${reportType}" para ${selectedMonth}/${selectedYear} foi gerado com sucesso.`,
+                "info"
+            )
         }, 600)
     }
 
