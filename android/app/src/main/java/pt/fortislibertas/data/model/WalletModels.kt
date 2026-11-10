@@ -14,6 +14,7 @@ data class BankAccount(
     val balance: BigDecimal,
     val isFrozen: Boolean,
     val isOwner: Boolean,                  // the user's role on this account is "owner"
+    val canAddCards: Boolean = isOwner,    // owner or editor (POST /bank-accounts/{id}/cards)
 )
 
 /**
@@ -52,4 +53,31 @@ data class CardUpdate(
 data class Wallet(
     val cards: List<PaymentCard>,
     val banks: List<BankAccount>,
+)
+
+/** A person in a bank account (read only in the app: managing members is done on the web). */
+data class BankMember(
+    val id: String,
+    val fullName: String,
+    val userName: String?,
+    val imageUrl: String?,
+    val role: String,                      // owner, editor, viewer
+)
+
+/** What the Add card form sends. Number, expiry date and CVV are optional in the API. */
+data class NewCard(
+    val bankId: String,
+    val cardholderName: String,
+    val type: CardType,
+    val cardNumber: String?,
+    val expiryDate: LocalDate?,
+    val cvv: String?,
+    val colorHex: String,
+)
+
+/** What the Add bank form sends. The creator becomes the owner. */
+data class NewBankAccount(
+    val name: String,
+    val initialBalance: BigDecimal,
+    val currency: String,
 )

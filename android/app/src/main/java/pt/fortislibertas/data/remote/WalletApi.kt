@@ -1,7 +1,10 @@
 package pt.fortislibertas.data.remote
 
 import pt.fortislibertas.data.remote.dto.BankAccountDto
+import pt.fortislibertas.data.remote.dto.BankMemberDto
 import pt.fortislibertas.data.remote.dto.CardDto
+import pt.fortislibertas.data.remote.dto.CreateBankRequestDto
+import pt.fortislibertas.data.remote.dto.CreateCardRequestDto
 import pt.fortislibertas.data.remote.dto.ItemResponseDto
 import pt.fortislibertas.data.remote.dto.ListResponseDto
 import pt.fortislibertas.data.remote.dto.UpdateCardRequestDto
@@ -29,6 +32,20 @@ interface WalletApi {
 
     @POST("api/v1/cards/{card_id}/unfreeze")
     suspend fun unfreezeCard(@Path("card_id") id: String): ItemResponseDto<CardDto>
+
+    /** People in a bank account (read only in the app). */
+    @GET("api/v1/bank-accounts/{bank_account_id}/members")
+    suspend fun getMembers(@Path("bank_account_id") bankId: String): ListResponseDto<BankMemberDto>
+
+    @POST("api/v1/bank-accounts/{bank_account_id}/cards")
+    suspend fun createCard(
+        @Path("bank_account_id") bankId: String,
+        @Body body: CreateCardRequestDto,
+    ): ItemResponseDto<CardDto>
+
+    /** The caller becomes the owner (§5.5). */
+    @POST("api/v1/bank-accounts")
+    suspend fun createBankAccount(@Body body: CreateBankRequestDto): ItemResponseDto<BankAccountDto>
 
     @PATCH("api/v1/cards/{card_id}")
     suspend fun updateCard(@Path("card_id") id: String, @Body body: UpdateCardRequestDto): ItemResponseDto<CardDto>

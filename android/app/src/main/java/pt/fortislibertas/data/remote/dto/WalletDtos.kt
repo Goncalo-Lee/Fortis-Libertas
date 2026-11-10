@@ -1,12 +1,13 @@
 package pt.fortislibertas.data.remote.dto
 
+import java.math.BigDecimal
+import java.time.LocalDate
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import pt.fortislibertas.data.model.BankAccount
+import pt.fortislibertas.data.model.BankMember
 import pt.fortislibertas.data.model.CardType
 import pt.fortislibertas.data.model.PaymentCard
-import java.math.BigDecimal
-import java.time.LocalDate
 
 /** Collection envelope of the v1 API: { "data": [ ... ], "meta": { ... } }. */
 @Serializable
@@ -67,6 +68,7 @@ data class BankAccountDto(
         balance = balance.toBigDecimalOrNull() ?: BigDecimal.ZERO,
         isFrozen = frozenAt != null,
         isOwner = role == "owner",
+        canAddCards = role == "owner" || role == "editor",
     )
 }
 
@@ -82,6 +84,36 @@ data class UpdateCardRequestDto(
     @SerialName("expiry_date") val expiryDate: String? = null,
     @SerialName("card_number") val cardNumber: String? = null,
     val cvv: String? = null,
+)
+
+/** JSON of a bank account member (endpoints.md §6.2). */
+@Serializable
+data class BankMemberDto(
+    @SerialName("user_id") val id: String,
+    @SerialName("user_name") val userName: String? = null,
+    @SerialName("full_name") val fullName: String,
+    val image: String? = null,
+    val role: String,
+) {
+    fun toModel() = BankMember(id = id, fullName = fullName, userName = userName, imageUrl = image, role = role)
+}
+
+/** Body of POST /api/v1/bank-accounts/{id}/cards (§7.3). Null fields are not sent. */
+@Serializable
+data class CreateCardRequestDto(
+    @SerialName("cardholder_name") val cardholderName: String,
+    @SerialName("type_card") val typeCard: String,
+    @SerialName("card_number") val cardNumber: String? = null,
+    @SerialName("expiry_date") val expiryDate: String? = null,
+    val cvv: String? = null,
+)
+
+/** Body of POST /api/v1/bank-accounts (§5.3). */
+@Serializable
+data class CreateBankRequestDto(
+    val name: String,
+    @SerialName("initial_balance") val initialBalance: String,
+    val currency: String,
 )
 
 /** Card colours while the API has no color field: always the same colour for the same card. */

@@ -6,10 +6,15 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import pt.fortislibertas.data.local.AccountStore
 import pt.fortislibertas.data.local.CardColorStore
+import pt.fortislibertas.data.model.BankMember
 import pt.fortislibertas.data.model.CardType
 import pt.fortislibertas.data.model.CardUpdate
+import pt.fortislibertas.data.model.NewBankAccount
+import pt.fortislibertas.data.model.NewCard
 import pt.fortislibertas.data.model.Wallet
 import pt.fortislibertas.data.remote.WalletApi
+import pt.fortislibertas.data.remote.dto.CreateBankRequestDto
+import pt.fortislibertas.data.remote.dto.CreateCardRequestDto
 import pt.fortislibertas.data.remote.dto.UpdateCardRequestDto
 import retrofit2.HttpException
 
@@ -56,6 +61,35 @@ class RemoteWalletRepository(
             ),
         )
         colorStore.set(cardId, update.colorHex)          // TEMPORARY: send color_id when the API has it
+    }
+
+    override suspend fun getMembers(bankId: String): List<BankMember> = call {
+        api.getMembers(bankId).data.map { it.toModel() }
+    }
+
+    override suspend fun createCard(card: NewCard) = call {
+        val created = api.createCard(
+            card.bankId,
+            CreateCardRequestDto(
+                cardholderName = card.cardholderName.trim(),
+                typeCard = if (card.type == CardType.CREDIT) "credit" else "debit",
+                cardNumber = card.cardNumber,
+                expiryDate = card.expiryDate?.toString(),
+                cvv = card.cvv,
+            ),
+        ).data
+        colorStore.set(created.id, card.colorHex)        // TEMPORARY: send color_id when the API has it
+    }
+
+    override suspend fun createBankAccount(bank: NewBankAccount) = call {
+        api.createBankAccount(
+            CreateBankRequestDto(
+                name = bank.name.trim(),
+                initialBalance = bank.initialBalance.setScale(2).toPlainString(),
+                currency = bank.currency,
+            ),
+        )
+        Unit
     }
 
     override suspend fun deleteCard(cardId: String) = call {
