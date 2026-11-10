@@ -1,13 +1,7 @@
 package pt.fortislibertas.ui.navigation
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -17,6 +11,7 @@ import androidx.navigation.toRoute
 import pt.fortislibertas.ui.auth.AuthScreen
 import pt.fortislibertas.ui.cards.CardsPage
 import pt.fortislibertas.ui.cards.CardsScreen
+import pt.fortislibertas.ui.dashboard.DashboardScreen
 import pt.fortislibertas.ui.home.HomeScreen
 import pt.fortislibertas.ui.newrecord.NewRecordScreen
 import pt.fortislibertas.ui.profile.ProfileScreen
@@ -62,7 +57,7 @@ fun FortisNavHost(
                 onBack = { navController.popBackStack() },
             )
         }
-        composable<DashboardRoute> { PlaceholderScreen("Dashboard", contentPadding) }
+        composable<DashboardRoute> { DashboardScreen(contentPadding = contentPadding) }
         composable<NewRecordRoute> {
             NewRecordScreen(contentPadding = contentPadding)
         }
@@ -108,18 +103,5 @@ fun NavHostController.navigateToAuthClearingStack() {
 private fun NavHostController.navigateToHomeClearingStack() {
     navigate(HomeRoute) {
         popUpTo(graph.id) { inclusive = true }
-    }
-}
-
-/** Temporary screen for tabs that are not built yet. */
-@Composable
-private fun PlaceholderScreen(title: String, contentPadding: PaddingValues) {
-    Box(
-        Modifier
-            .fillMaxSize()
-            .padding(contentPadding),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(title, style = MaterialTheme.typography.headlineMedium)
     }
 }

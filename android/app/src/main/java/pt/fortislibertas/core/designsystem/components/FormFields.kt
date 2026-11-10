@@ -21,6 +21,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -35,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import java.time.Instant
@@ -122,6 +124,7 @@ private fun ClickableField(
     modifier: Modifier = Modifier,
     errorText: String? = null,
     leadingContent: (@Composable () -> Unit)? = null,
+    textAlign: TextAlign = TextAlign.Start,
 ) {
     Box(modifier) {
         OutlinedTextField(
@@ -129,7 +132,8 @@ private fun ClickableField(
             onValueChange = {},
             readOnly = true,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(placeholder, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            textStyle = LocalTextStyle.current.copy(textAlign = textAlign),
+            placeholder = { Text(placeholder, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = textAlign, modifier = Modifier.fillMaxWidth()) },
             leadingIcon = leadingContent,
             trailingIcon = { Icon(trailingIcon, contentDescription = null) },
             isError = errorText != null,
@@ -157,6 +161,7 @@ fun <T> SelectField(
     modifier: Modifier = Modifier,
     placeholder: String = "",
     errorText: String? = null,
+    textAlign: TextAlign = TextAlign.Start,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -169,11 +174,12 @@ fun <T> SelectField(
                 trailingIcon = if (expanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown,
                 onClick = { expanded = true },
                 errorText = errorText,
+                textAlign = textAlign,
             )
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 options.forEach { option ->
                     DropdownMenuItem(
-                        text = { Text(optionLabel(option)) },
+                        text = { Text(optionLabel(option), modifier = Modifier.fillMaxWidth(), textAlign = textAlign) },
                         onClick = {
                             onSelect(option)
                             expanded = false
