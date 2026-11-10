@@ -19,6 +19,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import pt.fortislibertas.R
 import pt.fortislibertas.core.designsystem.components.AccountSwitcherSheet
 import pt.fortislibertas.ui.profile.components.ProfileDialogs
+import pt.fortislibertas.ui.profile.components.ProfileLanguageSheet
 
 /**
  * Stateful version of the Profile tab: connects [ProfileViewModel] to [ProfileContent].
@@ -62,6 +63,8 @@ fun ProfileScreen(
             onOpenBanks = onOpenBanks,
             onOpenDashboards = onOpenDashboards,
             onRequestDialog = viewModel::openDialog,
+            onThemeModeChange = viewModel::setThemeMode,
+            onOpenLanguage = viewModel::openLanguageSheet,
         )
 
         SnackbarHost(
@@ -82,6 +85,14 @@ fun ProfileScreen(
             onSelect = viewModel::switchAccount,
             onAddAccount = viewModel::addAccount,
             onDismiss = viewModel::closeAccountSwitcher,
+        )
+    }
+
+    if (state.showLanguageSheet) {
+        ProfileLanguageSheet(
+            selected = state.language,
+            onSelect = viewModel::setLanguage,
+            onDismiss = viewModel::closeLanguageSheet,
         )
     }
 

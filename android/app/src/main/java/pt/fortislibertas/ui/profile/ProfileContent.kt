@@ -21,10 +21,13 @@ import pt.fortislibertas.core.designsystem.components.LoadingContent
 import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisScreenPreviews
 import pt.fortislibertas.data.fake.FakeAccountData
+import pt.fortislibertas.data.model.AppLanguage
+import pt.fortislibertas.data.model.ThemeMode
 import pt.fortislibertas.data.model.UserProfile
 import pt.fortislibertas.ui.profile.components.ProfileAccountActions
 import pt.fortislibertas.ui.profile.components.ProfileAccountDetailsCard
 import pt.fortislibertas.ui.profile.components.ProfileHeader
+import pt.fortislibertas.ui.profile.components.ProfilePreferences
 import pt.fortislibertas.ui.profile.components.ProfileShortcuts
 
 /**
@@ -43,6 +46,8 @@ fun ProfileContent(
     onOpenBanks: () -> Unit,
     onOpenDashboards: () -> Unit,
     onRequestDialog: (ProfileDialog) -> Unit,
+    onThemeModeChange: (ThemeMode) -> Unit,
+    onOpenLanguage: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val waitingForProfile =
@@ -69,6 +74,10 @@ fun ProfileContent(
 
         else -> ProfileBody(
             profile = state.profile,
+            themeMode = state.themeMode,
+            language = state.language,
+            onThemeModeChange = onThemeModeChange,
+            onOpenLanguage = onOpenLanguage,
             contentPadding = contentPadding,
             onEditProfile = onEditProfile,
             onSwitchAccount = onSwitchAccount,
@@ -85,6 +94,10 @@ fun ProfileContent(
 @Composable
 private fun ProfileBody(
     profile: UserProfile,
+    themeMode: ThemeMode,
+    language: AppLanguage,
+    onThemeModeChange: (ThemeMode) -> Unit,
+    onOpenLanguage: () -> Unit,
     contentPadding: PaddingValues,
     onEditProfile: () -> Unit,
     onSwitchAccount: () -> Unit,
@@ -122,6 +135,15 @@ private fun ProfileBody(
 
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
+        ProfilePreferences(
+            themeMode = themeMode,
+            language = language,
+            onThemeModeChange = onThemeModeChange,
+            onOpenLanguage = onOpenLanguage,
+        )
+
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+
         ProfileAccountActions(onRequestDialog = onRequestDialog)
     }
 }
@@ -142,6 +164,7 @@ private fun ProfileContentPreview() {
             contentPadding = PaddingValues(),
             onRetry = {}, onSignIn = {}, onEditProfile = {}, onSwitchAccount = {},
             onOpenPassword = {}, onOpenBanks = {}, onOpenDashboards = {}, onRequestDialog = {},
+            onThemeModeChange = {}, onOpenLanguage = {},
         )
     }
 }

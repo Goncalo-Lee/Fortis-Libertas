@@ -1,7 +1,9 @@
 package pt.fortislibertas.ui.profile
 
 import androidx.annotation.StringRes
+import pt.fortislibertas.data.model.AppLanguage
 import pt.fortislibertas.data.model.SavedAccount
+import pt.fortislibertas.data.model.ThemeMode
 import pt.fortislibertas.data.model.UserProfile
 
 /** Everything the screen needs to draw itself. */
@@ -14,6 +16,9 @@ data class ProfileUiState(
     val showAccountSwitcher: Boolean = false,
     val dialog: ProfileDialog? = null,
     val isWorking: Boolean = false,            // sign out/deactivate/delete request running
+    val themeMode: ThemeMode = ThemeMode.System,
+    val language: AppLanguage = AppLanguage.Portuguese,
+    val showLanguageSheet: Boolean = false,
 )
 
 /** Which confirmation dialog is open. */

@@ -55,4 +55,11 @@
     <string name="error_network">Couldn\'t reach the server. Check your connection.</string>
     <string name="error_session_expired">Your session expired. Sign in again.</string>
     <string name="error_generic">Something went wrong. Try again.</string>
+    <!-- Preferences -->
+    <string name="profile_section_preferences">Preferences</string>
+    <string name="profile_appearance">Appearance</string>
+    <string name="profile_theme_system">System</string>
+    <string name="profile_theme_light">Light</string>
+    <string name="profile_theme_dark">Dark</string>
+    <string name="profile_language">Language</string>
 </resources>

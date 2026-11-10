@@ -1,11 +1,14 @@
 package pt.fortislibertas.ui.profile
 
 import androidx.annotation.StringRes
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -20,6 +23,9 @@ import kotlinx.coroutines.launch
 import pt.fortislibertas.FortisApplication
 import pt.fortislibertas.R
 import pt.fortislibertas.data.local.AccountStore
+import pt.fortislibertas.data.local.SettingsStore
+import pt.fortislibertas.data.model.AppLanguage
+import pt.fortislibertas.data.model.ThemeMode
 import pt.fortislibertas.data.repository.NetworkException
 import pt.fortislibertas.data.repository.ProfileRepository
 import pt.fortislibertas.data.repository.SessionExpiredException
@@ -27,9 +33,10 @@ import pt.fortislibertas.data.repository.SessionExpiredException
 class ProfileViewModel(
     private val repository: ProfileRepository,
     private val accountStore: AccountStore,
+    private val settingsStore: SettingsStore,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(ProfileUiState())
+    private val _state = MutableStateFlow(ProfileUiState(language = currentLanguage()))
     val state: StateFlow<ProfileUiState> = _state.asStateFlow()
 
     private val _events = Channel<ProfileEvent>(Channel.BUFFERED)
@@ -38,6 +45,9 @@ class ProfileViewModel(
     private var loadJob: Job? = null
 
     init {
+        viewModelScope.launch {
+            settingsStore.themeMode.collect { mode -> _state.update { it.copy(themeMode = mode) } }
+        }
         // Whenever the account list or the active account changes, the screen follows
         viewModelScope.launch {
             combine(accountStore.accounts, accountStore.activeAccountId) { accounts, activeId ->
@@ -94,6 +104,38 @@ class ProfileViewModel(
     }
 
     // ── Sign out / deactivate / delete ──────────────────
+
+    // ── Preferences ─────────────────────────────────────
+
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch { settingsStore.setThemeMode(mode) }
+    }
+
+    fun openLanguageSheet() = _state.update { it.copy(showLanguageSheet = true) }
+
+    fun closeLanguageSheet() = _state.update { it.copy(showLanguageSheet = false) }
+
+    /** Changes the app language right away (Android recreates the screen) and tells the server. */
+    fun setLanguage(language: AppLanguage) {
+        _state.update { it.copy(language = language, showLanguageSheet = false) }
+        if (language == currentLanguage()) return
+        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(language.tag))
+        viewModelScope.launch {
+            try {
+                repository.updateLanguage(language)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // Not critical: the app already changed; the website keeps its own value
+            }
+        }
+    }
+
+    /** Language in use: the one chosen in the app or, if none, the phone's. */
+    private fun currentLanguage(): AppLanguage {
+        val locale = AppCompatDelegate.getApplicationLocales()[0] ?: Locale.getDefault()
+        return if (locale.language == "pt") AppLanguage.Portuguese else AppLanguage.English
+    }
 
     fun openDialog(dialog: ProfileDialog) = _state.update { it.copy(dialog = dialog) }
 
@@ -159,6 +201,7 @@ class ProfileViewModel(
                 ProfileViewModel(
                     repository = app.container.profileRepository,
                     accountStore = app.container.accountStore,
+                    settingsStore = app.container.settingsStore,
                 )
             }
         }

@@ -15,6 +15,7 @@ import pt.fortislibertas.data.fake.FakeAccountData
 import pt.fortislibertas.data.local.AccountStore
 import pt.fortislibertas.data.local.CardColorStore
 import pt.fortislibertas.data.local.DashboardStore
+import pt.fortislibertas.data.local.SettingsStore
 import pt.fortislibertas.data.remote.AuthApi
 import pt.fortislibertas.data.remote.AuthInterceptor
 import pt.fortislibertas.data.remote.DashboardApi
@@ -56,6 +57,7 @@ class AppContainer(context: Context) {
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     val accountStore = AccountStore(context)
+    val settingsStore = SettingsStore(context)
 
     /** Active dashboard of each account: every screen that reads records uses it. */
     val dashboardStore = DashboardStore(context, accountStore)

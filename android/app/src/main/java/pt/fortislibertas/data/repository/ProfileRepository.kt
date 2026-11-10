@@ -1,5 +1,6 @@
 package pt.fortislibertas.data.repository
 
+import pt.fortislibertas.data.model.AppLanguage
 import pt.fortislibertas.data.model.UserProfile
 
 /**
@@ -11,6 +12,8 @@ interface ProfileRepository {
     suspend fun deactivateAccount()
     suspend fun deleteAccount()
     suspend fun signOut()
+    /** Saves the language on the server too, so the website uses the same one. */
+    suspend fun updateLanguage(language: AppLanguage)
 }
 
 /** Errors the UI knows how to show. */

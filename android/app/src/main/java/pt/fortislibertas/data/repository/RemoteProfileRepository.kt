@@ -1,10 +1,12 @@
 package pt.fortislibertas.data.repository
 
+import java.io.IOException
 import kotlinx.coroutines.CancellationException
+import pt.fortislibertas.data.model.AppLanguage
 import pt.fortislibertas.data.model.UserProfile
 import pt.fortislibertas.data.remote.FortisApi
+import pt.fortislibertas.data.remote.dto.UpdateProfileRequestDto
 import retrofit2.HttpException
-import java.io.IOException
 
 /** API mode: talks to Next.js using the active account's Bearer token. */
 class RemoteProfileRepository(
@@ -16,6 +18,9 @@ class RemoteProfileRepository(
     override suspend fun deactivateAccount() = call { api.deactivateMe() }
 
     override suspend fun deleteAccount() = call { api.deleteMe() }
+
+    override suspend fun updateLanguage(language: AppLanguage) =
+        call { api.updateMyProfile(UpdateProfileRequestDto(language = language.tag)) }
 
     /** Signs out even without network: the token is deleted locally anyway. */
     override suspend fun signOut() {

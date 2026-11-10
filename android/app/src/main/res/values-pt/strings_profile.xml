@@ -55,4 +55,11 @@
     <string name="error_network">Não foi possível ligar ao servidor. Verifica a ligação.</string>
     <string name="error_session_expired">A sessão expirou. Inicia sessão de novo.</string>
     <string name="error_generic">Algo correu mal. Tenta novamente.</string>
+    <!-- Preferences -->
+    <string name="profile_section_preferences">Preferências</string>
+    <string name="profile_appearance">Aparência</string>
+    <string name="profile_theme_system">Sistema</string>
+    <string name="profile_theme_light">Claro</string>
+    <string name="profile_theme_dark">Escuro</string>
+    <string name="profile_language">Idioma</string>
 </resources>

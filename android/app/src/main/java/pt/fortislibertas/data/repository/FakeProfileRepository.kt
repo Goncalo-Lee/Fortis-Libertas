@@ -5,6 +5,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import pt.fortislibertas.data.fake.FakeAccountData
 import pt.fortislibertas.data.local.AccountStore
+import pt.fortislibertas.data.model.AppLanguage
 import pt.fortislibertas.data.model.UserProfile
 
 /**
@@ -40,4 +41,6 @@ class FakeProfileRepository(
     override suspend fun deleteAccount() = delay(600)
 
     override suspend fun signOut() = delay(200)
+
+    override suspend fun updateLanguage(language: AppLanguage) = delay(200)
 }
