@@ -48,6 +48,9 @@ fun NewRecordScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalContext.current.resources
 
+    // When coming back to this tab, refresh the lists (they may have changed in another tab)
+    LaunchedEffect(Unit) { viewModel.onScreenShown() }
+
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {

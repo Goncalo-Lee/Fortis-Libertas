@@ -6,7 +6,10 @@ import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.AP
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import java.math.BigDecimal
+import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,8 +29,6 @@ import pt.fortislibertas.data.model.Tag
 import pt.fortislibertas.data.repository.NetworkException
 import pt.fortislibertas.data.repository.RecordRepository
 import pt.fortislibertas.data.repository.SessionExpiredException
-import java.math.BigDecimal
-import java.time.LocalDate
 
 class NewRecordViewModel(
     private val repository: RecordRepository,
@@ -39,6 +40,8 @@ class NewRecordViewModel(
 
     private val _events = Channel<NewRecordEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
+
+    private var optionsJob: Job? = null       // declared before init, which already uses it
 
     init {
         loadOptions()
@@ -52,25 +55,41 @@ class NewRecordViewModel(
         }
     }
 
+    /**
+     * Loads the lists of the forms (categories, tags, payment methods, plans…).
+     * When there are lists already, it refreshes them silently: they stay on screen and,
+     * if the request fails, the old ones are kept.
+     */
     fun loadOptions() {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoadingOptions = true, optionsError = null) }
+        val silent = _state.value.options != null
+        optionsJob?.cancel()
+        optionsJob = viewModelScope.launch {
+            if (!silent) _state.update { it.copy(isLoadingOptions = true, optionsError = null) }
             try {
                 val options = repository.getFormOptions()
-                _state.update { it.copy(isLoadingOptions = false, options = options) }
+                _state.update { it.copy(isLoadingOptions = false, options = options, optionsError = null) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _state.update { it.copy(isLoadingOptions = false, optionsError = e.toMessageRes()) }
+                if (!silent) _state.update { it.copy(isLoadingOptions = false, optionsError = e.toMessageRes()) }
             }
         }
+    }
+
+    /**
+     * Called every time the New record tab shows up again. The lists may have changed elsewhere
+     * (a payment method added in the Dashboard menu, another active dashboard), so they reload.
+     */
+    fun onScreenShown() {
+        if (_state.value.options != null) loadOptions()
     }
 
     // ── Form sheet ──────────────────────────────────────
 
     fun openSheet(sheet: RegisterSheet) {
         _state.update { it.copy(openSheet = sheet) }
-        if (_state.value.options == null && !_state.value.isLoadingOptions) loadOptions()
+        // Always refresh when a form opens, so it shows what exists right now
+        loadOptions()
     }
 
     fun closeSheet() {
