@@ -33,8 +33,8 @@ export const createCardSchema = z.strictObject({
   card_number: cardNumber.optional(),
   expiry_date: expiryDate.optional(),
   cvv: cvv.optional(),
-  user_id: z.guid().transform((v) => v.toLowerCase()),
-  color_id: colorId,
+  user_id: z.guid().transform((v) => v.toLowerCase()).optional(),
+  color_id: colorId.optional(),
 });
 
 export const updateCardSchema = z
