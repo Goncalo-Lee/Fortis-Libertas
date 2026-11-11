@@ -47,6 +47,7 @@ export const POST = withErrors(async (request: NextRequest, { params }: Ctx) => 
     expiryDate: input.expiry_date,
     cvv: input.cvv,
     userId: input.user_id,
+    colorId: input.color_id,
   });
   if (!row) throw new ApiError("INTERNAL_ERROR");
 

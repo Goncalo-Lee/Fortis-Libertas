@@ -98,6 +98,23 @@ export async function assertIconExists(iconId: string, pointer = "/icon_id") {
   }
 }
 
+/**
+ * Throws `422 VALIDATION_ERROR` when the color does not exist or is reserved.
+ * For rows that may repeat a color (cards): no "in use" check, only the free palette.
+ */
+export async function assertColorUsable(colorId: string, pointer = "/color_id") {
+  const [row] = await db
+    .select({ isReserved: color.isReserved })
+    .from(color)
+    .where(eq(color.id, colorId))
+    .limit(1);
+
+  const message = !row ? "Color does not exist." : row.isReserved ? "This color is reserved." : null;
+  if (message) {
+    throw new ApiError("VALIDATION_ERROR", "One or more fields are invalid.", [{ pointer, message }]);
+  }
+}
+
 /* ============
   COLOR USAGE
 ============= */

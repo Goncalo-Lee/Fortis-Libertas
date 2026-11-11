@@ -1,8 +1,9 @@
 import { changedFields, logBankAccountActivity } from "../activity-logs/write";
+import { assertColorUsable } from "../catalogs";
 import type { Tx } from "../memberships";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, asc, count, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { bankAccountUser, card, paymentMethod } from "@/db/schema";
+import { bankAccountUser, card, color, paymentMethod } from "@/db/schema";
 import { generateId } from "@/db/types";
 import { ApiError } from "@/lib/api/errors";
 import { getCard } from "./read";
@@ -16,6 +17,7 @@ import type { CreateCardInput, UpdateCardInput } from "./type";
  * Creates a card on a bank account. The owner defaults to the caller and must be an active member.
  *
  * @throws {ApiError} `VALIDATION_ERROR` (`/user_id`) when the owner is not a member of the account
+ * @throws {ApiError} `VALIDATION_ERROR` (`/color_id`) when the color does not exist or is reserved
  */
 export async function createCard(bankAccountId: string, callerUserId: string, input: CreateCardInput) {
   const ownerId = input.userId ?? callerUserId;
@@ -38,12 +40,17 @@ export async function createCard(bankAccountId: string, callerUserId: string, in
     ]);
   }
 
+  // A chosen color must be in the free palette; without one, the server picks the next color of the palette.
+  if (input.colorId) await assertColorUsable(input.colorId);
+  const colorId = input.colorId ?? (await pickCardColor(bankAccountId));
+
   const id = generateId();
   await db.transaction(async (tx) => {
     await tx.insert(card).values({
       id,
       bankId: bankAccountId,
       userId: ownerId,
+      colorId,
       cardholderName: input.cardholderName,
       typeCard: input.typeCard,
       cardNumber: input.cardNumber ?? null,
@@ -61,12 +68,15 @@ export async function createCard(bankAccountId: string, callerUserId: string, in
 
 /** Updates a card. `bank_id` and `user_id` cannot change. */
 export async function updateCard(cardId: string, callerUserId: string, changes: UpdateCardInput) {
+  if (changes.colorId !== undefined) await assertColorUsable(changes.colorId);
+
   const set: Partial<typeof card.$inferInsert> = {};
   if (changes.cardholderName !== undefined) set.cardholderName = changes.cardholderName;
   if (changes.typeCard !== undefined) set.typeCard = changes.typeCard;
   if (changes.cardNumber !== undefined) set.cardNumber = changes.cardNumber;
   if (changes.expiryDate !== undefined) set.expiryDate = changes.expiryDate;
   if (changes.cvv !== undefined) set.cvv = changes.cvv;
+  if (changes.colorId !== undefined) set.colorId = changes.colorId;
 
   if (Object.keys(set).length > 0) {
     await db.transaction(async (tx) => {
@@ -112,6 +122,28 @@ export async function setCardFrozenState(cardId: string, callerUserId: string, f
     await logCard(tx, cardId, freeze ? "frozen" : "unfrozen");
   });
   return getCard(cardId, callerUserId);
+}
+
+/**
+ * Color for a new card when none is chosen: the free palette in name order, starting at the
+ * number of cards the account already has, so the cards of one account get different colors.
+ *
+ * @throws {ApiError} `INTERNAL_ERROR` when the palette is empty (catalogs not seeded: `bun run db:seed:catalogs`)
+ */
+async function pickCardColor(bankAccountId: string): Promise<string> {
+  const palette = await db
+    .select({ id: color.id })
+    .from(color)
+    .where(eq(color.isReserved, false))
+    .orderBy(asc(color.name));
+  if (palette.length === 0) throw new ApiError("INTERNAL_ERROR", "The color catalog is empty.");
+
+  const [row] = await db
+    .select({ total: count() })
+    .from(card)
+    .where(and(eq(card.bankId, bankAccountId), isNull(card.deletedAt)));
+
+  return palette[(row?.total ?? 0) % palette.length].id;
 }
 
 /**

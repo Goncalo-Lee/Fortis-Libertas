@@ -8,6 +8,7 @@ export const card = mysqlTable("card", {
     id: uuidBinary("card_id").primaryKey(),
     bankId: uuidBinary("bank_id").notNull(),
     userId: uuidBinary("user_id").notNull(),
+    colorId: uuidBinary("color_id").notNull(),
     cardholderName: t.varchar("cardholder_name", { length: 50 }).notNull(),
     typeCard: t.mysqlEnum("type_card", ["credit", "debit"]).notNull(),
     cardNumber: t.char("card_number", { length: 16 }),
@@ -29,6 +30,13 @@ export const card = mysqlTable("card", {
         foreignColumns: [s.user.id],
     }).onDelete("restrict"),
 
+    t.foreignKey({
+        name: "fk_card_color",
+        columns: [table.colorId],
+        foreignColumns: [s.color.id],
+    }).onDelete("restrict"),
+
     t.index("idx_card_bank_id").on(table.bankId),
     t.index("idx_card_user_id").on(table.userId),
+    t.index("idx_card_color_id").on(table.colorId),
 ]);
