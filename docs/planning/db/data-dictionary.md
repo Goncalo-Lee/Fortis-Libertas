@@ -97,6 +97,7 @@ Stores payment cards (credit and debit) associated with bank accounts and users,
 | **card_id** | binary(16) | PK KEY (Primary Key), NOT NULL | Unique identifier for the card. |
 | **bank_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key linking to the bank account. |
 | **user_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Foreign key linking to the user. |
+| **color_id** | binary(16) | FK KEY (Foreign Key), NOT NULL | Background color of the card (`Color`, non-reserved). Chosen by the user or, when missing, picked by the server from the palette. Not unique: cards may share a color. |
 | **cardholder_name** | varchar(50) | NOT NULL | Name of the cardholder. |
 | **type_card** | enum | NOT NULL | Type of card ('credit' or 'debit'). |
 | **card_number** | char(16) | NULL | Card number (digits only, Luhn-valid). Never returned in full. |

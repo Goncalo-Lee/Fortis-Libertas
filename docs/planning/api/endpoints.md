@@ -433,11 +433,14 @@ Cards belong to a bank account (`bank_id`) and a user (`user_id`). Scope: **bank
 | :--- | :--- | :--- |
 | `card_id` | uuid | |
 | `bank_id` | uuid | Parent bank account. |
+| `bank_name` | string | Name of the parent bank account. Read-only. |
 | `user_id` | uuid | Card owner. |
 | `cardholder_name` | string | ≤ 50 chars. |
 | `type_card` | enum | `credit`, `debit`. |
 | `card_number_last4` | string \| null | Derived from `card_number`. The full number is never returned. |
 | `expiry_date` | date \| null | |
+| `color_id` | uuid | FK to `Color`. Every card has one. |
+| `color` | object | `{ color_id, name, code_color, is_reserved }`, as in categories. Read-only. |
 | `frozen_at` | datetime \| null | |
 | `created_at` | datetime | |
 | `updated_at` | datetime | |
@@ -454,6 +457,7 @@ Cards belong to a bank account (`bank_id`) and a user (`user_id`). Scope: **bank
 | `expiry_date` | date \| null | No | Valid date | |
 | `cvv` | string \| null | No | `^\d{3}$` | Write-only. Never returned or logged. |
 | `user_id` | uuid | No | Must be a member of the bank account | `POST` only. Defaults to the caller. |
+| `color_id` | uuid | No | Existing, non-reserved color | `422` on `/color_id` otherwise. On `POST`, picked by the server when missing. |
 
 ### 7.4 Query Parameters (`GET /cards`, `GET /bank-accounts/{id}/cards`)
 
@@ -468,6 +472,8 @@ Cards belong to a bank account (`bank_id`) and a user (`user_id`). Scope: **bank
 
 - `DELETE` also sets `card_id = NULL` on every `Payment_Method` that references the card, in the same transaction (mirrors `SET NULL`).
 - `PATCH` cannot change `bank_id` or `user_id`. To move a card, delete and recreate it.
+- Card colors are **not exclusive**: several cards can share a color (unlike record types and categories). Only the two reserved colors are refused.
+- `POST` without `color_id` takes the free palette in name order, starting at the number of non-deleted cards of the bank account, so the cards of one account get different colors.
 - `POST` has no `409`: a frozen bank account still accepts cards (`frozen_at` is informational, see [1.6](#16-inactive--frozen-states)). `user_id` must be an active member of the bank account (`422` on `/user_id`).
 
 ---
