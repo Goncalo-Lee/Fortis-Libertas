@@ -97,6 +97,7 @@ fun CardsScreen(
         ) {
             CardsEditCardForm(
                 form = form,
+                colors = state.colors,
                 isSaving = state.isWorking,
                 onUpdate = viewModel::updateEdit,
                 onCancel = viewModel::closeEdit,
@@ -129,6 +130,7 @@ fun CardsScreen(
                 CardsAddCardForm(
                     form = form,
                     banks = state.banks,
+                    colors = state.colors,
                     isSaving = state.isWorking,
                     onUpdate = viewModel::updateAddCard,
                     onCancel = viewModel::closeAdd,

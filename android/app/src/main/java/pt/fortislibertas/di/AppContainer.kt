@@ -14,7 +14,6 @@ import okhttp3.logging.HttpLoggingInterceptor
 import pt.fortislibertas.BuildConfig
 import pt.fortislibertas.data.fake.FakeAccountData
 import pt.fortislibertas.data.local.AccountStore
-import pt.fortislibertas.data.local.CardColorStore
 import pt.fortislibertas.data.local.DashboardStore
 import pt.fortislibertas.data.local.SettingsStore
 import pt.fortislibertas.data.remote.AuthApi
@@ -128,7 +127,7 @@ class AppContainer(context: Context) {
 
     val walletRepository: WalletRepository =
         if (BuildConfig.USE_FAKE_DATA) FakeWalletRepository()
-        else RemoteWalletRepository(retrofit.create(WalletApi::class.java), accountStore, CardColorStore(context))
+        else RemoteWalletRepository(retrofit.create(WalletApi::class.java), accountStore)
 
     // After walletRepository: the Home uses it for the card stack
     val homeRepository: HomeRepository =

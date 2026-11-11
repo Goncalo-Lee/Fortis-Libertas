@@ -26,7 +26,6 @@ import pt.fortislibertas.data.model.CardUpdate
 import pt.fortislibertas.data.model.NewBankAccount
 import pt.fortislibertas.data.model.NewCard
 import pt.fortislibertas.data.model.PaymentCard
-import pt.fortislibertas.data.remote.dto.CardColors
 import pt.fortislibertas.data.repository.NetworkException
 import pt.fortislibertas.data.repository.SessionExpiredException
 import pt.fortislibertas.data.repository.WalletRepository
@@ -75,7 +74,7 @@ class CardsViewModel(
 
     private suspend fun reload() {
         val wallet = repository.getWallet()
-        _state.update { it.copy(cards = wallet.cards, banks = wallet.banks) }
+        _state.update { it.copy(cards = wallet.cards, banks = wallet.banks, colors = wallet.colors) }
     }
 
     // ── Page and filter ─────────────────────────────────
@@ -162,7 +161,7 @@ class CardsViewModel(
                     cardholderName = form.cardholderName.trim(),
                     type = form.type,
                     expiryDate = form.expiryDate,
-                    colorHex = form.colorHex,
+                    colorId = form.colorId,
                     cardNumber = form.cardNumber.takeIf { form.replaceNumber },
                     cvv = form.cvv.takeIf { form.replaceNumber && it.isNotEmpty() },
                 ),
@@ -199,7 +198,6 @@ class CardsViewModel(
                 addCardForm = CardAddForm(
                     // Only one bank where cards can be added → already chosen
                     bankId = s.banks.filter { it.canAddCards }.singleOrNull()?.id,
-                    colorHex = CardColors.palette.first(),
                 ),
             )
             CardsPage.Banks -> s.copy(addBankForm = BankAddForm())
@@ -248,7 +246,7 @@ class CardsViewModel(
                     cardNumber = f.cardNumber.ifEmpty { null },
                     expiryDate = f.expiryDate,
                     cvv = f.cvv.ifEmpty { null },
-                    colorHex = f.colorHex,
+                    colorId = f.colorId,
                 ),
             )
             R.string.msg_card_created

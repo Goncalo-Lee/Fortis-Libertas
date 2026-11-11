@@ -1,12 +1,13 @@
 package pt.fortislibertas.data.repository
 
 import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import pt.fortislibertas.data.local.AccountStore
-import pt.fortislibertas.data.local.CardColorStore
 import pt.fortislibertas.data.model.BankMember
+import pt.fortislibertas.data.model.CardColor
 import pt.fortislibertas.data.model.CardType
 import pt.fortislibertas.data.model.CardUpdate
 import pt.fortislibertas.data.model.NewBankAccount
@@ -25,22 +26,28 @@ import retrofit2.HttpException
 class RemoteWalletRepository(
     private val api: WalletApi,
     private val accountStore: AccountStore,
-    private val colorStore: CardColorStore,
 ) : WalletRepository {
 
     override suspend fun getWallet(): Wallet = call {
         coroutineScope {
             val cards = async { api.getCards().data }
             val banks = async { api.getBankAccounts().data }
+            // The palette is only for the forms: if it fails, the cards still show
+            val colors = async {
+                try {
+                    api.getCardColors().data.map { CardColor(it.id, it.codeColor) }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    emptyList()
+                }
+            }
             val banksById = banks.await().associateBy { it.id }
             val userId = accountStore.activeAccountId.first()
-            val localColors = colorStore.all()               // TEMPORARY until the API has card colours
             Wallet(
-                cards = cards.await().map { dto ->
-                    val card = dto.toModel(banksById[dto.bankId], userId)
-                    localColors[card.id]?.let { card.copy(colorHex = it) } ?: card
-                },
+                cards = cards.await().map { it.toModel(banksById[it.bankId], userId) },
                 banks = banks.await().map { it.toModel() },
+                colors = colors.await(),
             )
         }
     }
@@ -58,9 +65,10 @@ class RemoteWalletRepository(
                 expiryDate = update.expiryDate?.toString(),        // ISO: 2027-05-01
                 cardNumber = update.cardNumber,
                 cvv = update.cvv,
+                colorId = update.colorId,
             ),
         )
-        colorStore.set(cardId, update.colorHex)          // TEMPORARY: send color_id when the API has it
+        Unit
     }
 
     override suspend fun getMembers(bankId: String): List<BankMember> = call {
@@ -68,7 +76,7 @@ class RemoteWalletRepository(
     }
 
     override suspend fun createCard(card: NewCard) = call {
-        val created = api.createCard(
+        api.createCard(
             card.bankId,
             CreateCardRequestDto(
                 cardholderName = card.cardholderName.trim(),
@@ -76,9 +84,10 @@ class RemoteWalletRepository(
                 cardNumber = card.cardNumber,
                 expiryDate = card.expiryDate?.toString(),
                 cvv = card.cvv,
+                colorId = card.colorId,
             ),
-        ).data
-        colorStore.set(created.id, card.colorHex)        // TEMPORARY: send color_id when the API has it
+        )
+        Unit
     }
 
     override suspend fun createBankAccount(bank: NewBankAccount) = call {
@@ -92,10 +101,7 @@ class RemoteWalletRepository(
         Unit
     }
 
-    override suspend fun deleteCard(cardId: String) = call {
-        api.deleteCard(cardId)
-        colorStore.remove(cardId)
-    }
+    override suspend fun deleteCard(cardId: String) = call { api.deleteCard(cardId) }
 
     /** Turns Retrofit/OkHttp errors into the errors the UI knows. */
     private suspend fun <T> call(block: suspend () -> T): T =

@@ -14,12 +14,15 @@ import pt.fortislibertas.data.model.Wallet
 /** Local mode: the test wallet in memory; freezing lasts while the app is open. */
 class FakeWalletRepository : WalletRepository {
 
-    private var cards = FakeWalletData.cards
+    // The test cards only have a hex: give them the matching palette colour, like the API would
+    private var cards = FakeWalletData.cards.map { card ->
+        card.copy(colorId = FakeWalletData.colors.firstOrNull { it.hex.equals(card.colorHex, ignoreCase = true) }?.id)
+    }
     private var banks = FakeWalletData.banks
 
     override suspend fun getWallet(): Wallet {
         delay(400)
-        return Wallet(cards = cards, banks = banks)
+        return Wallet(cards = cards, banks = banks, colors = FakeWalletData.colors)
     }
 
     override suspend fun freezeCard(cardId: String) = setFrozen(cardId, true)
@@ -34,7 +37,8 @@ class FakeWalletRepository : WalletRepository {
                 cardholderName = update.cardholderName,
                 type = update.type,
                 expiryDate = update.expiryDate,
-                colorHex = update.colorHex,
+                colorHex = colorHex(update.colorId) ?: it.colorHex,
+                colorId = update.colorId ?: it.colorId,
                 last4 = update.cardNumber?.takeLast(4) ?: it.last4,
             )
         }
@@ -57,7 +61,9 @@ class FakeWalletRepository : WalletRepository {
             id = UUID.randomUUID().toString(),
             bankId = bank.id,
             bankName = bank.name,
-            colorHex = card.colorHex,
+            // Like the server: without a choice, the next colour of the palette
+            colorId = card.colorId ?: FakeWalletData.colors[cards.size % FakeWalletData.colors.size].id,
+            colorHex = colorHex(card.colorId) ?: FakeWalletData.colors[cards.size % FakeWalletData.colors.size].hex,
             cardholderName = card.cardholderName,
             type = card.type,
             last4 = card.cardNumber?.takeLast(4),
@@ -83,4 +89,6 @@ class FakeWalletRepository : WalletRepository {
         delay(400)
         cards = cards.map { if (it.id == cardId) it.copy(isFrozen = frozen) else it }
     }
+
+    private fun colorHex(colorId: String?): String? = FakeWalletData.colors.firstOrNull { it.id == colorId }?.hex
 }

@@ -4,11 +4,22 @@ import java.math.BigDecimal
 import java.time.LocalDate
 import pt.fortislibertas.data.model.BankAccount
 import pt.fortislibertas.data.model.BankMember
+import pt.fortislibertas.data.model.CardColor
 import pt.fortislibertas.data.model.CardType
 import pt.fortislibertas.data.model.PaymentCard
 
 /** Test wallet for local mode. Card colours match the card stack of FakeHomeData. */
 object FakeWalletData {
+
+    /** Card colours of the test palette (the API sends ~22 of them). */
+    val colors = listOf(
+        CardColor("color-yellow", "#FFE761"),
+        CardColor("color-blue", "#2092E9"),
+        CardColor("color-green", "#76C352"),
+        CardColor("color-orange", "#F97316"),
+        CardColor("color-violet", "#7C3AED"),
+        CardColor("color-cyan", "#06B6D4"),
+    )
 
     val banks = listOf(
         BankAccount(

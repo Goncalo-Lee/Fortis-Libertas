@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import java.time.LocalDate
 import pt.fortislibertas.data.model.BankAccount
 import pt.fortislibertas.data.model.BankMember
+import pt.fortislibertas.data.model.CardColor
 import pt.fortislibertas.data.model.CardType
 import pt.fortislibertas.data.model.PaymentCard
 
@@ -34,7 +35,7 @@ data class CardEditForm(
     val cardholderName: String = card.cardholderName,
     val type: CardType = card.type,
     val expiryDate: LocalDate? = card.expiryDate,
-    val colorHex: String = card.colorHex,
+    val colorId: String? = card.colorId,
     val replaceNumber: Boolean = false,          // number + CVV fields only show after "Replace card number"
     val cardNumber: String = "",
     val cvv: String = "",
@@ -60,7 +61,7 @@ data class CardAddForm(
     val cardNumber: String = "",
     val expiryDate: LocalDate? = null,
     val cvv: String = "",
-    val colorHex: String,
+    val colorId: String? = null,                 // null = the server picks one
     val errors: Map<AddField, Int> = emptyMap(),
 )
 
@@ -78,6 +79,7 @@ data class CardsUiState(
     val filter: CardsFilter = CardsFilter.All,
     val cards: List<PaymentCard> = emptyList(),
     val banks: List<BankAccount> = emptyList(),
+    val colors: List<CardColor> = emptyList(),   // palette of the colour pickers (from the API)
     val isLoading: Boolean = true,
     @StringRes val errorMessage: Int? = null,
     val dialog: CardsDialog? = null,

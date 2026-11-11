@@ -15,18 +15,16 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import pt.fortislibertas.R
-import pt.fortislibertas.core.designsystem.components.ColorDot
 import pt.fortislibertas.core.designsystem.components.DateField
 import pt.fortislibertas.core.designsystem.components.FormActions
 import pt.fortislibertas.core.designsystem.components.FormTextField
 import pt.fortislibertas.core.designsystem.components.SelectField
-import pt.fortislibertas.core.designsystem.components.colorFromHex
 import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisScreenPreviews
 import pt.fortislibertas.data.fake.FakeWalletData
 import pt.fortislibertas.data.model.BankAccount
+import pt.fortislibertas.data.model.CardColor
 import pt.fortislibertas.data.model.CardType
-import pt.fortislibertas.data.remote.dto.CardColors
 import pt.fortislibertas.ui.cards.AddField
 import pt.fortislibertas.ui.cards.BankAddForm
 import pt.fortislibertas.ui.cards.CardAddForm
@@ -42,6 +40,7 @@ private val CURRENCIES = listOf("EUR", "USD", "GBP", "BRL")
 fun CardsAddCardForm(
     form: CardAddForm,
     banks: List<BankAccount>,
+    colors: List<CardColor>,
     isSaving: Boolean,
     onUpdate: (AddField?, (CardAddForm) -> CardAddForm) -> Unit,
     onCancel: () -> Unit,
@@ -120,15 +119,18 @@ fun CardsAddCardForm(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 4.dp),
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            CardColors.palette.forEach { hex ->
-                ColorDot(
-                    color = colorFromHex(hex),
-                    size = 32.dp,
-                    selected = hex.equals(form.colorHex, ignoreCase = true),
-                    onClick = { onUpdate(null) { it.copy(colorHex = hex) } },
-                )
-            }
+        CardsColorPicker(
+            colors = colors,
+            selectedId = form.colorId,
+            onSelect = { id -> onUpdate(null) { it.copy(colorId = id) } },
+        )
+        if (form.colorId == null) {
+            Text(
+                text = stringResource(R.string.cards_color_auto),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp),
+            )
         }
         FormActions(
             cancelLabel = stringResource(R.string.action_cancel),
@@ -197,8 +199,9 @@ fun CardsAddBankForm(
 private fun CardsAddCardFormPreview() {
     FortisPreviewTheme {
         CardsAddCardForm(
-            form = CardAddForm(bankId = "bank-1", cardholderName = "Ana Silva", colorHex = CardColors.palette.first()),
+            form = CardAddForm(bankId = "bank-1", cardholderName = "Ana Silva"),
             banks = FakeWalletData.banks,
+            colors = FakeWalletData.colors,
             isSaving = false,
             onUpdate = { _, _ -> }, onCancel = {}, onSave = {},
             modifier = Modifier.padding(24.dp),

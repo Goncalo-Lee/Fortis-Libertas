@@ -37,6 +37,7 @@
     <string name="cards_filter_inactive">Inactive</string>
     <string name="cards_empty_filter">Nothing here with this filter.</string>
     <string name="cards_edit_title">Edit card</string>
+    <string name="cards_color_auto">If you choose none, the card gets the next colour of the palette.</string>
     <string name="cards_color">Colour</string>
     <string name="cards_replace_number">Replace card number</string>
     <string name="cards_keep_number">Keep current number</string>

@@ -37,6 +37,7 @@
     <string name="cards_filter_inactive">Inativos</string>
     <string name="cards_empty_filter">Não há nada com este filtro.</string>
     <string name="cards_edit_title">Editar cartão</string>
+    <string name="cards_color_auto">Se não escolheres, o cartão fica com a próxima cor da paleta.</string>
     <string name="cards_color">Cor</string>
     <string name="cards_replace_number">Substituir número do cartão</string>
     <string name="cards_keep_number">Manter o número atual</string>
