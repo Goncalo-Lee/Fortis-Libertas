@@ -1,0 +1,27 @@
+meta {
+  name: Card color - change the color
+  type: http
+  seq: 631
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/cards/{{ccCard1}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "color_id": "{{color5}}" }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("new color", function () { expect(res.body.data.color_id).to.equal(bru.getVar("color5").toLowerCase()); });
+}

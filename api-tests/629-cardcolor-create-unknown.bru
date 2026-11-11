@@ -1,0 +1,23 @@
+meta {
+  name: Card color - unknown color rejected
+  type: http
+  seq: 629
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{ccBaId}}/cards
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "cardholder_name": "Unknown", "type_card": "credit", "color_id": "00000000-0000-7000-8000-000000000000" }
+}
+
+assert {
+  res.status: eq 422
+}

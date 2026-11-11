@@ -1,0 +1,23 @@
+meta {
+  name: Card color - color_id not a uuid
+  type: http
+  seq: 630
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{ccBaId}}/cards
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "cardholder_name": "Bad", "type_card": "credit", "color_id": "red" }
+}
+
+assert {
+  res.status: eq 422
+}

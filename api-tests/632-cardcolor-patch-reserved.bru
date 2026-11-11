@@ -1,0 +1,23 @@
+meta {
+  name: Card color - patch to a reserved color
+  type: http
+  seq: 632
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/cards/{{ccCard1}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "color_id": "{{colorReservedId}}" }
+}
+
+assert {
+  res.status: eq 422
+}

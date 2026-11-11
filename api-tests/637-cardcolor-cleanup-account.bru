@@ -1,0 +1,19 @@
+meta {
+  name: Card color - cleanup account
+  type: http
+  seq: 637
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{ccBaId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 204
+}
