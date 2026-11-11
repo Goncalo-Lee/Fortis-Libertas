@@ -23,6 +23,12 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 
 Restart the terminal afterwards and check with `bun --version`.
 
+If you see some error when you try run the `bun --version` in powershell, I recommend to run the following code, this code will reset the powershell.
+
+```bash
+$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+```
+
 ## 1. Clone the repository
 
 ```bash

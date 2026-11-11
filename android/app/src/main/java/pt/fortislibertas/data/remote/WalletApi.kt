@@ -3,6 +3,7 @@ package pt.fortislibertas.data.remote
 import pt.fortislibertas.data.remote.dto.BankAccountDto
 import pt.fortislibertas.data.remote.dto.BankMemberDto
 import pt.fortislibertas.data.remote.dto.CardDto
+import pt.fortislibertas.data.remote.dto.CatalogColorDto
 import pt.fortislibertas.data.remote.dto.CreateBankRequestDto
 import pt.fortislibertas.data.remote.dto.CreateCardRequestDto
 import pt.fortislibertas.data.remote.dto.ItemResponseDto
@@ -18,6 +19,13 @@ import retrofit2.http.Query
 
 /** Cards and bank accounts (endpoints.md §5 and §7). */
 interface WalletApi {
+
+    /** Colours a card can have: the catalog without the 2 reserved ones (Income / Expenses). */
+    @GET("api/v1/colors")
+    suspend fun getCardColors(
+        @Query("is_reserved") isReserved: Boolean = false,
+        @Query("per_page") perPage: Int = 100,
+    ): ListResponseDto<CatalogColorDto>
 
     /** Cards owned by the caller, across bank accounts. */
     @GET("api/v1/cards")

@@ -1,0 +1,31 @@
+meta {
+  name: Card color - create with a chosen color
+  type: http
+  seq: 626
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{ccBaId}}/cards
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "cardholder_name": "Chosen color", "type_card": "credit", "color_id": "{{color3}}" }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("ccCard2", res.body.data.card_id);
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("keeps the chosen color", function () { expect(res.body.data.color_id).to.equal(bru.getVar("color3").toLowerCase()); });
+}

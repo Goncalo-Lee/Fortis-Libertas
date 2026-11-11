@@ -1,6 +1,6 @@
 import { and, asc, count, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { bankAccount, bankAccountUser, card } from "@/db/schema";
+import { bankAccount, bankAccountUser, card, color } from "@/db/schema";
 import type { ListFiltersCard } from "./type";
 
 /* ======
@@ -17,6 +17,11 @@ const cardColumns = {
   cardNumberLast4: sql<string | null>`RIGHT(${card.cardNumber}, 4)`,
   expiryDate: card.expiryDate,
   frozenAt: card.frozenAt,
+  colorId: card.colorId,
+  colorName: color.name,
+  colorCode: color.codeColor,
+  colorReserved: color.isReserved,
+  bankName: bankAccount.name,
   role: bankAccountUser.role,
   createdAt: card.createdAt,
   updatedAt: card.updatedAt,
@@ -38,6 +43,7 @@ export async function getCard(cardId: string, userId: string) {
     .from(card)
     .innerJoin(bankAccount, eq(bankAccount.id, card.bankId))
     .innerJoin(bankAccountUser, eq(bankAccountUser.bankId, card.bankId))
+    .innerJoin(color, eq(color.id, card.colorId))
     .where(and(eq(card.id, cardId), visibleTo(userId)))
     .limit(1);
   return row ?? null;
@@ -66,6 +72,7 @@ export async function listCards(userId: string, f: ListFiltersCard) {
     .from(card)
     .innerJoin(bankAccount, eq(bankAccount.id, card.bankId))
     .innerJoin(bankAccountUser, eq(bankAccountUser.bankId, card.bankId))
+    .innerJoin(color, eq(color.id, card.colorId))
     .where(where)
     .orderBy(order, asc(card.id))
     .limit(f.limit)

@@ -1,0 +1,19 @@
+meta {
+  name: Card color - cleanup card 1
+  type: http
+  seq: 634
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/cards/{{ccCard1}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 204
+}

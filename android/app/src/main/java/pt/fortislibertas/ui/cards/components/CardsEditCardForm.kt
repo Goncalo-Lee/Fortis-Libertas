@@ -21,17 +21,15 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import pt.fortislibertas.R
-import pt.fortislibertas.core.designsystem.components.ColorDot
 import pt.fortislibertas.core.designsystem.components.DateField
 import pt.fortislibertas.core.designsystem.components.FormActions
 import pt.fortislibertas.core.designsystem.components.FormTextField
 import pt.fortislibertas.core.designsystem.components.SelectField
-import pt.fortislibertas.core.designsystem.components.colorFromHex
 import pt.fortislibertas.core.designsystem.preview.FortisPreviewTheme
 import pt.fortislibertas.core.designsystem.preview.FortisScreenPreviews
 import pt.fortislibertas.data.fake.FakeWalletData
+import pt.fortislibertas.data.model.CardColor
 import pt.fortislibertas.data.model.CardType
-import pt.fortislibertas.data.remote.dto.CardColors
 import pt.fortislibertas.ui.cards.CardEditField
 import pt.fortislibertas.ui.cards.CardEditForm
 
@@ -43,6 +41,7 @@ import pt.fortislibertas.ui.cards.CardEditForm
 @Composable
 fun CardsEditCardForm(
     form: CardEditForm,
+    colors: List<CardColor>,
     isSaving: Boolean,
     onUpdate: (CardEditField?, (CardEditForm) -> CardEditForm) -> Unit,
     onCancel: () -> Unit,
@@ -92,23 +91,18 @@ fun CardsEditCardForm(
             )
         }
 
-        // ── Colour (saved on the phone until the API has card colours) ──
+        // ── Colour (palette of the API) ──
         Text(
             text = stringResource(R.string.cards_color),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 4.dp),
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            CardColors.palette.forEach { hex ->
-                ColorDot(
-                    color = colorFromHex(hex),
-                    size = 32.dp,
-                    selected = hex.equals(form.colorHex, ignoreCase = true),
-                    onClick = { onUpdate(null) { it.copy(colorHex = hex) } },
-                )
-            }
-        }
+        CardsColorPicker(
+            colors = colors,
+            selectedId = form.colorId,
+            onSelect = { id -> onUpdate(null) { it.copy(colorId = id) } },
+        )
 
         // ── Number + CVV (write-only: only when replacing) ──
         if (form.replaceNumber) {
@@ -172,6 +166,7 @@ private fun CardsEditCardFormPreview() {
     FortisPreviewTheme {
         CardsEditCardForm(
             form = CardEditForm(FakeWalletData.cards.first()).copy(replaceNumber = true, cardNumber = "4111"),
+            colors = FakeWalletData.colors,
             isSaving = false,
             onUpdate = { _, _ -> },
             onCancel = {},

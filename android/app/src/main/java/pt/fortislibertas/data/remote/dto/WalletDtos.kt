@@ -29,14 +29,16 @@ data class CardDto(
     @SerialName("expiry_date") val expiryDate: String? = null,
     @SerialName("frozen_at") val frozenAt: String? = null,
     @SerialName("bank_name") val bankName: String? = null,
-    val color: WalletColorDto? = null,
+    @SerialName("color_id") val colorId: String? = null,
+    val color: ColorRefDto? = null,                       // { color_id, name, code_color, is_reserved }
 ) {
     /** [bank] and [currentUserId] fill what the card JSON does not have yet. */
     fun toModel(bank: BankAccountDto?, currentUserId: String?) = PaymentCard(
         id = id,
         bankId = bankId,
         bankName = bankName ?: bank?.name.orEmpty(),
-        colorHex = color?.hexLight ?: CardColors.fallbackFor(id),
+        colorHex = color?.codeColor ?: CardColors.fallbackFor(id),
+        colorId = colorId,
         cardholderName = cardholderName,
         type = if (typeCard == "credit") CardType.CREDIT else CardType.DEBIT,
         last4 = last4,
@@ -45,11 +47,6 @@ data class CardDto(
         canManage = userId == currentUserId || bank?.role == "owner",
     )
 }
-
-@Serializable
-data class WalletColorDto(
-    @SerialName("hex_light") val hexLight: String,
-)
 
 /** JSON of a bank account (endpoints.md §5.2). */
 @Serializable
@@ -74,8 +71,7 @@ data class BankAccountDto(
 
 /**
  * Body of PATCH /api/v1/cards/{card_id} (endpoints.md §7.3).
- * Null fields are not sent (encodeDefaults is off), so the number and CVV are kept when null.
- * No color yet: the API rejects unknown keys (422) until color_id exists (see plano-api-cartoes).
+ * Null fields are not sent (encodeDefaults is off), so the number, CVV and colour are kept when null.
  */
 @Serializable
 data class UpdateCardRequestDto(
@@ -84,6 +80,7 @@ data class UpdateCardRequestDto(
     @SerialName("expiry_date") val expiryDate: String? = null,
     @SerialName("card_number") val cardNumber: String? = null,
     val cvv: String? = null,
+    @SerialName("color_id") val colorId: String? = null,
 )
 
 /** JSON of a bank account member (endpoints.md §6.2). */
@@ -106,6 +103,7 @@ data class CreateCardRequestDto(
     @SerialName("card_number") val cardNumber: String? = null,
     @SerialName("expiry_date") val expiryDate: String? = null,
     val cvv: String? = null,
+    @SerialName("color_id") val colorId: String? = null,     // null = the server picks one
 )
 
 /** Body of POST /api/v1/bank-accounts (§5.3). */
@@ -117,8 +115,8 @@ data class CreateBankRequestDto(
 )
 
 /** Card colours while the API has no color field: always the same colour for the same card. */
+/** Only used when a card comes without a colour (local test data); the forms use the API palette. */
 object CardColors {
-    /** Colours the user can pick in the Edit card form. */
     val palette = listOf("#FFE761", "#2092E9", "#76C352", "#F97316", "#7C3AED", "#06B6D4")
 
     fun fallbackFor(cardId: String): String = palette[Math.floorMod(cardId.hashCode(), palette.size)]

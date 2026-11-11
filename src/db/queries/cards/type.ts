@@ -32,6 +32,8 @@ export interface CreateCardInput {
   cvv?: string | null;
   /** Card owner; must be a member of the bank account. Defaults to the caller. */
   userId?: string;
+  /** Free (non-reserved) palette color. Picked by the server when missing. */
+  colorId?: string;
 }
 
 export interface UpdateCardInput {
@@ -40,4 +42,5 @@ export interface UpdateCardInput {
   cardNumber?: string | null;
   expiryDate?: string | null;
   cvv?: string | null;
+  colorId?: string;
 }

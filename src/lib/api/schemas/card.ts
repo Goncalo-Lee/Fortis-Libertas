@@ -4,6 +4,8 @@ const cardholderName = z.string().trim().min(1).max(50);
 const typeCard = z.enum(["credit", "debit"]);
 const expiryDate = z.iso.date().nullable();
 const cvv = z.string().regex(/^\d{3}$/, "Must be 3 digits.").nullable();
+// Existence and "not reserved" are checked against the database (assertColorUsable).
+const colorId = z.guid().transform((v) => v.toLowerCase());
 
 /** Luhn checksum over a digit string. */
 function luhnValid(digits: string): boolean {
@@ -32,6 +34,7 @@ export const createCardSchema = z.strictObject({
   expiry_date: expiryDate.optional(),
   cvv: cvv.optional(),
   user_id: z.guid().transform((v) => v.toLowerCase()).optional(),
+  color_id: colorId.optional(),
 });
 
 export const updateCardSchema = z
@@ -41,6 +44,7 @@ export const updateCardSchema = z
     card_number: cardNumber,
     expiry_date: expiryDate,
     cvv,
+    color_id: colorId,
   })
   .partial()
   .refine((v) => Object.keys(v).length > 0, { message: "At least one field is required." });

@@ -31,6 +31,7 @@ export const PATCH = withErrors(async (request: NextRequest, { params }: Ctx) =>
     cardNumber: input.card_number,
     expiryDate: input.expiry_date,
     cvv: input.cvv,
+    colorId: input.color_id,
   });
   if (!row) throw new ApiError("NOT_FOUND");
   return ok(serializeCard(row));

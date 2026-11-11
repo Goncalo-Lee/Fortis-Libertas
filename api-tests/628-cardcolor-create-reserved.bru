@@ -1,0 +1,27 @@
+meta {
+  name: Card color - reserved color rejected
+  type: http
+  seq: 628
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{ccBaId}}/cards
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "cardholder_name": "Reserved", "type_card": "credit", "color_id": "{{colorReservedId}}" }
+}
+
+assert {
+  res.status: eq 422
+}
+
+tests {
+  test("points at color_id", function () { expect(res.body.errors[0].pointer).to.equal("/color_id"); });
+}

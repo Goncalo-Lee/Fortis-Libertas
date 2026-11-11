@@ -51,6 +51,7 @@ erDiagram
     Color ||--o{ Record_Type : "colors (1:N)"
     Icon ||--o{ Record_Type : "illustrates (1:N)"
     Color ||--o{ Category : "colors (1:N)"
+    Color ||--o{ Card : "colors (1:N)"
     Icon ||--o{ Category : "illustrates (1:N)"
     Record_Type ||--o{ Transaction : "classifies (1:N)"
     Dashboard ||--o{ Transaction : "records (1:N)"
@@ -123,6 +124,7 @@ erDiagram
     Color ||--o{ Record_Type : "colors (1:N)"
     Icon ||--o{ Record_Type : "illustrates (1:N)"
     Color ||--o{ Category : "colors (1:N)"
+    Color ||--o{ Card : "colors (1:N)"
     Icon ||--o{ Category : "illustrates (1:N)"
     Record_Type ||--o{ Transaction : "classifies (1:N)"
     Dashboard ||--o{ Transaction : "records (1:N)"
@@ -261,6 +263,7 @@ erDiagram
         binary16 card_id PK
         binary16 bank_id FK
         binary16 user_id FK
+        binary16 color_id FK
         varchar50 cardholder_name
         enum type_card "credit, debit"
         char16 card_number
@@ -596,6 +599,7 @@ Covers the global `Color` and `Icon` catalogs, the `Transaction` registry, and t
 | `Icon` | 1:N (One-to-Many) | `Record_Type` | `Record_Type.icon_id` | `Icon.id` | RESTRICT | Icon of a record type. |
 | `Color` | 1:N (One-to-Many) | `Category` | `Category.color_id` | `Color.id` | RESTRICT | Color of a category. Unique on `(dashboard_id, color_id)`. |
 | `Icon` | 1:N (One-to-Many) | `Category` | `Category.icon_id` | `Icon.id` | RESTRICT | Icon of a category. |
+| `Color` | 1:N (One-to-Many) | `Card` | `Card.color_id` | `Color.id` | RESTRICT | Background color of a card in the apps. Not unique: cards may share a color. |
 | `Record_Type` | 1:N (One-to-Many) | `Transaction` | `Transaction.record_type_id` | `Record_Type.id` | RESTRICT | Classifies a history entry (expenses, income, savings or any other type). |
 | `Dashboard` | 1:N (One-to-Many) | `Transaction` | `Transaction.dashboard_id` | `Dashboard.id` | CASCADE | The history belongs to a dashboard. |
 | `User` | 1:N (One-to-Many) | `Transaction` | `Transaction.user_id` | `User.id` | RESTRICT | Who registered the movement. |
@@ -607,6 +611,7 @@ Covers the global `Color` and `Icon` catalogs, the `Transaction` registry, and t
 
 - **`Color` and `Icon` (global catalogs):** They are not scoped to a dashboard and are seeded when the database is created. Two colors are reserved (`Color.is_reserved`) for the seeded `Income` and `Expenses` record types.
 - **Exclusive colors:** `(dashboard_id, color_id)` is unique in `Record_Type` and, separately, in `Category`, so a color identifies one record type and one category per dashboard. Icons can be shared.
+- **Card colors:** `Card.color_id` is only appearance and is not exclusive: cards may share a color. It is required; when the client sends none, the server picks a non-reserved color.
 - **`Transaction`:** Dashboard-wide financial history. Each row is a snapshot of a source row, referenced by `source_type` + `source_id` (polymorphic, like `Account.provider_id`), so it survives edits and deletions of the source. `deleted_at` marks entries whose source was soft-deleted, and the frontend filters them. It is not an audit trail: who did what is in `Activity_Log`.
 - **`Activity_Log`:** Append-only. Exactly one scope applies per row: account (no dashboard, no bank account), dashboard, or bank account.
 
@@ -711,7 +716,8 @@ Dashboard
 
 Color
 ├── Record_Type (1:N)
-└── Category (1:N)
+├── Category (1:N)
+└── Card (1:N)
 
 Icon
 ├── Record_Type (1:N)

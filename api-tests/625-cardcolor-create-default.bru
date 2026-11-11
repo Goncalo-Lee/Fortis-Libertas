@@ -1,0 +1,36 @@
+meta {
+  name: Card color - create without color gets one
+  type: http
+  seq: 625
+}
+
+post {
+  url: {{baseUrl}}/api/v1/bank-accounts/{{ccBaId}}/cards
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "cardholder_name": "Default color", "type_card": "debit" }
+}
+
+script:post-response {
+  if (res.status === 201) bru.setVar("ccCard1", res.body.data.card_id);
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("color picked by the server", function () {
+    expect(res.body.data.color_id).to.be.a("string");
+    expect(res.body.data.color.code_color).to.match(/^#[0-9A-Fa-f]{6}$/);
+    expect(res.body.data.color.is_reserved).to.equal(false);
+  });
+  test("bank name included", function () { expect(res.body.data.bank_name).to.equal("Color account"); });
+}

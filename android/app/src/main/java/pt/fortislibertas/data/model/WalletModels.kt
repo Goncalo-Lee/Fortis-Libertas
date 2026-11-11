@@ -26,6 +26,7 @@ data class PaymentCard(
     val bankId: String,
     val bankName: String,
     val colorHex: String,
+    val colorId: String? = null,           // color_id in the API (null in previews / old data)
     val cardholderName: String,
     val type: CardType,
     val last4: String?,
@@ -44,15 +45,19 @@ data class CardUpdate(
     val cardholderName: String,
     val type: CardType,
     val expiryDate: LocalDate?,
-    val colorHex: String,
+    val colorId: String?,                   // null = keep the current colour
     val cardNumber: String? = null,
     val cvv: String? = null,
 )
 
-/** Cards and bank accounts, loaded together for the Cards / Banks screen. */
+/** A colour a card can have (the API's colour catalog without the 2 reserved ones). */
+data class CardColor(val id: String, val hex: String)
+
+/** Cards, bank accounts and the card colours, loaded together for the Cards / Banks screen. */
 data class Wallet(
     val cards: List<PaymentCard>,
     val banks: List<BankAccount>,
+    val colors: List<CardColor> = emptyList(),
 )
 
 /** A person in a bank account (read only in the app: managing members is done on the web). */
@@ -72,7 +77,7 @@ data class NewCard(
     val cardNumber: String?,
     val expiryDate: LocalDate?,
     val cvv: String?,
-    val colorHex: String,
+    val colorId: String?,                   // null = the server picks one from the palette
 )
 
 /** What the Add bank form sends. The creator becomes the owner. */
