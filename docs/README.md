@@ -8,6 +8,7 @@ Everything about **Fortis Libertas** that is not code. Start with the part that 
 | Call the API (web frontend, Android app, Bruno) | [documentation/api.md](documentation/api.md) |
 | Understand how the code is organised | [documentation/architecture.md](documentation/architecture.md) |
 | Know **why** something was built the way it was | [documentation/decisions.md](documentation/decisions.md) |
+| Learn about the frontend stack and structure | [documentation/frontend.md](documentation/frontend/frontend.md) |
 | See every endpoint, field and rule | [planning/api/endpoints.md](planning/api/endpoints.md) |
 | See the tables and columns | [planning/db/data-dictionary.md](planning/db/data-dictionary.md) and [planning/db/model-er.md](planning/db/model-er.md) |
 | See known limitations and open items | [planning/api/README.md](planning/api/README.md) |
