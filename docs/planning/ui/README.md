@@ -9,8 +9,8 @@ This directory documentation the User Interface design and component architectur
 
 ## UI Stack
 
-- **Framework**: Next.js 15+ (App Router)
-- **Styling**: Tailwind CSS 4.0
+- **Framework**: Next.js 16.+ (App Router)
+- **Styling**: Tailwind CSS 4.+
 - **Icons**: Lucide React & Material Symbols
 - **Components**: Radix UI primitives (via shadcn/ui patterns)
 - **Forms**: React Hook Form with Zod validation
