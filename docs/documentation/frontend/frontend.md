@@ -16,14 +16,14 @@ This document provides a technical overview of the frontend architecture, techno
 
 The frontend is built on a modern, type-safe stack designed for performance and developer experience.
 
-- **Framework**: [Next.js: 16.3.6](https://nextjs.org/) (using App Router)
+- **Framework**: [Next.js: 16.+](https://nextjs.org/) (using App Router)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Styling**: [Tailwind CSS 4.x](https://tailwindcss.com/)
+- **Styling**: [Tailwind CSS 4.+](https://tailwindcss.com/)
 - **Component Library**: [Radix UI](https://www.radix-ui.com/) primitives styled with Tailwind (following the [shadcn/ui](https://ui.shadcn.com/) pattern)
 - **Icons**: [Lucide React](https://lucide.dev/) and [Material Symbols](https://fonts.google.com/icons)
 - **Form Management**: [React Hook Form](https://react-hook-form.com/)
-- **Validation**: [Zod: 4.6.7](https://zod.dev/)
-- **Authentication**: [Better Auth: 1.7.12](https://www.better-auth.com/) (Client-side hooks and components)
+- **Validation**: [Zod: 4.6.+](https://zod.dev/)
+- **Authentication**: [Better Auth: 1.7.+](https://www.better-auth.com/) (Client-side hooks and components)
 - **State Management**: React Context for global UI state; URL-based state for filters and navigation.
 - **Data Fetching**: Next.js Server Components for initial load; Client-side fetching via standard `fetch` or specialized hooks for mutations.
 
