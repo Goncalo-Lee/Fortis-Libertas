@@ -50,12 +50,11 @@ export async function getNotification(userId: string, notificationId: string) {
     .limit(1);
   return row ?? null;
 }
-
 /** Number of unread notifications, for the badge on the bell icon. */
 export async function countUnreadNotifications(userId: string) {
-  const [{ unread }] = await db
-    .select({ unread: count() })
-    .from(notifications)
-    .where(and(eq(notifications.userId, userId), isNull(notifications.readAt)));
-  return unread;
+    const [{unread}] = await db
+        .select({unread: count()})
+        .from(notifications)
+        .where(and(eq(notifications.userId, userId), isNull(notifications.readAt)));
+    return unread;
 }

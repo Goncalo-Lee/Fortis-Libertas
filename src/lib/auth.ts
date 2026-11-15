@@ -8,7 +8,9 @@ import { getDefaultProfileCatalogIds } from "../db/queries/catalogs";
 import {nextCookies} from "better-auth/next-js";
 import nodemailer from "nodemailer";
 import { onAccountUpdated, onSessionCreated, onSessionDeleted, onUserUpdated } from "./auth-activity";
-import {error} from "better-auth/api";
+import ResetPasswordEmail from "@/emails/reset-password";
+import { render } from "@react-email/render";
+import VerificationEmail from "@/emails/verification-email";
 
 /**
  * Better Auth Configuration
@@ -47,26 +49,40 @@ export const auth = betterAuth({
   }),
 
   emailVerification: {
-    sendOnSignUp: false,
-    autoSignInAfterVerification: true,
+    sendOnSignUp: true,
+    sendOnSignIn: true,
+    autoSignInAfterVerification: false,
+    requireEmailVerification: true,
 
     sendVerificationEmail: async ({ user, url }) => {
+      // Better-Auth provides 'url' which is typically just a token or a relative path
+      // We should ensure it's a full URL using BETTER_AUTH_URL
+      const baseUrl = process.env.BETTER_AUTH_URL || "http://localhost:3000";
+      const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+
+      const emailHtml = await render(
+          VerificationEmail({
+            verificationUrl: fullUrl,
+            username: user.name || "Utilizador",
+            userEmail: user.email,
+          })
+      )
       if (process.env.SEEDING === "true") {
         console.log(`Bypassing email verification for: ${user.email}`);
         return;
       }
 
-      await transporter.sendMail({
-        from: '"Fortis Libertas" <no-reply@fortislibertas.com>',
-        to: user.email,
-        subject: "Verifica a tua conta",
-        html: `<p>Clica <a href="${url}">aqui</a> para verificar a tua conta.</p>`,
-      })
+      try {
+        await transporter.sendMail({
+          from: '"Fortis Libertas" <no-reply@fortislibertas.com>',
+          to: user.email,
+          subject: "Verificação de Email - Fortis Libertas",
+          html: emailHtml,
+        });
 
-      if (error) {
-        console.error(error);
-      } else {
-        console.log("Email enviado com sucesso!");
+        console.log(`Email de verificação enviado com sucesso para ${user.email}!`);
+      } catch (err) {
+        console.error("Falha ao enviar o email de verificação:", err);
       }
     }
   },
@@ -77,11 +93,19 @@ export const auth = betterAuth({
     requireEmailVerification: false,
 
     sendResetPassword: async ({ user, url }) => {
-      await transporter.sendMail({
+      const emailHtml = await render(
+          ResetPasswordEmail({
+            resetUrl: url,
+            userEmail: user.email,
+            username: user.name,
+          })
+      )
+
+      transporter.sendMail({
         from: '"Fortis Libertas" <no-reply@fortislibertas.com>',
         to: user.email,
         subject: "Reinicia a tua senha",
-        html: `<p>Clica <a href="${url}">aqui</a> para reiniciar a tua senha.</p>`,
+        html: emailHtml,
       })
     },
   },
@@ -90,6 +114,9 @@ export const auth = betterAuth({
       suspendedAt: { type: "date", required: false, input: false },
       deletedAt: { type: "date", required: false, input: false},
     },
+    changeEmail: {
+      enabled: true,
+    }
   },
   socialProviders: {
     google: {

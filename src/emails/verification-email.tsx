@@ -15,72 +15,74 @@ import {
 } from "@react-email/components";
 import * as React from "react";
 
-interface ResetPasswordEmailProps {
+
+interface VerificationEmailProps {
     username: string;
-    resetUrl: string;
+    verificationUrl: string;
     userEmail: string;
 }
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-export const ResetPasswordEmail = ({
-                                       username,
-                                       resetUrl,
-                                       userEmail,
-                                   }: ResetPasswordEmailProps) => {
+
+
+export const VerificationEmail = ({
+                                      username = "utilizador",
+                                      verificationUrl,
+                                  }: VerificationEmailProps) => {
+
+
     return (
         <Html>
             <Head />
-            <Preview>Reset your password for Fortis Libertas</Preview>
+            <Preview>Verifique o seu email para a Fortis Libertas</Preview>
             <Tailwind>
                 <Body className="bg-white my-auto mx-auto font-sans px-2">
                     <Container className="border border-solid border-[#eaeaea] rounded my-[40px] mx-auto p-[20px] max-w-[465px]">
                         <Section className="mt-[32px]">
-                            {/* Replace with your actual logo URL */}
                             <Img
                                 src={`${baseUrl}/logo.png`}
                                 width="40"
                                 height="40"
-                                alt="Acme Corp"
+                                alt="Fortis Libertas"
                                 className="my-0 mx-auto rounded-full"
                             />
                         </Section>
 
                         <Heading className="text-black text-[24px] font-normal text-center p-0 my-[30px] mx-0">
-                            Reset your password
+                            Verifique o seu email
                         </Heading>
 
                         <Text className="text-black text-[14px] leading-[24px]">
-                            Hello {username}
+                            Olá {username},
                         </Text>
 
                         <Text className="text-black text-[14px] leading-[24px]">
-                            Someone recently requested a password change for your Fortis Libertas account
-                            associated with this {userEmail} address.
-                            If this was you, you can set a new password here:
+                            Bem-vindo à Fortis Libertas! Por favor, verifique o seu endereço de email clicando no botão abaixo para poder iniciar sessão em segurança e começar.
                         </Text>
 
                         <Section className="text-center mt-[32px] mb-[32px]">
                             <Button
                                 className="bg-[#000000] rounded text-white text-[12px] font-semibold no-underline text-center px-6 py-3"
-                                href={resetUrl}
+                                href={verificationUrl}
+                                style={{ backgroundColor: '#000000', color: '#ffffff', padding: '12px 24px', borderRadius: '4px', textDecoration: 'none', display: 'inline-block' }}
                             >
-                                Reset Password
+                                Verificar Email
                             </Button>
                         </Section>
 
                         <Text className="text-black text-[14px] leading-[24px]">
-                            Or copy and paste this URL into your browser:{" "}
-                            <Link href={resetUrl} className="text-blue-600 no-underline break-all">
-                                {resetUrl}
+                            Ou copie e cole este URL no seu navegador:{" "}
+                            <Link href={verificationUrl} className="text-blue-600 no-underline break-all">
+                                {verificationUrl}
                             </Link>
                         </Text>
 
                         <Hr className="border border-solid border-[#eaeaea] my-[26px] mx-0 w-full" />
 
                         <Text className="text-[#666666] text-[12px] leading-[24px]">
-                            If you dont want to change your password or didnt request this, just
-                            ignore and delete this message. Your account remains secure.
+                            Se não criou uma conta na Fortis Libertas, pode ignorar
+                            e eliminar esta mensagem com segurança.
                         </Text>
                     </Container>
                 </Body>
@@ -89,4 +91,4 @@ export const ResetPasswordEmail = ({
     );
 };
 
-export default ResetPasswordEmail;
+export default VerificationEmail;

@@ -1,193 +1,243 @@
-// src/db/data/user_seed.ts
-import mysql from 'mysql2/promise';
-import { randomUUID } from 'crypto';
+import { eq } from "drizzle-orm";
 import { hashPassword } from "better-auth/crypto";
+import { randomUUID } from "crypto";
+import { db } from "@/db";
+import * as schema from "@/db/schema";
 
 async function seed() {
-    console.log("🌱 A conectar à base de dados MySQL...");
-
-    const connection = await mysql.createConnection({
-        host: process.env.DB_HOST || 'localhost',
-        user: process.env.DB_USER || 'root',
-        password: process.env.DB_PASSWORD || '',
-        database: process.env.DB_NAME || 'fortis_libertas',
-        port: Number(process.env.DB_PORT) || 3306,
-        namedPlaceholders: true,
-    });
+    console.log("🌱 A preparar seed da Maria Nova com Drizzle ORM...");
 
     try {
-        console.log("🚀 A preparar identificadores fixos e entidades...");
-
         const userId = "01a183f3-c947-77f3-b678-96e46d13f7dc";
         const email = "maria.nova@example.com";
-        const accountPkId = "01a183f3-c947-77f3-b678-96e46d13f7dd";
+        const accountPkId = "01a183f3-c947-77f3-b678-96e46d13f7de";
         const dashboardId = "01a183f3-c947-77f3-b678-96e46d13f7de";
         const bankAccountId = "01a183f3-c947-77f3-b678-96e46d13f7df";
         const cardId = randomUUID();
-        const recordTypeId = randomUUID();
+
+        // IDs separados para Receita e Despesa
+        const expenseTypeId = randomUUID();
+        const incomeTypeId = randomUUID();
+
         const categoryId = randomUUID();
         const tagId = randomUUID();
-        const paymentMethodId = "PM-" + Date.now().toString().slice(-13);
+        const paymentMethodId = randomUUID();
         const installmentPlanId = randomUUID();
         const financialRecordId = randomUUID();
 
-        // Gera o hash nativo que o Better Auth valida sem erros
         const passwordHash = await hashPassword("Password!");
 
-        await connection.beginTransaction();
+        await db.transaction(async (tx) => {
+            console.log("🔍 A carregar referências dos catálogos globais...");
 
-        // ========================================================
-        // BLOCO 1: AUTENTICAÇÃO E IDENTIDADE (BETTER AUTH)
-        // ========================================================
-        console.log("👤 A inserir User e Account no formato nativo...");
+            const [eurCurrency] = await tx.select().from(schema.currency).where(eq(schema.currency.code, 'EUR')).limit(1);
+            const [ptLanguage] = await tx.select().from(schema.language).where(eq(schema.language.code, 'pt-PT')).limit(1);
+            const [defaultIcon] = await tx.select().from(schema.icon).limit(1);
+            const reservedColors = await tx.select().from(schema.color).where(eq(schema.color.isReserved, true)).limit(2);
+            const otherColors = await tx.select().from(schema.color).where(eq(schema.color.isReserved, false)).limit(3);
 
-        await connection.execute(`
-            INSERT INTO user (
-                user_id, full_name, user_name, email, email_verified_at, two_factor_enabled, role, created_at, updated_at
-            ) VALUES (
-                UUID_TO_BIN(:userId), 'Maria Nova Silva', 'maria.nova', :email, NOW(), 0, 'user', NOW(), NOW()
-            )
-            ON DUPLICATE KEY UPDATE updated_at = NOW()
-        `, { userId, email });
+            if (!eurCurrency || !ptLanguage || !defaultIcon || reservedColors.length < 2 || otherColors.length < 1) {
+                throw new Error("Catálogos globais vazios. Corre primeiro o 'bun run db:seed:catalogs'!");
+            }
 
-        await connection.execute(`
-            INSERT INTO account (
-                account_id, user_id, account_identifier_id, provider_id, password, created_at, updated_at
-            ) VALUES (
-                UUID_TO_BIN(:accountPkId), UUID_TO_BIN(:userId), :userId, 'credential', :passwordHash, NOW(), NOW()
-            )
-            ON DUPLICATE KEY UPDATE 
-                account_identifier_id = :userId, 
-                password = :passwordHash,
-                updated_at = NOW()
-        `, { accountPkId, userId, passwordHash });
+            console.log("📦 A inserir Maria, Conta e Dashboard...");
 
-        await connection.execute(`
-            INSERT INTO profile (
-                user_id, birth_date, phone, currency, language, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:userId), '1990-05-20', '+351912345678', 'EUR', 'pt-PT', NOW(), NOW()
-                     )
-                ON DUPLICATE KEY UPDATE updated_at = NOW()
-        `, { userId });
+            // 1. UTILIZADOR & PERFIL
+            await tx.insert(schema.user).values({
+                id: userId,
+                name: "Maria Nova Silva",
+                username: "maria.nova",
+                email: email,
+                emailVerified: new Date(),
+                twoFactorEnabled: false,
+            });
 
-        // ========================================================
-        // BLOCO 2: WORKSPACE & PERMISSÕES
-        // ========================================================
-        console.log("🏢 A inserir Dashboard e associação de permissões...");
+            await tx.insert(schema.account).values({
+                id: accountPkId,
+                userId: userId,
+                accountId: userId,
+                providerId: "credential",
+                password: passwordHash,
+            });
 
-        await connection.execute(`
-            INSERT INTO dashboard (
-                dashboard_id, name, is_active, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:dashboardId), 'Finanças da Maria', 1, NOW(), NOW()
-                     )
-                ON DUPLICATE KEY UPDATE updated_at = NOW()
-        `, { dashboardId });
+            await tx.insert(schema.profile).values({
+                userId: userId,
+                birthDate: "1990-05-20",
+                phone: "+351912345678",
+                currencyId: eurCurrency.id,
+                languageId: ptLanguage.id,
+            });
 
-        await connection.execute(`
-            INSERT INTO user__dashboard (
-                dashboard_id, user_id, role, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:dashboardId), UUID_TO_BIN(:userId), 'owner', NOW(), NOW()
-                     )
-                ON DUPLICATE KEY UPDATE updated_at = NOW()
-        `, { dashboardId, userId });
+            // 2. DASHBOARD
+            await tx.insert(schema.dashboard).values({
+                id: dashboardId,
+                name: "Finanças da Maria",
+                isActive: true,
+            });
 
-        // ========================================================
-        // BLOCO 3: CONTAS BANCÁRIAS (COM DASHBOARD_ID) & CARTÕES
-        // ========================================================
-        console.log("🏦 A inserir Conta Bancária e Cartão...");
+            await tx.insert(schema.userDashboard).values({
+                dashboardId: dashboardId,
+                userId: userId,
+                role: "owner",
+            });
 
-        await connection.execute(`
-            INSERT INTO bank_account (
-                bank_account_id, dashboard_id, name, initial_balance, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:bankAccountId), UUID_TO_BIN(:dashboardId), 'Conta à Ordem CGD', 1500.00, NOW(), NOW()
-                     )
-                ON DUPLICATE KEY UPDATE updated_at = NOW()
-        `, { bankAccountId, dashboardId });
+            console.log("🏦 A inserir Conta Bancária e Cartão...");
 
-        await connection.execute(`
-            INSERT INTO bank_account__user (
-                bank_id, user_id, role, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:bankAccountId), UUID_TO_BIN(:userId), 'owner', NOW(), NOW()
-                     )
-                ON DUPLICATE KEY UPDATE updated_at = NOW()
-        `, { bankAccountId, userId });
+            // 3. CONTA BANCÁRIA
+            await tx.insert(schema.bankAccount).values({
+                id: bankAccountId,
+                name: "Conta à Ordem CGD",
+                initialBalance: "1500.00",
+                currencyId: eurCurrency.id,
+            });
 
-        await connection.execute(`
-            INSERT INTO card (
-                card_id, bank_id, user_id, cardholder_name, type_card, card_number, expiry_date, cvv, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:cardId), UUID_TO_BIN(:bankAccountId), UUID_TO_BIN(:userId), 'MARIA SILVA', 'debit', '1234567812345678', '2028-12-31', '123', NOW(), NOW()
-                     )
-        `, { cardId, bankAccountId, userId });
+            await tx.insert(schema.bankAccountUser).values({
+                bankId: bankAccountId,
+                userId: userId,
+                role: "owner",
+            });
 
-        // ========================================================
-        // BLOCO 4: ESTRUTURA FINANCEIRA & TRANSAÇÕES
-        // ========================================================
-        console.log("🏷️ A criar categorias, tipos de registo e transação inicial...");
+            await tx.insert(schema.card).values({
+                id: cardId,
+                bankId: bankAccountId,
+                userId: userId,
+                cardholderName: "MARIA SILVA",
+                typeCard: "debit",
+                cardNumber: "1234567812345678",
+                expiryDate: "2028-12-31",
+                cvv: "123",
+            });
 
-        await connection.execute(`
-            INSERT INTO record_type (
-                record_type_id, dashboard_id, name, description, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:recordTypeId), UUID_TO_BIN(:dashboardId), 'EXPENSE', 'Saídas de dinheiro', NOW(), NOW()
-                     )
-        `, { recordTypeId, dashboardId });
+            console.log("🏷️ A inserir classificações (Receitas e Despesas)...");
 
-        await connection.execute(`
-            INSERT INTO category (
-                category_id, dashboard_id, name, description, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:categoryId), UUID_TO_BIN(:dashboardId), 'Supermercado', 'Compras de mercearia', NOW(), NOW()
-                     )
-        `, { categoryId, dashboardId });
+            // 4. CLASSIFICAÇÕES: Criamos obrigatoriamente Despesa e Receita
+            // Encontrar as cores reservadas específicas
+            const expenseColor = reservedColors.find(c => c.name === "Expenses Red") || reservedColors[1];
+            const incomeColor = reservedColors.find(c => c.name === "Income Green") || reservedColors[0];
 
-        await connection.execute(`
-            INSERT INTO tag (
-                tag_id, dashboard_id, name, description, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:tagId), UUID_TO_BIN(:dashboardId), 'Essencial', 'Despesas obrigatórias', NOW(), NOW()
-                     )
-        `, { tagId, dashboardId });
+            await tx.insert(schema.recordType).values({
+                id: expenseTypeId,
+                dashboardId: dashboardId,
+                name: "Despesa",
+                description: "Saídas de dinheiro",
+                colorId: expenseColor.id,
+                iconId: defaultIcon.id,
+                kind: "expense",
+            });
 
-        await connection.execute(`
-            INSERT INTO payment_method (
-                payment_method_id, dashboard_id, card_id, name, description, created_at, updated_at
-            ) VALUES (
-                         :paymentMethodId, UUID_TO_BIN(:dashboardId), UUID_TO_BIN(:cardId), 'Cartão Débito Principal', 'Pagamentos diários', NOW(), NOW()
-                     )
-        `, { paymentMethodId, dashboardId, cardId });
+            await tx.insert(schema.recordType).values({
+                id: incomeTypeId,
+                dashboardId: dashboardId,
+                name: "Receita",
+                description: "Entradas de dinheiro",
+                colorId: incomeColor.id,
+                iconId: defaultIcon.id,
+                kind: "income",
+            });
 
-        await connection.execute(`
-            INSERT INTO installment_plan (
-                installment_plan_id, dashboard_id, register_by_id, name, description, total_amount, total_installments, due_date, status, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:installmentPlanId), UUID_TO_BIN(:dashboardId), UUID_TO_BIN(:userId), 'Compra do Computador', 'Descrição do computador', 120.00, 3, '2026-11-25', 'pending', NOW(), NOW()
-                     )
-        `, { installmentPlanId, dashboardId, userId });
+            await tx.insert(schema.category).values({
+                id: categoryId,
+                dashboardId: dashboardId,
+                name: "Supermercado",
+                description: "Compras de mercearia",
+                colorId: otherColors[0].id,
+                iconId: defaultIcon.id,
+            });
 
-        await connection.execute(`
-            INSERT INTO financial_record (
-                financial_record_id, dashboard_id, register_by_id, record_type_id, category_id, payment_method_id, installment_plan_id, name, description, price, currency, payment_date, status, created_at, updated_at
-            ) VALUES (
-                         UUID_TO_BIN(:financialRecordId), UUID_TO_BIN(:dashboardId), UUID_TO_BIN(:userId), UUID_TO_BIN(:recordTypeId), UUID_TO_BIN(:categoryId), :paymentMethodId, UUID_TO_BIN(:installmentPlanId), 'Compras Continente', 'Leite, pão e vegetais', 40.00, 'EUR', NOW(), 'settled', NOW(), NOW()
-                     )
-        `, { financialRecordId, dashboardId, userId, recordTypeId, categoryId, paymentMethodId, installmentPlanId });
+            // Associa a categoria aos dois record types para poderes usá-la em ambos
+            await tx.insert(schema.recordTypeCategory).values({
+                recordTypeId: expenseTypeId,
+                categoryId: categoryId,
+            });
 
-        await connection.commit();
-        console.log("✅ Base de dados populada com hash nativo do Better Auth!");
+            await tx.insert(schema.recordTypeCategory).values({
+                recordTypeId: incomeTypeId,
+                categoryId: categoryId,
+            });
+
+            await tx.insert(schema.tag).values({
+                id: tagId,
+                dashboardId: dashboardId,
+                name: "Essencial",
+                description: "Despesas obrigatórias",
+            });
+
+            await tx.insert(schema.tagCategory).values({
+                tagId: tagId,
+                categoryId: categoryId,
+            });
+
+            await tx.insert(schema.paymentMethod).values({
+                id: paymentMethodId,
+                dashboardId: dashboardId,
+                userId: userId,
+                cardId: cardId,
+                name: "Cartão Débito Principal",
+                description: "Pagamentos diários com cartão", // IMPORTANTE: description é notNull!
+            });
+
+            console.log("💰 A gerar planos e transações...");
+
+            // 5. TRANSAÇÕES
+            const emergencyPlanId = randomUUID();
+            await tx.insert(schema.installmentPlan).values({
+                id: emergencyPlanId,
+                dashboardId: dashboardId,
+                registerById: userId,
+                name: "Fundo de Emergência",
+                description: "[EMERGENCY] Custo: 750 | Meses: 6",
+                categoryId: categoryId,
+                recordTypeId: expenseTypeId,
+                currencyId: eurCurrency.id,
+                totalAmount: "4500.00",
+                totalInstallments: 6,
+                dueDate: "2027-05-20",
+                status: "pending",
+            });
+
+            await tx.insert(schema.installmentPlan).values({
+                id: installmentPlanId,
+                dashboardId: dashboardId,
+                registerById: userId,
+                recordTypeId: expenseTypeId,
+                categoryId: categoryId,
+                currencyId: eurCurrency.id,
+                totalAmount: "120.00",
+                totalInstallments: 3,
+                dueDate: "2026-11-25",
+                status: "pending",
+                name: "Compra do Computador",
+                description: "Computador portátil para trabalho",
+            });
+
+            await tx.insert(schema.financialRecord).values({
+                id: financialRecordId,
+                dashboardId: dashboardId,
+                registerById: userId,
+                recordTypeId: expenseTypeId,
+                categoryId: categoryId,
+                paymentMethodId: paymentMethodId,
+                installmentPlanId: installmentPlanId,
+                name: "Compras Continente",
+                description: "Leite, pão e vegetais",
+                price: "40.00",
+                currencyId: eurCurrency.id,
+                paymentDate: new Date(),
+                status: "settled",
+            });
+
+            await tx.insert(schema.tagFinancialRecord).values({
+                tagId: tagId,
+                recordId: financialRecordId,
+            });
+        });
+
+        console.log("✅ Seed da Maria Nova completo e otimizado!");
         console.log(`🔑 Login: ${email} | Password: Password!`);
 
     } catch (error) {
-        await connection.rollback();
-        console.error("❌ Falha na transação do seed:");
-        console.error(error);
-    } finally {
-        await connection.end();
+        console.error("❌ Erro ao executar o seed:", error);
+        process.exit(1);
     }
 }
 

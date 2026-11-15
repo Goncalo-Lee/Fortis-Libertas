@@ -41,14 +41,13 @@ export default function SignInForm({
       const res = await authClient.signIn.social({
         provider: "google",
         mode: "popup",
-        redirectTo: "/dashboard",
+        callbackURL: "/dashboard",
       });
 
       if (res?.error) {
         toast.error(res.error.message || "Sign-in failed");
       } else {
         toast.success("Entrada bem-sucedida! Bem-vindo(a) de volta(o)");
-        router.push("/dashboard");
       }
     } catch (err) {
       toast.error("Ocorreu algum erro inesperado. Por favor, tenta novamente mais tarde.");
@@ -97,7 +96,7 @@ export default function SignInForm({
             <div className="flex items-center">
               <FieldLabel htmlFor="password">Password</FieldLabel>
               <a
-                  href="#"
+                  href="/forgot-password"
                   className="ml-auto text-sm underline-offset-4 hover:underline"
               >
                 Esqueceste a password?

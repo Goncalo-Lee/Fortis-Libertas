@@ -3,7 +3,6 @@
 import * as React from "react"
 import { NavDocuments } from "@/components/nav/nav-documents"
 import { NavMain } from "@/components/nav/nav-main"
-import { NavSecondary } from "@/components/nav/nav-secondary"
 import { NavUser } from "@/components/nav/nav-user"
 import {
   Sidebar,
@@ -15,18 +14,18 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import {
-  FileTextIcon, Settings2Icon, CircleHelpIcon, SearchIcon,
+  FileTextIcon,
   FileChartColumnIcon, CommandIcon, BadgeEuroIcon, MinusCircleIcon,
   CalendarArrowDownIcon, ClipboardMinusIcon, PiggyBankIcon,
-  FileOutputIcon, BellIcon, ArrowLeftRightIcon
+  FileOutputIcon, BellIcon, ArrowLeftRightIcon, ShieldCheck, ShieldCheckIcon
 } from "lucide-react"
+import ChatToggleDialog from "@/components/chat-toggle-dialog";
 
 const navMain = [
   { title: "Rendimentos", url: "/dashboard/incomes", icon: <BadgeEuroIcon /> },
   { title: "Despesas", url: "/dashboard/expenses", icon: <MinusCircleIcon /> },
   { title: "Metas Financeiras", url: "/dashboard/financial-goals", icon: <CalendarArrowDownIcon /> },
-  { title: "Dívidas", url: "/dashboard/financial-debts", icon: <ClipboardMinusIcon /> },
-  { title: "Pé de meia", url: "/dashboard/money-pillow", icon: <PiggyBankIcon /> },
+  { title: "Fundo de emergência", url: "/dashboard/money-pillow", icon: <ShieldCheckIcon /> },
   { title: "Notificações", url: "/dashboard/notifications", icon: <BellIcon /> },
 ]
 
@@ -35,12 +34,6 @@ const documents = [
   { name: "Gerador de relatórios", url: "/dashboard/documents/reports-generator", icon: <FileChartColumnIcon /> },
   { name: "Faturas", url: "/dashboard/documents/invoices", icon: <FileTextIcon /> },
   { name: "Registo de transações", url: "/dashboard/documents/transactions-log", icon: <ArrowLeftRightIcon /> },
-]
-
-const navSecondary = [
-  { title: "Configurações", url: "/dashboard/configurations", icon: <Settings2Icon /> },
-  { title: "Ajuda/Chatbot", url: "#", icon: <CircleHelpIcon /> },
-  { title: "Pesquisar", url: "#", icon: <SearchIcon /> },
 ]
 
 interface UserSidebarProps extends React.ComponentProps<typeof Sidebar> {
@@ -68,7 +61,7 @@ export function UserSidebar({ user, ...props }: UserSidebarProps) {
                   render={<a href="/dashboard" />}
               >
                 <CommandIcon className="size-8!" />
-                <span className="text-base font-semibold">Fortis Libertas</span>
+                <span className="text-base font-semibold">FORTIS LIBERTAS</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -76,9 +69,9 @@ export function UserSidebar({ user, ...props }: UserSidebarProps) {
         <SidebarContent>
           <NavMain items={navMain} />
           <NavDocuments items={documents} />
-          <NavSecondary items={navSecondary} className="mt-auto" />
         </SidebarContent>
         <SidebarFooter>
+          <ChatToggleDialog />
           <NavUser user={userData} />
         </SidebarFooter>
       </Sidebar>

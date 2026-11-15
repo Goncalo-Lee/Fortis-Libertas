@@ -1,6 +1,6 @@
 "use client"
 import { GalleryVerticalEndIcon } from "lucide-react"
-import {ResetPasswordForm} from "@/components/reset-password-form";
+import {ResetPasswordForm} from "@/components/forms/reset-password-form";
 
 export default function ResetPasswordPage() {
     return (
@@ -10,7 +10,7 @@ export default function ResetPasswordPage() {
                     <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
                         <GalleryVerticalEndIcon className="size-4" />
                     </div>
-                    Acme Inc.
+                    Fortis Liberta
                 </a>
                 <ResetPasswordForm />
             </div>

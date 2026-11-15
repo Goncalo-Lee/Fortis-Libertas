@@ -28,6 +28,7 @@ export function serializeCategory(
     record_types: recordTypes.map((rt) => ({
       record_type_id: rt.id,
       name: rt.name,
+      kind: rt.kind,
       color: serializeColor(rt.color),
       icon: serializeIcon(rt.icon),
     })),

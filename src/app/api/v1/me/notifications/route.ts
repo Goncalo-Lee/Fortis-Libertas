@@ -1,10 +1,13 @@
 import type { NextRequest } from "next/server";
-import { listNotifications } from "@/db/queries/notifications";
+import { db } from "@/db";
+import { createNotification, listNotifications } from "@/db/queries/notifications";
+import type { NotificationType } from "@/db/queries/notifications/type";
 import { requireSession } from "@/lib/api/auth";
+import { parseJson } from "@/lib/api/body";
 import { withErrors } from "@/lib/api/errors";
 import { parsePagination } from "@/lib/api/pagination";
-import { paginated } from "@/lib/api/responses";
-import { listNotificationsQuery } from "@/lib/api/schemas/notification";
+import { created, paginated } from "@/lib/api/responses";
+import { createNotificationSchema, listNotificationsQuery } from "@/lib/api/schemas/notification";
 import { serializeNotification } from "@/lib/api/serializers/notification";
 
 export const runtime = "nodejs";
@@ -28,3 +31,24 @@ export const GET = withErrors(async (request: NextRequest) => {
   const { rows, total } = await listNotifications(user.id, { ...filters, limit: perPage, offset });
   return paginated(rows.map(serializeNotification), { page, perPage, total });
 });
+
+/**
+ * POST /api/v1/me/notifications
+ *
+ * Creates a notification for the caller.
+ *
+ * Body: { title: string, message: string, type?: string }
+ */
+export const POST = withErrors(async (request: NextRequest) => {
+  const { user } = await requireSession(request);
+  const input = await parseJson(request, createNotificationSchema);
+
+  await createNotification(db, user.id, input.type as NotificationType, {
+    title: input.title,
+    message: input.message,
+  });
+
+  return created();
+});
+
+

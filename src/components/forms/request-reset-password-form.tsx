@@ -40,7 +40,6 @@ export function RequestResetPasswordForm({
     })
 
     const handleSubmit = async (data: z.infer<typeof contactSchema>) => {
-        console.log("Estou aqui");
 
         setIsLoading(true);
         const{ error } = await authClient.requestPasswordReset({

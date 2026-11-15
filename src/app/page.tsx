@@ -1,8 +1,6 @@
 "use client"
 import React from 'react';
-
 import Link from 'next/link';
-
 import { authClient } from '@/lib/auth-client';
 
 
@@ -11,8 +9,8 @@ export default function Home() {
     const handleFastAdminLogin = async () => {
 
         await authClient.signIn.email({
-            email: "admin@yourdomain.com",
-            password: "SuperSecurePassword123!",
+            email: "admin@fortislibertas.com",
+            password: "Password!",
             name: "Administrator",
 
         }, {

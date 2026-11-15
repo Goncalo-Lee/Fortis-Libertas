@@ -1,81 +1,82 @@
-"use client"
+'use client';
 
-import { TrendingUp } from "lucide-react"
-import { Pie, PieChart } from "recharts"
-
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart"
-
-export const description = "A simple pie chart"
-
-const chartData = [
-  { browser: "chrome", visitors: 275, fill: "var(--color-chrome)" },
-  { browser: "safari", visitors: 200, fill: "var(--color-safari)" },
-  { browser: "firefox", visitors: 187, fill: "var(--color-firefox)" },
-  { browser: "edge", visitors: 173, fill: "var(--color-edge)" },
-  { browser: "other", visitors: 90, fill: "var(--color-other)" },
-]
+import { useMemo } from "react";
+import { PieChart as PieChartIcon } from "lucide-react";
+import { Pie, PieChart } from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import { useFinancial } from "@/contexts/FinancialContext";
 
 const chartConfig = {
-  visitors: {
-    label: "Visitors",
+  value: { label: "Valor" },
+  receitas: {
+    label: "Receitas",
+    color: "var(--app-gains)", // Receitas a Verde!
   },
-  chrome: {
-    label: "Chrome",
-    color: "var(--chart-1)",
+  despesas: {
+    label: "Despesas",
+    color: "var(--app-loses)", // Despesas a Vermelho!
   },
-  safari: {
-    label: "Safari",
-    color: "var(--chart-2)",
-  },
-  firefox: {
-    label: "Firefox",
-    color: "var(--chart-3)",
-  },
-  edge: {
-    label: "Edge",
-    color: "var(--chart-4)",
-  },
-  other: {
-    label: "Other",
-    color: "var(--chart-5)",
-  },
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
 export default function ChartPie() {
-  return (
-      <Card className="flex h-full w-full flex-col gap-2 py-3 font-poppins text-center">
-        <CardHeader className="shrink-0 items-center px-3 pb-0">
-          <CardTitle className="text-sm">Rendimentos/Despesas</CardTitle>
-          <CardDescription className="text-xs">January - June 2024</CardDescription>
-        </CardHeader>
+  const { financialRecords } = useFinancial();
 
-        <CardContent className="min-h-0 flex-1 px-3 pb-0">
-          <ChartContainer config={chartConfig} className="mx-auto aspect-auto h-full w-full">
-            <PieChart>
-              <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-              <Pie
-                  data={chartData}
-                  dataKey="visitors"
-                  nameKey="browser"
-                  outerRadius="80%"
-              />
-            </PieChart>
-          </ChartContainer>
+  const { chartData, hasData } = useMemo(() => {
+    if (!financialRecords || financialRecords.length === 0) {
+      return { chartData: [], hasData: false };
+    }
+
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+
+    let incomeTotal = 0;
+    let expenseTotal = 0;
+
+    financialRecords.forEach((record: any) => {
+      if (!record.date) return;
+      const recordDate = new Date(record.date);
+
+      if (recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear) {
+        if (record.isExpense) expenseTotal += record.amount;
+        if (record.isIncome) incomeTotal += record.amount;
+      }
+    });
+
+    const data = [
+      { id: "receitas", label: "Receitas", value: incomeTotal, fill: "var(--app-gains)" },
+      { id: "despesas", label: "Despesas", value: expenseTotal, fill: "var(--app-loses)" }
+    ];
+
+    return {
+      chartData: data,
+      hasData: incomeTotal > 0 || expenseTotal > 0
+    };
+  }, [financialRecords]);
+
+  return (
+      <Card className="font-poppins w-full h-full flex flex-col justify-center items-center text-center shadow-sm py-3">
+        <CardHeader className="pb-1 md:pb-2 w-full px-3">
+          <CardTitle className="text-xs sm:text-sm md:text-base font-medium text-muted-foreground flex items-center justify-center gap-2">
+            <PieChartIcon className="w-4 h-4 text-stone-400" />
+            Receitas vs Despesas
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="min-h-0 flex-1 px-3 pb-0 w-full flex items-center justify-center">
+          {hasData ? (
+              <ChartContainer config={chartConfig} className="mx-auto aspect-auto h-full w-full max-h-[200px]">
+                <PieChart>
+                  <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                  <Pie data={chartData} dataKey="value" nameKey="id" outerRadius="80%" stroke="none" />
+                </PieChart>
+              </ChartContainer>
+          ) : (
+              <div className="text-sm text-muted-foreground flex flex-col items-center justify-center h-full gap-2">
+                <PieChartIcon className="w-6 h-6 text-stone-200" />
+                <span>Sem movimentos este mês</span>
+              </div>
+          )}
         </CardContent>
       </Card>
-  )
+  );
 }
-

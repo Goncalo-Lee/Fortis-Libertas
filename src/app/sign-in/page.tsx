@@ -1,6 +1,6 @@
 "use client"
 import { GalleryVerticalEndIcon } from "lucide-react"
-import SignInForm from "@/components/sign-in-form";
+import SignInForm from "@/components/forms/sign-in-form";
 
 export default function SignInPage() {
     return (

@@ -10,5 +10,13 @@ export const listNotificationsQuery = z.looseObject({
 
 /** Body of PATCH /me/notifications/{notification_id} (section 4.4). `read` is the only field and is required. */
 export const updateNotificationSchema = z.strictObject({
-  read: z.boolean(),
+  read: z.boolean().optional(), // backward compatibility if needed
+  is_read: z.boolean().optional(), // context uses is_read
+});
+
+/** Body of POST /me/notifications */
+export const createNotificationSchema = z.strictObject({
+  title: z.string().min(1).max(255),
+  message: z.string().min(1).max(1024),
+  type: z.string().default("manual"),
 });
